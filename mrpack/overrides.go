@@ -3,9 +3,11 @@ package mrpack
 import (
 	"archive/zip"
 	"fmt"
+	"log"
 	"os"
 	"path"
 	"path/filepath"
+	"strings"
 )
 
 type Side string
@@ -28,21 +30,26 @@ func ExtractOverrides(zipFile string, target string, side Side) error {
 	}(zipReader)
 
 	for _, file := range zipReader.File {
-		if file.Name == "modrinth.index.json" {
+		if file.FileInfo().IsDir() {
 			continue
 		}
 
-		switch side {
-		case Client:
-			//"overrides", "client-overrides"
-		case Server:
-			//"overrides", "server-overrides"
-		default:
-			//illegal
+		filePath := file.Name
+		if strings.HasPrefix(filePath, "overrides/") {
+			filePath = strings.TrimPrefix(filePath, "overrides/")
+		} else if side == Client && strings.HasPrefix(filePath, "client-overrides/") {
+			filePath = strings.TrimPrefix(filePath, "client-overrides/")
+		} else if side == Server && strings.HasPrefix(filePath, "server-overrides/") {
+			filePath = strings.TrimPrefix(filePath, "server-overrides/")
+		} else {
+			continue
 		}
 
-		// create parent directory tree
+		log.Println(filePath)
+
 		targetPath := path.Join(target, file.Name)
+
+		// create parent directory tree
 		err := os.MkdirAll(filepath.Dir(targetPath), 0755)
 		if err != nil {
 			return err
