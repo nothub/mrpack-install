@@ -3,7 +3,6 @@ package mrpack
 import (
 	"archive/zip"
 	"fmt"
-	"log"
 	"os"
 	"path"
 	"path/filepath"
@@ -45,11 +44,8 @@ func ExtractOverrides(zipFile string, target string, side Side) error {
 			continue
 		}
 
-		log.Println(filePath)
+		targetPath := path.Join(target, filePath)
 
-		targetPath := path.Join(target, file.Name)
-
-		// create parent directory tree
 		err := os.MkdirAll(filepath.Dir(targetPath), 0755)
 		if err != nil {
 			return err
