@@ -21,12 +21,12 @@ const (
 	Unknown    ProjectStatus = "unknown"
 )
 
-type Environment string
+type EnvSupport string
 
 const (
-	Required    Environment = "required"
-	Optional    Environment = "optional"
-	Unsupported Environment = "unsupported"
+	Required    EnvSupport = "required"
+	Optional    EnvSupport = "optional"
+	Unsupported EnvSupport = "unsupported"
 )
 
 type ReleaseChannel string
@@ -56,8 +56,8 @@ type Project struct {
 	Title                string           `json:"title"`
 	Description          string           `json:"description"`
 	Categories           []string         `json:"categories"`
-	ClientSide           Environment      `json:"client_side"`
-	ServerSide           Environment      `json:"server_side"`
+	ClientSide           EnvSupport       `json:"client_side"`
+	ServerSide           EnvSupport       `json:"server_side"`
 	Body                 string           `json:"body"`
 	AdditionalCategories []string         `json:"additional_categories"`
 	IssuesUrl            string           `json:"issues_url"`

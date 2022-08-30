@@ -35,8 +35,8 @@ type File struct {
 }
 
 type Env struct {
-	Client api.Environment `json:"client"`
-	Server api.Environment `json:"server"`
+	Client api.EnvSupport `json:"client"`
+	Server api.EnvSupport `json:"server"`
 }
 
 type Dependencies struct {
