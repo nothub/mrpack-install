@@ -1,14 +1,13 @@
 version: 2
 updates:
-
-  - package-ecosystem: "gomod"
-    directory: "/"
+  - package-ecosystem: gomod
+    directory: '/'
     schedule:
-      interval: "daily"
+      interval: daily
     assignees:
-      - "nothub"
+      - 'nothub'
     reviewers:
-      - "nothub"
+      - 'nothub'
     commit-message:
-      prefix: "gomod"
-      include: "scope"
+      prefix: gomod
+      include: scope
