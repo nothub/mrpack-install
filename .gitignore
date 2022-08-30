@@ -11,3 +11,6 @@
 !/go.mod
 !/go.sum
 !/**/*.go
+
+!/LICENSE.txt
+!/README.md
