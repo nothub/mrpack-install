@@ -13,6 +13,9 @@ lint:
 	go vet
 
 test:
-	go test $(MODNAME)/api -parallel $(THREADS)
+	go test -v -parallel $(THREADS) \
+	$(MODNAME)/api \
+	$(MODNAME)/mrpack
+
 
 .PHONY: clean lint test
