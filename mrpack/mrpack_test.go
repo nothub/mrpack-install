@@ -3,69 +3,90 @@ package mrpack
 import (
 	"encoding/base64"
 	"io"
-	"log"
 	"net/http"
 	"os"
+	"regexp"
 	"testing"
 )
 
-func Test_ParseIndex_Mod(t *testing.T) {
+func Test_ParseIndex_Fabulously_Optimized(t *testing.T) {
 	t.Parallel()
-	file, err := download("https://cdn.modrinth.com/data/P7dR8mSH/versions/0.60.0+1.19.2/fabric-api-0.60.0%2B1.19.2.jar")
+
+	zipFile := download(t, "https://cdn.modrinth.com/data/1KVo5zza/versions/1vRDfe1u/MR_Fabulously%20Optimized_4.2.1.mrpack")
+	defer func(file *os.File) {
+		err := file.Close()
+		if err != nil {
+			t.Fatal(err)
+		}
+		err = os.Remove(file.Name())
+		if err != nil {
+			t.Fatal(err)
+		}
+	}(zipFile)
+
+	index, err := ReadIndex(zipFile.Name())
 	if err != nil {
 		t.Fatal(err)
 	}
-	validate(t, file)
+
+	if index.Name != "Fabulously Optimized" {
+		t.Fatal("wrong name!")
+	}
 }
 
-func Test_ParseIndex_Pack(t *testing.T) {
+func Test_ParseIndex_Skyblocker(t *testing.T) {
 	t.Parallel()
-	file, err := download("https://cdn.modrinth.com/data/JE8Z4A5g/versions/ag2r5Pf8/Rinthereout-0.4.0-indev.mrpack")
+
+	zipFile := download(t, "https://cdn.modrinth.com/data/KmiWHzQ4/versions/1.5.0/Skyblocker-Modpack.mrpack")
+	defer func(file *os.File) {
+		err := file.Close()
+		if err != nil {
+			t.Fatal(err)
+		}
+		err = os.Remove(file.Name())
+		if err != nil {
+			t.Fatal(err)
+		}
+	}(zipFile)
+
+	index, err := ReadIndex(zipFile.Name())
 	if err != nil {
 		t.Fatal(err)
 	}
-	validate(t, file)
+
+	if index.Name != "Skyblocker Modpack" {
+		t.Fatal("wrong name!")
+	}
 }
 
-func download(url string) (*os.File, error) {
-	// download from url
+func download(t *testing.T, url string) *os.File {
 	resp, err := http.Get(url)
 	if err != nil {
-		return nil, err
+		t.Fatal(err)
 	}
 
-	// create temp file
-	file, err := os.CreateTemp(os.TempDir(), base64.StdEncoding.EncodeToString([]byte(resp.Request.RequestURI)))
+	nameHash := base64.StdEncoding.EncodeToString([]byte(resp.Request.URL.String()))
+	pattern, err := regexp.Compile("[^a-zA-Z0-9]+")
 	if err != nil {
-		return nil, err
+		t.Fatal(err)
+	}
+	nameHash = pattern.ReplaceAllString(nameHash, "")
+	if len(nameHash) > 16 {
+		nameHash = nameHash[len(nameHash)-16:]
 	}
 
-	// write body to file
+	file, err := os.CreateTemp(os.TempDir(), nameHash)
+	if err != nil {
+		t.Fatal(err)
+	}
 	_, err = io.Copy(file, resp.Body)
 	if err != nil {
-		return nil, err
+		t.Fatal(err)
 	}
 	err = resp.Body.Close()
 	if err != nil {
-		return nil, err
-	}
-
-	return file, nil
-}
-
-func validate(t *testing.T, file *os.File) {
-	index, err := ReadFile(file)
-	if err != nil {
-		return
-	}
-	log.Println(index.Name)
-
-	err = file.Close()
-	if err != nil {
 		t.Fatal(err)
 	}
-	err = os.Remove(file.Name())
-	if err != nil {
-		t.Fatal(err)
-	}
+
+	return file
 }

@@ -1,8 +1,14 @@
 package mrpack
 
-import "github.com/nothub/gorinth/api"
+import (
+	"archive/zip"
+	"encoding/json"
+	"errors"
+	"fmt"
+	"io"
+)
 
-const indexFile string = "modrinth.index.json"
+import "github.com/nothub/gorinth/api"
 
 type Index struct {
 	FormatVersion int          `json:"formatVersion"`
@@ -38,4 +44,47 @@ type Dependencies struct {
 	Forge     string `json:"forge"`
 	Fabric    string `json:"fabric-loader"`
 	Quilt     string `json:"quilt-loader"`
+}
+
+func ReadIndex(zipFile string) (*Index, error) {
+	zipReader, err := zip.OpenReader(zipFile)
+	if err != nil {
+		return nil, err
+	}
+	defer func(zipReader *zip.ReadCloser) {
+		err := zipReader.Close()
+		if err != nil {
+			fmt.Println(err)
+		}
+	}(zipReader)
+
+	var indexFile *zip.File
+	for _, file := range zipReader.File {
+		if file.Name == "modrinth.index.json" {
+			indexFile = file
+			break
+		}
+	}
+	if indexFile == nil {
+		return nil, errors.New("no index file found")
+	}
+
+	fileReader, err := indexFile.Open()
+	if err != nil {
+		return nil, err
+	}
+	defer func(fileReader io.ReadCloser) {
+		err := fileReader.Close()
+		if err != nil {
+			fmt.Println(err)
+		}
+	}(fileReader)
+
+	var index Index
+	err = json.NewDecoder(fileReader).Decode(&index)
+	if err != nil {
+		return nil, err
+	}
+
+	return &index, nil
 }
