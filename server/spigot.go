@@ -2,15 +2,14 @@ package server
 
 import (
 	"log"
-	"net/url"
 )
 
-type SpigotSupplier struct {
+type Spigot struct {
 	MinecraftVersion string
 	SpigotVersion    string
 }
 
-func (*SpigotSupplier) GetUrl() (*url.URL, error) {
+func (*Spigot) GetUrl() (string, error) {
 	log.Fatalln("Not yet implemented!")
-	return nil, nil
+	return "", nil
 }

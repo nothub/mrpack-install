@@ -2,15 +2,14 @@ package server
 
 import (
 	"log"
-	"net/url"
 )
 
-type ForgeSupplier struct {
+type Forge struct {
 	MinecraftVersion string
 	ForgeVersion     string
 }
 
-func (*ForgeSupplier) GetUrl() (*url.URL, error) {
+func (*Forge) GetUrl() (string, error) {
 	log.Fatalln("Not yet implemented!")
-	return nil, nil
+	return "", nil
 }

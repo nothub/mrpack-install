@@ -2,15 +2,14 @@ package server
 
 import (
 	"log"
-	"net/url"
 )
 
-type PaperSupplier struct {
+type Paper struct {
 	MinecraftVersion string
 	PaperVersion     string
 }
 
-func (*PaperSupplier) GetUrl() (*url.URL, error) {
+func (*Paper) GetUrl() (string, error) {
 	log.Fatalln("Not yet implemented!")
-	return nil, nil
+	return "", nil
 }

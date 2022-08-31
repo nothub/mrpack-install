@@ -2,14 +2,13 @@ package server
 
 import (
 	"log"
-	"net/url"
 )
 
-type VanillaSupplier struct {
+type Vanilla struct {
 	MinecraftVersion string
 }
 
-func (*VanillaSupplier) GetUrl() (*url.URL, error) {
+func (*Vanilla) GetUrl() (string, error) {
 	log.Fatalln("Not yet implemented!")
-	return nil, nil
+	return "", nil
 }

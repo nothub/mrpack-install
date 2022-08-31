@@ -10,6 +10,8 @@ import (
 	"strconv"
 )
 
+// TODO: http client provider server -> 1 http client per target host
+
 type ErrorModel interface {
 	String() string
 }
@@ -58,7 +60,7 @@ func (client *Client) JsonRequest(method string, url string, body io.Reader, rep
 	}(response.Body)
 
 	if response.StatusCode < http.StatusOK || response.StatusCode >= http.StatusBadRequest {
-		if json.NewDecoder(response.Body).Decode(&errorModel) != nil {
+		if errorModel == nil || json.NewDecoder(response.Body).Decode(&errorModel) != nil {
 			return errors.New("http status " + strconv.Itoa(response.StatusCode))
 		}
 		return errors.New("http status " + strconv.Itoa(response.StatusCode) + " - " + errorModel.String())

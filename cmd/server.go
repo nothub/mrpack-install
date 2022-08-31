@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"fmt"
 	"github.com/nothub/gorinth/server"
 	"github.com/spf13/cobra"
 	"log"
@@ -18,9 +19,9 @@ func init() {
 }
 
 var serverCmd = &cobra.Command{
-	Use:   "server",
+	Use:   "server (vanilla|fabric|forge|quilt|paper|spigot)",
 	Short: "Prepare a server environment",
-	Long:  `TODO`,
+	Long:  `Download and configure one of several Minecraft server flavors.`,
 
 	Args:      cobra.ExactValidArgs(1),
 	ValidArgs: []string{"vanilla", "fabric", "forge", "quilt", "paper", "spigot"},
@@ -38,39 +39,41 @@ var serverCmd = &cobra.Command{
 		var supplier server.DownloadSupplier = nil
 		switch args[0] {
 		case "vanilla":
-			supplier = &server.VanillaSupplier{
+			supplier = &server.Vanilla{
 				MinecraftVersion: minecraftVersion,
 			}
 		case "fabric":
-			supplier = &server.FabricSupplier{
+			supplier = &server.Fabric{
 				MinecraftVersion: minecraftVersion,
 				FabricVersion:    loaderVersion,
 			}
 		case "forge":
-			supplier = &server.ForgeSupplier{
+			supplier = &server.Forge{
 				MinecraftVersion: minecraftVersion,
 				ForgeVersion:     loaderVersion,
 			}
 		case "quilt":
-			supplier = &server.QuiltSupplier{
+			supplier = &server.Quilt{
 				MinecraftVersion: minecraftVersion,
 				QuiltVersion:     loaderVersion,
 			}
 		case "paper":
-			supplier = &server.PaperSupplier{
+			supplier = &server.Paper{
 				MinecraftVersion: minecraftVersion,
 				PaperVersion:     loaderVersion,
 			}
 		case "spigot":
-			supplier = &server.SpigotSupplier{
+			supplier = &server.Spigot{
 				MinecraftVersion: minecraftVersion,
 				SpigotVersion:    loaderVersion,
 			}
 		}
+
 		url, err := supplier.GetUrl()
 		if err != nil {
 			log.Fatalln(err)
 		}
-		log.Println(&url.Path)
+
+		fmt.Println(url)
 	},
 }
