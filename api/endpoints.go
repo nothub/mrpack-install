@@ -4,12 +4,10 @@ import (
 	url2 "net/url"
 )
 
-const baseUrl = "https://api.modrinth.com/"
 const apiVersion = "v2"
-const apiUrl = baseUrl + apiVersion
 
 func (client *Client) LabrinthInfo() (*LabrinthInfo, error) {
-	url, err := url2.Parse(baseUrl)
+	url, err := url2.Parse(client.BaseUrl)
 	if err != nil {
 		return nil, err
 	}
@@ -27,7 +25,7 @@ func (client *Client) LabrinthInfo() (*LabrinthInfo, error) {
 
 // GetProject https://docs.modrinth.com/api-spec/#tag/projects/operation/getProject
 func (client *Client) GetProject(id string) (*Project, error) {
-	url, err := url2.Parse(apiUrl + "/project/" + id)
+	url, err := url2.Parse(client.BaseUrl + apiVersion + "/project/" + id)
 	if err != nil {
 		return nil, err
 	}
@@ -43,7 +41,7 @@ func (client *Client) GetProject(id string) (*Project, error) {
 
 // GetProjects https://docs.modrinth.com/api-spec/#tag/projects/operation/getProjects
 func (client *Client) GetProjects(ids []string) ([]*Project, error) {
-	url, err := url2.Parse(apiUrl + "/projects")
+	url, err := url2.Parse(client.BaseUrl + apiVersion + "/projects")
 	if err != nil {
 		return nil, err
 	}
@@ -63,7 +61,7 @@ func (client *Client) GetProjects(ids []string) ([]*Project, error) {
 
 // CheckProjectValidity https://docs.modrinth.com/api-spec/#tag/projects/operation/checkProjectValidity
 func (client *Client) CheckProjectValidity(id string) (*CheckResponse, error) {
-	url, err := url2.Parse(apiUrl + "/project/" + id + "/check")
+	url, err := url2.Parse(client.BaseUrl + apiVersion + "/project/" + id + "/check")
 	if err != nil {
 		return nil, err
 	}
@@ -79,7 +77,7 @@ func (client *Client) CheckProjectValidity(id string) (*CheckResponse, error) {
 
 // GetDependencies https://docs.modrinth.com/api-spec/#tag/projects/operation/getDependencies
 func (client *Client) GetDependencies(id string) (*Dependencies, error) {
-	url, err := url2.Parse(apiUrl + "/project/" + id + "/dependencies")
+	url, err := url2.Parse(client.BaseUrl + apiVersion + "/project/" + id + "/dependencies")
 	if err != nil {
 		return nil, err
 	}
@@ -97,7 +95,7 @@ func (client *Client) GetDependencies(id string) (*Dependencies, error) {
 
 // GetProjectVersions https://docs.modrinth.com/api-spec/#tag/versions/operation/getProjectVersions
 func (client *Client) GetProjectVersions(id string, params *GetProjectVersionsParams) ([]*Version, error) {
-	url, err := url2.Parse(apiUrl + "/project/" + id + "/version")
+	url, err := url2.Parse(client.BaseUrl + apiVersion + "/project/" + id + "/version")
 	if err != nil {
 		return nil, err
 	}
@@ -131,7 +129,7 @@ type GetProjectVersionsParams struct {
 
 // GetVersion https://docs.modrinth.com/api-spec/#tag/versions/operation/getVersion
 func (client *Client) GetVersion(id string) (*Version, error) {
-	url, err := url2.Parse(apiUrl + "/version/" + id)
+	url, err := url2.Parse(client.BaseUrl + apiVersion + "/version/" + id)
 	if err != nil {
 		return nil, err
 	}
@@ -147,7 +145,7 @@ func (client *Client) GetVersion(id string) (*Version, error) {
 
 // GetVersions https://docs.modrinth.com/api-spec/#tag/versions/operation/getVersions
 func (client *Client) GetVersions(ids []string) ([]*Version, error) {
-	url, err := url2.Parse(apiUrl + "/versions")
+	url, err := url2.Parse(client.BaseUrl + apiVersion + "/versions")
 	if err != nil {
 		return nil, err
 	}
@@ -169,7 +167,7 @@ func (client *Client) GetVersions(ids []string) ([]*Version, error) {
 
 // VersionFromHash https://docs.modrinth.com/api-spec/#tag/version-files/operation/versionFromHash
 func (client *Client) VersionFromHash(hash string, algorithm HashAlgo) (*Version, error) {
-	url, err := url2.Parse(apiUrl + "/version_file/" + hash)
+	url, err := url2.Parse(client.BaseUrl + apiVersion + "/version_file/" + hash)
 	if err != nil {
 		return nil, err
 	}

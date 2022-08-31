@@ -6,7 +6,7 @@ import (
 
 func Test_GetProject_Success(t *testing.T) {
 	t.Parallel()
-	c := NewClient()
+	c := NewClient(nil)
 	project, err := c.GetProject("fabric-api")
 	if err != nil {
 		t.Fatal(err)
@@ -21,7 +21,7 @@ func Test_GetProject_Success(t *testing.T) {
 
 func Test_GetProject_404(t *testing.T) {
 	t.Parallel()
-	c := NewClient()
+	c := NewClient(nil)
 	_, err := c.GetProject("x")
 	if err.Error() != "http status 404" {
 		t.Fatal("wrong status!")
@@ -30,7 +30,7 @@ func Test_GetProject_404(t *testing.T) {
 
 func TestClient_GetProjects_Count(t *testing.T) {
 	t.Parallel()
-	c := NewClient()
+	c := NewClient(nil)
 	projects, err := c.GetProjects([]string{"P7dR8mSH", "XxWD5pD3", "x"})
 	if err != nil {
 		t.Fatal(err)
@@ -42,7 +42,7 @@ func TestClient_GetProjects_Count(t *testing.T) {
 
 func TestClient_GetProjects_Slug(t *testing.T) {
 	t.Parallel()
-	c := NewClient()
+	c := NewClient(nil)
 	projects, err := c.GetProjects([]string{"P7dR8mSH"})
 	if err != nil {
 		t.Fatal(err)
@@ -54,7 +54,7 @@ func TestClient_GetProjects_Slug(t *testing.T) {
 
 func TestClient_CheckProjectValidity_Slug(t *testing.T) {
 	t.Parallel()
-	c := NewClient()
+	c := NewClient(nil)
 	response, err := c.CheckProjectValidity("fabric-api")
 	if err != nil {
 		t.Fatal(err)
@@ -66,7 +66,7 @@ func TestClient_CheckProjectValidity_Slug(t *testing.T) {
 
 func TestClient_CheckProjectValidity_Id(t *testing.T) {
 	t.Parallel()
-	c := NewClient()
+	c := NewClient(nil)
 	response, err := c.CheckProjectValidity("P7dR8mSH")
 	if err != nil {
 		t.Fatal(err)
@@ -78,7 +78,7 @@ func TestClient_CheckProjectValidity_Id(t *testing.T) {
 
 func TestClient_GetDependencies(t *testing.T) {
 	t.Parallel()
-	c := NewClient()
+	c := NewClient(nil)
 	dependencies, err := c.GetDependencies("rinthereout")
 	if err != nil {
 		t.Fatal(err)
@@ -90,7 +90,7 @@ func TestClient_GetDependencies(t *testing.T) {
 
 func TestClient_GetProjectVersions_Count(t *testing.T) {
 	t.Parallel()
-	c := NewClient()
+	c := NewClient(nil)
 	versions, err := c.GetProjectVersions("fabric-api", &GetProjectVersionsParams{})
 	if err != nil {
 		t.Fatal(err)
@@ -102,7 +102,7 @@ func TestClient_GetProjectVersions_Count(t *testing.T) {
 
 func TestClient_GetProjectVersions_Filter_Results(t *testing.T) {
 	t.Parallel()
-	c := NewClient()
+	c := NewClient(nil)
 	versions, err := c.GetProjectVersions("fabric-api", &GetProjectVersionsParams{
 		GameVersions: []string{"1.16.5"},
 	})
@@ -116,7 +116,7 @@ func TestClient_GetProjectVersions_Filter_Results(t *testing.T) {
 
 func TestClient_GetProjectVersions_Filter_NoResults(t *testing.T) {
 	t.Parallel()
-	c := NewClient()
+	c := NewClient(nil)
 	versions, err := c.GetProjectVersions("fabric-api", &GetProjectVersionsParams{
 		Loaders: []string{"forge"},
 	})
@@ -130,7 +130,7 @@ func TestClient_GetProjectVersions_Filter_NoResults(t *testing.T) {
 
 func TestClient_GetVersion(t *testing.T) {
 	t.Parallel()
-	c := NewClient()
+	c := NewClient(nil)
 	version, err := c.GetVersion("IQ3UGSc2")
 	if err != nil {
 		t.Fatal(err)
@@ -142,7 +142,7 @@ func TestClient_GetVersion(t *testing.T) {
 
 func TestClient_GetVersions(t *testing.T) {
 	t.Parallel()
-	c := NewClient()
+	c := NewClient(nil)
 	versions, err := c.GetVersions([]string{"IQ3UGSc2", "DrzwF8io", "foobar"})
 	if err != nil {
 		t.Fatal(err)
@@ -154,7 +154,7 @@ func TestClient_GetVersions(t *testing.T) {
 
 func TestClient_VersionFromHash(t *testing.T) {
 	t.Parallel()
-	c := NewClient()
+	c := NewClient(nil)
 	version, err := c.VersionFromHash("619e250c133106bacc3e3b560839bd4b324dfda8", "sha1")
 	if err != nil {
 		t.Fatal(err)

@@ -1,18 +1,9 @@
 package main
 
 import (
-	"fmt"
-	"github.com/nothub/gorinth/api"
-	"log"
+	"github.com/nothub/gorinth/cmd"
 )
 
 func main() {
-	client := api.NewClient()
-	info, err := client.LabrinthInfo()
-	if err != nil {
-		log.Fatalln(err)
-	}
-	fmt.Println(info.About)
-	fmt.Println(info.Name, info.Version)
-	fmt.Println(info.Documentation)
+	cmd.Execute()
 }

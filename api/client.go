@@ -13,19 +13,24 @@ import (
 
 type Client struct {
 	UserAgent  string
+	BaseUrl    string
 	HTTPClient *http.Client
 }
 
-func NewClient() *Client {
-	userAgent := "gorinth"
-	info, ok := debug.ReadBuildInfo()
-	if ok {
-		userAgent = info.Main.Path + "/" + info.Main.Version
-	}
-	return &Client{
-		UserAgent:  userAgent,
+func NewClient(host *string) *Client {
+	client := &Client{
+		UserAgent:  "gorinth",
+		BaseUrl:    "https://api.modrinth.com/",
 		HTTPClient: &http.Client{},
 	}
+	info, ok := debug.ReadBuildInfo()
+	if ok {
+		client.UserAgent = info.Main.Path + "/" + info.Main.Version
+	}
+	if host != nil {
+		client.BaseUrl = "https://" + *host + "/"
+	}
+	return client
 }
 
 func (client *Client) buildRequest(method string, url string, body io.Reader) *http.Request {
