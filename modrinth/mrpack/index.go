@@ -8,7 +8,7 @@ import (
 	"io"
 )
 
-import "github.com/nothub/gorinth/api"
+import "github.com/nothub/gorinth/modrinth"
 
 type Index struct {
 	FormatVersion int          `json:"formatVersion"`
@@ -27,16 +27,16 @@ const (
 )
 
 type File struct {
-	Path      string     `json:"path"`
-	Hashes    api.Hashes `json:"hashes"`
-	Env       Env        `json:"env"`
-	Downloads []string   `json:"downloads"` // array of HTTPS URLs
-	FileSize  int        `json:"fileSize"`  // size in bytes
+	Path      string          `json:"path"`
+	Hashes    modrinth.Hashes `json:"hashes"`
+	Env       Env             `json:"env"`
+	Downloads []string        `json:"downloads"` // array of HTTPS URLs
+	FileSize  int             `json:"fileSize"`  // size in bytes
 }
 
 type Env struct {
-	Client api.EnvSupport `json:"client"`
-	Server api.EnvSupport `json:"server"`
+	Client modrinth.EnvSupport `json:"client"`
+	Server modrinth.EnvSupport `json:"server"`
 }
 
 type Dependencies struct {
