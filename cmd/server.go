@@ -9,15 +9,15 @@ import (
 var mcVer *string
 var loaderVer *string
 
-/*
-TODO: eula flag
-TODO: ops flag
-TODO: whitelist flag
-*/
-
 func init() {
-	mcVer = pingCmd.Flags().StringP("minecraft-version", "mc", "1.19.2", "Minecraft version")
-	loaderVer = pingCmd.Flags().StringP("loader-version", "ml", "latest", "Mod loader version")
+	mcVer = pingCmd.Flags().String("minecraft-version", "1.19.2", "Minecraft version")
+	loaderVer = pingCmd.Flags().String("loader-version", "latest", "Mod loader version")
+
+	/*
+	   TODO: eula flag
+	   TODO: ops flag
+	   TODO: whitelist flag
+	*/
 
 	rootCmd.AddCommand(serverCmd)
 }

@@ -1,4 +1,4 @@
-package api
+package modrinth
 
 type ProjectType string
 
@@ -150,9 +150,4 @@ type Dependencies struct {
 
 type CheckResponse struct {
 	Id string `json:"id"`
-}
-
-type Error struct {
-	Error       string `json:"error"`
-	Description string `json:"description"`
 }

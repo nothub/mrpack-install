@@ -1,4 +1,4 @@
-package api
+package modrinth
 
 import (
 	url2 "net/url"
@@ -6,14 +6,14 @@ import (
 
 const apiVersion = "v2"
 
-func (client *Client) LabrinthInfo() (*LabrinthInfo, error) {
-	url, err := url2.Parse(client.BaseUrl)
+func (client *ApiClient) LabrinthInfo() (*LabrinthInfo, error) {
+	url, err := url2.Parse(client.Http.BaseUrl)
 	if err != nil {
 		return nil, err
 	}
 
 	labrinthInfo := LabrinthInfo{}
-	err = client.sendRequest("GET", url.String(), nil, &labrinthInfo)
+	err = client.Http.JsonRequest("GET", url.String(), nil, &labrinthInfo, &Error{})
 	if err != nil {
 		return nil, err
 	}
@@ -24,14 +24,14 @@ func (client *Client) LabrinthInfo() (*LabrinthInfo, error) {
 /* projects */
 
 // GetProject https://docs.modrinth.com/api-spec/#tag/projects/operation/getProject
-func (client *Client) GetProject(id string) (*Project, error) {
-	url, err := url2.Parse(client.BaseUrl + apiVersion + "/project/" + id)
+func (client *ApiClient) GetProject(id string) (*Project, error) {
+	url, err := url2.Parse(client.Http.BaseUrl + apiVersion + "/project/" + id)
 	if err != nil {
 		return nil, err
 	}
 
 	project := Project{}
-	err = client.sendRequest("GET", url.String(), nil, &project)
+	err = client.Http.JsonRequest("GET", url.String(), nil, &project, &Error{})
 	if err != nil {
 		return nil, err
 	}
@@ -40,8 +40,8 @@ func (client *Client) GetProject(id string) (*Project, error) {
 }
 
 // GetProjects https://docs.modrinth.com/api-spec/#tag/projects/operation/getProjects
-func (client *Client) GetProjects(ids []string) ([]*Project, error) {
-	url, err := url2.Parse(client.BaseUrl + apiVersion + "/projects")
+func (client *ApiClient) GetProjects(ids []string) ([]*Project, error) {
+	url, err := url2.Parse(client.Http.BaseUrl + apiVersion + "/projects")
 	if err != nil {
 		return nil, err
 	}
@@ -51,7 +51,7 @@ func (client *Client) GetProjects(ids []string) ([]*Project, error) {
 	url.RawQuery = query.Encode()
 
 	var projects []*Project
-	err = client.sendRequest("GET", url.String(), nil, &projects)
+	err = client.Http.JsonRequest("GET", url.String(), nil, &projects, &Error{})
 	if err != nil {
 		return nil, err
 	}
@@ -60,14 +60,14 @@ func (client *Client) GetProjects(ids []string) ([]*Project, error) {
 }
 
 // CheckProjectValidity https://docs.modrinth.com/api-spec/#tag/projects/operation/checkProjectValidity
-func (client *Client) CheckProjectValidity(id string) (*CheckResponse, error) {
-	url, err := url2.Parse(client.BaseUrl + apiVersion + "/project/" + id + "/check")
+func (client *ApiClient) CheckProjectValidity(id string) (*CheckResponse, error) {
+	url, err := url2.Parse(client.Http.BaseUrl + apiVersion + "/project/" + id + "/check")
 	if err != nil {
 		return nil, err
 	}
 
 	var checkResponse CheckResponse
-	err = client.sendRequest("GET", url.String(), nil, &checkResponse)
+	err = client.Http.JsonRequest("GET", url.String(), nil, &checkResponse, &Error{})
 	if err != nil {
 		return nil, err
 	}
@@ -76,14 +76,14 @@ func (client *Client) CheckProjectValidity(id string) (*CheckResponse, error) {
 }
 
 // GetDependencies https://docs.modrinth.com/api-spec/#tag/projects/operation/getDependencies
-func (client *Client) GetDependencies(id string) (*Dependencies, error) {
-	url, err := url2.Parse(client.BaseUrl + apiVersion + "/project/" + id + "/dependencies")
+func (client *ApiClient) GetDependencies(id string) (*Dependencies, error) {
+	url, err := url2.Parse(client.Http.BaseUrl + apiVersion + "/project/" + id + "/dependencies")
 	if err != nil {
 		return nil, err
 	}
 
 	var dependencies Dependencies
-	err = client.sendRequest("GET", url.String(), nil, &dependencies)
+	err = client.Http.JsonRequest("GET", url.String(), nil, &dependencies, &Error{})
 	if err != nil {
 		return nil, err
 	}
@@ -94,8 +94,8 @@ func (client *Client) GetDependencies(id string) (*Dependencies, error) {
 /* versions */
 
 // GetProjectVersions https://docs.modrinth.com/api-spec/#tag/versions/operation/getProjectVersions
-func (client *Client) GetProjectVersions(id string, params *GetProjectVersionsParams) ([]*Version, error) {
-	url, err := url2.Parse(client.BaseUrl + apiVersion + "/project/" + id + "/version")
+func (client *ApiClient) GetProjectVersions(id string, params *GetProjectVersionsParams) ([]*Version, error) {
+	url, err := url2.Parse(client.Http.BaseUrl + apiVersion + "/project/" + id + "/version")
 	if err != nil {
 		return nil, err
 	}
@@ -113,7 +113,7 @@ func (client *Client) GetProjectVersions(id string, params *GetProjectVersionsPa
 	url.RawQuery = query.Encode()
 
 	var versions []*Version
-	err = client.sendRequest("GET", url.String(), nil, &versions)
+	err = client.Http.JsonRequest("GET", url.String(), nil, &versions, &Error{})
 	if err != nil {
 		return nil, err
 	}
@@ -128,14 +128,14 @@ type GetProjectVersionsParams struct {
 }
 
 // GetVersion https://docs.modrinth.com/api-spec/#tag/versions/operation/getVersion
-func (client *Client) GetVersion(id string) (*Version, error) {
-	url, err := url2.Parse(client.BaseUrl + apiVersion + "/version/" + id)
+func (client *ApiClient) GetVersion(id string) (*Version, error) {
+	url, err := url2.Parse(client.Http.BaseUrl + apiVersion + "/version/" + id)
 	if err != nil {
 		return nil, err
 	}
 
 	var version Version
-	err = client.sendRequest("GET", url.String(), nil, &version)
+	err = client.Http.JsonRequest("GET", url.String(), nil, &version, &Error{})
 	if err != nil {
 		return nil, err
 	}
@@ -144,8 +144,8 @@ func (client *Client) GetVersion(id string) (*Version, error) {
 }
 
 // GetVersions https://docs.modrinth.com/api-spec/#tag/versions/operation/getVersions
-func (client *Client) GetVersions(ids []string) ([]*Version, error) {
-	url, err := url2.Parse(client.BaseUrl + apiVersion + "/versions")
+func (client *ApiClient) GetVersions(ids []string) ([]*Version, error) {
+	url, err := url2.Parse(client.Http.BaseUrl + apiVersion + "/versions")
 	if err != nil {
 		return nil, err
 	}
@@ -155,7 +155,7 @@ func (client *Client) GetVersions(ids []string) ([]*Version, error) {
 	url.RawQuery = query.Encode()
 
 	var versions []*Version
-	err = client.sendRequest("GET", url.String(), nil, &versions)
+	err = client.Http.JsonRequest("GET", url.String(), nil, &versions, &Error{})
 	if err != nil {
 		return nil, err
 	}
@@ -166,8 +166,8 @@ func (client *Client) GetVersions(ids []string) ([]*Version, error) {
 /* version files */
 
 // VersionFromHash https://docs.modrinth.com/api-spec/#tag/version-files/operation/versionFromHash
-func (client *Client) VersionFromHash(hash string, algorithm HashAlgo) (*Version, error) {
-	url, err := url2.Parse(client.BaseUrl + apiVersion + "/version_file/" + hash)
+func (client *ApiClient) VersionFromHash(hash string, algorithm HashAlgo) (*Version, error) {
+	url, err := url2.Parse(client.Http.BaseUrl + apiVersion + "/version_file/" + hash)
 	if err != nil {
 		return nil, err
 	}
@@ -177,7 +177,7 @@ func (client *Client) VersionFromHash(hash string, algorithm HashAlgo) (*Version
 	url.RawQuery = query.Encode()
 
 	var version *Version
-	err = client.sendRequest("GET", url.String(), nil, &version)
+	err = client.Http.JsonRequest("GET", url.String(), nil, &version, &Error{})
 	if err != nil {
 		return nil, err
 	}

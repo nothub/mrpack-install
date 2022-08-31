@@ -14,8 +14,8 @@ lint:
 
 test:
 	go test -v -parallel $(THREADS) \
-	$(MODNAME)/api \
-	$(MODNAME)/mrpack
+	$(MODNAME)/modrinth \
+	$(MODNAME)/modrinth/mrpack
 
 
 .PHONY: clean lint test

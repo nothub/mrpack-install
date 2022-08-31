@@ -1,15 +1,18 @@
-package api
+package http
 
 import (
 	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
-	"log"
 	"net/http"
 	"runtime/debug"
 	"strconv"
 )
+
+type ErrorModel interface {
+	String() string
+}
 
 type Client struct {
 	UserAgent  string
@@ -17,26 +20,22 @@ type Client struct {
 	HTTPClient *http.Client
 }
 
-func NewClient(host *string) *Client {
+func NewHttpClient() *Client {
 	client := &Client{
 		UserAgent:  "gorinth",
-		BaseUrl:    "https://api.modrinth.com/",
 		HTTPClient: &http.Client{},
 	}
 	info, ok := debug.ReadBuildInfo()
 	if ok {
 		client.UserAgent = info.Main.Path + "/" + info.Main.Version
 	}
-	if host != nil {
-		client.BaseUrl = "https://" + *host + "/"
-	}
 	return client
 }
 
-func (client *Client) buildRequest(method string, url string, body io.Reader) *http.Request {
+func (client *Client) JsonRequest(method string, url string, body io.Reader, reponseModel interface{}, errorModel ErrorModel) error {
 	request, err := http.NewRequest(method, url, body)
 	if err != nil {
-		log.Fatalln(err)
+		return err
 	}
 
 	request.Header.Set("User-Agent", client.UserAgent)
@@ -46,12 +45,7 @@ func (client *Client) buildRequest(method string, url string, body io.Reader) *h
 	}
 
 	request.Close = true
-
-	return request
-}
-
-func (client *Client) sendRequest(method string, url string, body io.Reader, result interface{}) error {
-	response, err := client.HTTPClient.Do(client.buildRequest(method, url, body))
+	response, err := client.HTTPClient.Do(request)
 	if err != nil {
 		return err
 	}
@@ -64,14 +58,13 @@ func (client *Client) sendRequest(method string, url string, body io.Reader, res
 	}(response.Body)
 
 	if response.StatusCode < http.StatusOK || response.StatusCode >= http.StatusBadRequest {
-		var e Error
-		if json.NewDecoder(response.Body).Decode(&e) != nil {
+		if json.NewDecoder(response.Body).Decode(&errorModel) != nil {
 			return errors.New("http status " + strconv.Itoa(response.StatusCode))
 		}
-		return errors.New("http status " + strconv.Itoa(response.StatusCode) + " - " + e.Error + " " + e.Description)
+		return errors.New("http status " + strconv.Itoa(response.StatusCode) + " - " + errorModel.String())
 	}
 
-	err = json.NewDecoder(response.Body).Decode(&result)
+	err = json.NewDecoder(response.Body).Decode(&reponseModel)
 	if err != nil {
 		return errors.New("http status " + strconv.Itoa(response.StatusCode) + " - " + err.Error())
 	}
