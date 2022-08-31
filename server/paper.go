@@ -10,7 +10,7 @@ type PaperSupplier struct {
 	PaperVersion     string
 }
 
-func (*PaperSupplier) get(mcVer string, loaderVer string) (*url.URL, error) {
+func (*PaperSupplier) GetUrl() (*url.URL, error) {
 	log.Fatalln("Not yet implemented!")
 	return nil, nil
 }

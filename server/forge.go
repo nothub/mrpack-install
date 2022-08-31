@@ -10,7 +10,7 @@ type ForgeSupplier struct {
 	ForgeVersion     string
 }
 
-func (*ForgeSupplier) get(mcVer string, loaderVer string) (*url.URL, error) {
+func (*ForgeSupplier) GetUrl() (*url.URL, error) {
 	log.Fatalln("Not yet implemented!")
 	return nil, nil
 }

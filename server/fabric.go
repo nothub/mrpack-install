@@ -10,7 +10,7 @@ type FabricSupplier struct {
 	FabricVersion    string
 }
 
-func (*FabricSupplier) get(mcVer string, loaderVer string) (*url.URL, error) {
+func (*FabricSupplier) GetUrl() (*url.URL, error) {
 	log.Fatalln("Not yet implemented!")
 	return nil, nil
 }

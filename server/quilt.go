@@ -10,7 +10,7 @@ type QuiltSupplier struct {
 	QuiltVersion     string
 }
 
-func (*QuiltSupplier) get(mcVer string, loaderVer string) (*url.URL, error) {
+func (*QuiltSupplier) GetUrl() (*url.URL, error) {
 	log.Fatalln("Not yet implemented!")
 	return nil, nil
 }

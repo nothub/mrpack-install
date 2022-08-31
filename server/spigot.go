@@ -10,7 +10,7 @@ type SpigotSupplier struct {
 	SpigotVersion    string
 }
 
-func (*SpigotSupplier) get(mcVer string, loaderVer string) (*url.URL, error) {
+func (*SpigotSupplier) GetUrl() (*url.URL, error) {
 	log.Fatalln("Not yet implemented!")
 	return nil, nil
 }
