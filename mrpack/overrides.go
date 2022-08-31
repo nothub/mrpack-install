@@ -9,14 +9,7 @@ import (
 	"strings"
 )
 
-type Side string
-
-const (
-	Client Side = "client"
-	Server Side = "server"
-)
-
-func ExtractOverrides(zipFile string, target string, side Side) error {
+func ExtractOverrides(zipFile string, target string) error {
 	zipReader, err := zip.OpenReader(zipFile)
 	if err != nil {
 		return err
@@ -36,9 +29,7 @@ func ExtractOverrides(zipFile string, target string, side Side) error {
 		filePath := file.Name
 		if strings.HasPrefix(filePath, "overrides/") {
 			filePath = strings.TrimPrefix(filePath, "overrides/")
-		} else if side == Client && strings.HasPrefix(filePath, "client-overrides/") {
-			filePath = strings.TrimPrefix(filePath, "client-overrides/")
-		} else if side == Server && strings.HasPrefix(filePath, "server-overrides/") {
+		} else if strings.HasPrefix(filePath, "server-overrides/") {
 			filePath = strings.TrimPrefix(filePath, "server-overrides/")
 		} else {
 			continue

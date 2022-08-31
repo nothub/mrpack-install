@@ -44,7 +44,7 @@ func Test_Index_Skyblocker(t *testing.T) {
 
 func Test_Overrides_Fabulously_Optimized(t *testing.T) {
 	t.Parallel()
-	err := ExtractOverrides("/tmp/MR_Fabulously Optimized_4.2.1.mrpack", "fabulously_optimized", Server)
+	err := ExtractOverrides("/tmp/MR_Fabulously Optimized_4.2.1.mrpack", "fabulously_optimized")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -57,7 +57,7 @@ func Test_Overrides_Fabulously_Optimized(t *testing.T) {
 
 func Test_Overrides_Skyblocker(t *testing.T) {
 	t.Parallel()
-	err := ExtractOverrides("/tmp/Skyblocker-Modpack.mrpack", "skyblocker", Client)
+	err := ExtractOverrides("/tmp/Skyblocker-Modpack.mrpack", "skyblocker")
 	if err != nil {
 		t.Fatal(err)
 	}
