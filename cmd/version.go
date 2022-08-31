@@ -21,7 +21,7 @@ var versionCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		info, ok := debug.ReadBuildInfo()
 		if ok {
-			fmt.Println(path.Base(info.Main.Path), info.Main.Version)
+			fmt.Println(path.Base(info.Main.Path), info.Main.Version, info.Main.Sum)
 		} else {
 			log.Fatalln("Unable to extract build infos from running binary!")
 		}
