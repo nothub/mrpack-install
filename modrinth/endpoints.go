@@ -1,6 +1,7 @@
 package modrinth
 
 import (
+	"errors"
 	url2 "net/url"
 )
 
@@ -183,4 +184,26 @@ func (client *ApiClient) VersionFromHash(hash string, algorithm HashAlgo) (*Vers
 	}
 
 	return version, nil
+}
+
+// GetLatestGameVersion https://docs.modrinth.com/api-spec/#tag/tags/operation/versionList
+func (client *ApiClient) GetLatestGameVersion() (string, error) {
+	url, err := url2.Parse(client.Http.BaseUrl + apiVersion + "/tag/game_version")
+	if err != nil {
+		return "", err
+	}
+
+	var gameVersions []*GameVersion
+	err = client.Http.JsonRequest("GET", url.String(), nil, &gameVersions, &Error{})
+	if err != nil {
+		return "", err
+	}
+
+	for i := range gameVersions {
+		if gameVersions[i].VersionType == "release" {
+			return gameVersions[i].Version, nil
+		}
+	}
+
+	return "", errors.New("no release candidate found")
 }

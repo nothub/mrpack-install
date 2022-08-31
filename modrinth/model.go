@@ -1,5 +1,7 @@
 package modrinth
 
+import "time"
+
 type ProjectType string
 
 const (
@@ -150,4 +152,11 @@ type Dependencies struct {
 
 type CheckResponse struct {
 	Id string `json:"id"`
+}
+
+type GameVersion struct {
+	Version     string    `json:"version"`
+	VersionType string    `json:"version_type"`
+	Date        time.Time `json:"date"`
+	Major       bool      `json:"major"`
 }

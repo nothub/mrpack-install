@@ -163,3 +163,15 @@ func TestClient_VersionFromHash(t *testing.T) {
 		t.Fatal("wrong id!")
 	}
 }
+
+func TestClient_GetLatestGameVersion(t *testing.T) {
+	t.Parallel()
+	c := NewClient("api.modrinth.com")
+	version, err := c.GetLatestGameVersion()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if version == "" {
+		t.Fatal("result missing!")
+	}
+}
