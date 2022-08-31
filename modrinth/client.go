@@ -13,7 +13,7 @@ type ApiClient struct {
 
 func NewClient(host string) *ApiClient {
 	client := ApiClient{
-		Http: http.ClientInstance,
+		Http: http.Instance,
 	}
 	u, err := url.Parse("https://" + host + "/")
 	if err != nil {

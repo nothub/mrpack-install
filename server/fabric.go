@@ -20,7 +20,7 @@ func (supplier *Fabric) GetUrl() (string, error) {
 				Stable  bool   `json:"stable"`
 			} `json:"loader"`
 		}
-		err := http.ClientInstance.JsonRequest("GET", "https://meta.fabricmc.net/v2/versions/loader/"+supplier.MinecraftVersion, nil, &loaders, nil)
+		err := http.Instance.GetJson("https://meta.fabricmc.net/v2/versions/loader/"+supplier.MinecraftVersion, nil, &loaders, nil)
 		if err != nil {
 			return "", err
 		}
@@ -40,7 +40,7 @@ func (supplier *Fabric) GetUrl() (string, error) {
 		Version string `json:"version"`
 		Stable  bool   `json:"stable"`
 	}
-	err := http.ClientInstance.JsonRequest("GET", "https://meta.fabricmc.net/v2/versions/installer", nil, &installers, nil)
+	err := http.Instance.GetJson("https://meta.fabricmc.net/v2/versions/installer", nil, &installers, nil)
 	if err != nil {
 		return "", err
 	}

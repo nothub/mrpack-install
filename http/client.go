@@ -19,32 +19,30 @@ type Client struct {
 	HTTPClient *http.Client
 }
 
-var ClientInstance *Client = nil
+var Instance *Client = nil
 
 func init() {
-	ClientInstance = &Client{
+	Instance = &Client{
 		UserAgent:  "gorinth",
 		HTTPClient: &http.Client{},
 	}
 	info, ok := debug.ReadBuildInfo()
 	if ok {
-		ClientInstance.UserAgent = info.Main.Path + "/" + info.Main.Version
+		Instance.UserAgent = info.Main.Path + "/" + info.Main.Version
 	}
 }
 
-func (client *Client) JsonRequest(method string, url string, body io.Reader, reponseModel interface{}, errorModel ErrorModel) error {
-	request, err := http.NewRequest(method, url, body)
+func (client *Client) GetJson(url string, body io.Reader, reponseModel interface{}, errorModel ErrorModel) error {
+	request, err := http.NewRequest("GET", url, body)
 	if err != nil {
 		return err
 	}
 
 	request.Header.Set("User-Agent", client.UserAgent)
 	request.Header.Set("Accept", "application/json")
-	if request.Method == "POST" || request.Method == "PATCH" || request.Method == "PUT" {
-		request.Header.Set("Content-Type", "application/json")
-	}
 
 	request.Close = true
+
 	response, err := client.HTTPClient.Do(request)
 	if err != nil {
 		return err

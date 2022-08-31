@@ -14,7 +14,7 @@ func (client *ApiClient) LabrinthInfo() (*LabrinthInfo, error) {
 	}
 
 	labrinthInfo := LabrinthInfo{}
-	err = client.Http.JsonRequest("GET", url.String(), nil, &labrinthInfo, &Error{})
+	err = client.Http.GetJson(url.String(), nil, &labrinthInfo, &Error{})
 	if err != nil {
 		return nil, err
 	}
@@ -32,7 +32,7 @@ func (client *ApiClient) GetProject(id string) (*Project, error) {
 	}
 
 	project := Project{}
-	err = client.Http.JsonRequest("GET", url.String(), nil, &project, &Error{})
+	err = client.Http.GetJson(url.String(), nil, &project, &Error{})
 	if err != nil {
 		return nil, err
 	}
@@ -52,7 +52,7 @@ func (client *ApiClient) GetProjects(ids []string) ([]*Project, error) {
 	url.RawQuery = query.Encode()
 
 	var projects []*Project
-	err = client.Http.JsonRequest("GET", url.String(), nil, &projects, &Error{})
+	err = client.Http.GetJson(url.String(), nil, &projects, &Error{})
 	if err != nil {
 		return nil, err
 	}
@@ -68,7 +68,7 @@ func (client *ApiClient) CheckProjectValidity(id string) (*CheckResponse, error)
 	}
 
 	var checkResponse CheckResponse
-	err = client.Http.JsonRequest("GET", url.String(), nil, &checkResponse, &Error{})
+	err = client.Http.GetJson(url.String(), nil, &checkResponse, &Error{})
 	if err != nil {
 		return nil, err
 	}
@@ -84,7 +84,7 @@ func (client *ApiClient) GetDependencies(id string) (*Dependencies, error) {
 	}
 
 	var dependencies Dependencies
-	err = client.Http.JsonRequest("GET", url.String(), nil, &dependencies, &Error{})
+	err = client.Http.GetJson(url.String(), nil, &dependencies, &Error{})
 	if err != nil {
 		return nil, err
 	}
@@ -114,7 +114,7 @@ func (client *ApiClient) GetProjectVersions(id string, params *GetProjectVersion
 	url.RawQuery = query.Encode()
 
 	var versions []*Version
-	err = client.Http.JsonRequest("GET", url.String(), nil, &versions, &Error{})
+	err = client.Http.GetJson(url.String(), nil, &versions, &Error{})
 	if err != nil {
 		return nil, err
 	}
@@ -136,7 +136,7 @@ func (client *ApiClient) GetVersion(id string) (*Version, error) {
 	}
 
 	var version Version
-	err = client.Http.JsonRequest("GET", url.String(), nil, &version, &Error{})
+	err = client.Http.GetJson(url.String(), nil, &version, &Error{})
 	if err != nil {
 		return nil, err
 	}
@@ -156,7 +156,7 @@ func (client *ApiClient) GetVersions(ids []string) ([]*Version, error) {
 	url.RawQuery = query.Encode()
 
 	var versions []*Version
-	err = client.Http.JsonRequest("GET", url.String(), nil, &versions, &Error{})
+	err = client.Http.GetJson(url.String(), nil, &versions, &Error{})
 	if err != nil {
 		return nil, err
 	}
@@ -178,7 +178,7 @@ func (client *ApiClient) VersionFromHash(hash string, algorithm HashAlgo) (*Vers
 	url.RawQuery = query.Encode()
 
 	var version *Version
-	err = client.Http.JsonRequest("GET", url.String(), nil, &version, &Error{})
+	err = client.Http.GetJson(url.String(), nil, &version, &Error{})
 	if err != nil {
 		return nil, err
 	}
@@ -194,7 +194,7 @@ func (client *ApiClient) GetLatestGameVersion() (string, error) {
 	}
 
 	var gameVersions []*GameVersion
-	err = client.Http.JsonRequest("GET", url.String(), nil, &gameVersions, &Error{})
+	err = client.Http.GetJson(url.String(), nil, &gameVersions, &Error{})
 	if err != nil {
 		return "", err
 	}
