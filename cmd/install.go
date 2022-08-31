@@ -15,6 +15,6 @@ var installCmd = &cobra.Command{
 	Long:  `TODO`,
 
 	Run: func(cmd *cobra.Command, args []string) {
-		log.Println("TODO")
+		log.Fatalln("Not yet implemented!")
 	},
 }

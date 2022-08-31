@@ -8,10 +8,8 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var host *string
-
 func init() {
-	host = pingCmd.Flags().String("host", "api.modrinth.com", "Host address")
+	pingCmd.Flags().String("host", "api.modrinth.com", "Host address")
 
 	rootCmd.AddCommand(pingCmd)
 }
@@ -22,7 +20,12 @@ var pingCmd = &cobra.Command{
 	Long:  `Connect to a Labrinth instance and display basic information.`,
 
 	Run: func(cmd *cobra.Command, args []string) {
-		client := modrinth.NewClient(*host)
+		host, err := cmd.Flags().GetString("host")
+		if err != nil {
+			log.Fatalln(err)
+		}
+
+		client := modrinth.NewClient(host)
 
 		info, err := client.LabrinthInfo()
 		if err != nil {

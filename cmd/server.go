@@ -6,19 +6,14 @@ import (
 	"log"
 )
 
-var mcVer *string
-var loaderVer *string
-
 func init() {
-	mcVer = pingCmd.Flags().String("minecraft-version", "1.19.2", "Minecraft version")
-	loaderVer = pingCmd.Flags().String("loader-version", "latest", "Mod loader version")
-
+	serverCmd.Flags().String("minecraft-version", "1.19.2", "Minecraft version")
+	serverCmd.Flags().String("loader-version", "latest", "Mod loader version")
 	/*
 	   TODO: eula flag
 	   TODO: ops flag
 	   TODO: whitelist flag
 	*/
-
 	rootCmd.AddCommand(serverCmd)
 }
 
@@ -31,37 +26,45 @@ var serverCmd = &cobra.Command{
 	ValidArgs: []string{"vanilla", "fabric", "forge", "quilt", "paper", "spigot"},
 
 	Run: func(cmd *cobra.Command, args []string) {
-		log.Println("Installing", args[0], "server...")
+		minecraftVersion, err := cmd.Flags().GetString("minecraft-version")
+		if err != nil {
+			log.Fatalln(err)
+		}
+		loaderVersion, err := cmd.Flags().GetString("loader-version")
+		if err != nil {
+			log.Fatalln(err)
+		}
+
 		var supplier server.DownloadSupplier = nil
 		switch args[0] {
 		case "vanilla":
 			supplier = &server.VanillaSupplier{
-				MinecraftVersion: *mcVer,
+				MinecraftVersion: minecraftVersion,
 			}
 		case "fabric":
 			supplier = &server.FabricSupplier{
-				MinecraftVersion: *mcVer,
-				FabricVersion:    *loaderVer,
+				MinecraftVersion: minecraftVersion,
+				FabricVersion:    loaderVersion,
 			}
 		case "forge":
 			supplier = &server.ForgeSupplier{
-				MinecraftVersion: *mcVer,
-				ForgeVersion:     *loaderVer,
+				MinecraftVersion: minecraftVersion,
+				ForgeVersion:     loaderVersion,
 			}
 		case "quilt":
 			supplier = &server.QuiltSupplier{
-				MinecraftVersion: *mcVer,
-				QuiltVersion:     *loaderVer,
+				MinecraftVersion: minecraftVersion,
+				QuiltVersion:     loaderVersion,
 			}
 		case "paper":
 			supplier = &server.PaperSupplier{
-				MinecraftVersion: *mcVer,
-				PaperVersion:     *loaderVer,
+				MinecraftVersion: minecraftVersion,
+				PaperVersion:     loaderVersion,
 			}
 		case "spigot":
 			supplier = &server.SpigotSupplier{
-				MinecraftVersion: *mcVer,
-				SpigotVersion:    *loaderVer,
+				MinecraftVersion: minecraftVersion,
+				SpigotVersion:    loaderVersion,
 			}
 		}
 		url, err := supplier.GetUrl()
