@@ -13,9 +13,11 @@ lint:
 
 test:
 	go test -v -parallel $(shell grep -c -E "^processor.*[0-9]+" "/proc/cpuinfo") \
+	$(MOD_NAME) \
+	$(MOD_NAME)/cmd \
+	$(MOD_NAME)/http \
 	$(MOD_NAME)/modrinth \
 	$(MOD_NAME)/modrinth/mrpack \
 	$(MOD_NAME)/server
-
 
 .PHONY: clean lint test

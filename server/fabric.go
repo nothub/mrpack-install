@@ -12,8 +12,6 @@ type Fabric struct {
 }
 
 func (supplier *Fabric) GetUrl() (string, error) {
-	client := http.NewHttpClient()
-
 	loaderVersion := supplier.FabricVersion
 	if loaderVersion == "" || loaderVersion == "latest" {
 		var loaders []struct {
@@ -22,7 +20,7 @@ func (supplier *Fabric) GetUrl() (string, error) {
 				Stable  bool   `json:"stable"`
 			} `json:"loader"`
 		}
-		err := client.JsonRequest("GET", "https://meta.fabricmc.net/v2/versions/loader/"+supplier.MinecraftVersion, nil, &loaders, nil)
+		err := http.ClientInstance.JsonRequest("GET", "https://meta.fabricmc.net/v2/versions/loader/"+supplier.MinecraftVersion, nil, &loaders, nil)
 		if err != nil {
 			return "", err
 		}
@@ -42,7 +40,7 @@ func (supplier *Fabric) GetUrl() (string, error) {
 		Version string `json:"version"`
 		Stable  bool   `json:"stable"`
 	}
-	err := client.JsonRequest("GET", "https://meta.fabricmc.net/v2/versions/installer", nil, &installers, nil)
+	err := http.ClientInstance.JsonRequest("GET", "https://meta.fabricmc.net/v2/versions/installer", nil, &installers, nil)
 	if err != nil {
 		return "", err
 	}

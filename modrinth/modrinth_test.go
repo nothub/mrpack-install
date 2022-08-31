@@ -4,10 +4,15 @@ import (
 	"testing"
 )
 
+var client ApiClient
+
+func init() {
+	client = *NewClient("api.modrinth.com")
+}
+
 func Test_GetProject_Success(t *testing.T) {
 	t.Parallel()
-	c := NewClient("api.modrinth.com")
-	project, err := c.GetProject("fabric-api")
+	project, err := client.GetProject("fabric-api")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -21,8 +26,7 @@ func Test_GetProject_Success(t *testing.T) {
 
 func Test_GetProject_404(t *testing.T) {
 	t.Parallel()
-	c := NewClient("api.modrinth.com")
-	_, err := c.GetProject("x")
+	_, err := client.GetProject("x")
 	if err.Error() != "http status 404" {
 		t.Fatal("wrong status!")
 	}
@@ -30,8 +34,7 @@ func Test_GetProject_404(t *testing.T) {
 
 func TestClient_GetProjects_Count(t *testing.T) {
 	t.Parallel()
-	c := NewClient("api.modrinth.com")
-	projects, err := c.GetProjects([]string{"P7dR8mSH", "XxWD5pD3", "x"})
+	projects, err := client.GetProjects([]string{"P7dR8mSH", "XxWD5pD3", "x"})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -42,8 +45,7 @@ func TestClient_GetProjects_Count(t *testing.T) {
 
 func TestClient_GetProjects_Slug(t *testing.T) {
 	t.Parallel()
-	c := NewClient("api.modrinth.com")
-	projects, err := c.GetProjects([]string{"P7dR8mSH"})
+	projects, err := client.GetProjects([]string{"P7dR8mSH"})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -54,8 +56,7 @@ func TestClient_GetProjects_Slug(t *testing.T) {
 
 func TestClient_CheckProjectValidity_Slug(t *testing.T) {
 	t.Parallel()
-	c := NewClient("api.modrinth.com")
-	response, err := c.CheckProjectValidity("fabric-api")
+	response, err := client.CheckProjectValidity("fabric-api")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -66,8 +67,7 @@ func TestClient_CheckProjectValidity_Slug(t *testing.T) {
 
 func TestClient_CheckProjectValidity_Id(t *testing.T) {
 	t.Parallel()
-	c := NewClient("api.modrinth.com")
-	response, err := c.CheckProjectValidity("P7dR8mSH")
+	response, err := client.CheckProjectValidity("P7dR8mSH")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -78,8 +78,7 @@ func TestClient_CheckProjectValidity_Id(t *testing.T) {
 
 func TestClient_GetDependencies(t *testing.T) {
 	t.Parallel()
-	c := NewClient("api.modrinth.com")
-	dependencies, err := c.GetDependencies("rinthereout")
+	dependencies, err := client.GetDependencies("rinthereout")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -90,8 +89,7 @@ func TestClient_GetDependencies(t *testing.T) {
 
 func TestClient_GetProjectVersions_Count(t *testing.T) {
 	t.Parallel()
-	c := NewClient("api.modrinth.com")
-	versions, err := c.GetProjectVersions("fabric-api", &GetProjectVersionsParams{})
+	versions, err := client.GetProjectVersions("fabric-api", &GetProjectVersionsParams{})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -102,8 +100,7 @@ func TestClient_GetProjectVersions_Count(t *testing.T) {
 
 func TestClient_GetProjectVersions_Filter_Results(t *testing.T) {
 	t.Parallel()
-	c := NewClient("api.modrinth.com")
-	versions, err := c.GetProjectVersions("fabric-api", &GetProjectVersionsParams{
+	versions, err := client.GetProjectVersions("fabric-api", &GetProjectVersionsParams{
 		GameVersions: []string{"1.16.5"},
 	})
 	if err != nil {
@@ -116,8 +113,7 @@ func TestClient_GetProjectVersions_Filter_Results(t *testing.T) {
 
 func TestClient_GetProjectVersions_Filter_NoResults(t *testing.T) {
 	t.Parallel()
-	c := NewClient("api.modrinth.com")
-	versions, err := c.GetProjectVersions("fabric-api", &GetProjectVersionsParams{
+	versions, err := client.GetProjectVersions("fabric-api", &GetProjectVersionsParams{
 		Loaders: []string{"forge"},
 	})
 	if err != nil {
@@ -130,8 +126,7 @@ func TestClient_GetProjectVersions_Filter_NoResults(t *testing.T) {
 
 func TestClient_GetVersion(t *testing.T) {
 	t.Parallel()
-	c := NewClient("api.modrinth.com")
-	version, err := c.GetVersion("IQ3UGSc2")
+	version, err := client.GetVersion("IQ3UGSc2")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -142,8 +137,7 @@ func TestClient_GetVersion(t *testing.T) {
 
 func TestClient_GetVersions(t *testing.T) {
 	t.Parallel()
-	c := NewClient("api.modrinth.com")
-	versions, err := c.GetVersions([]string{"IQ3UGSc2", "DrzwF8io", "foobar"})
+	versions, err := client.GetVersions([]string{"IQ3UGSc2", "DrzwF8io", "foobar"})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -154,8 +148,7 @@ func TestClient_GetVersions(t *testing.T) {
 
 func TestClient_VersionFromHash(t *testing.T) {
 	t.Parallel()
-	c := NewClient("api.modrinth.com")
-	version, err := c.VersionFromHash("619e250c133106bacc3e3b560839bd4b324dfda8", "sha1")
+	version, err := client.VersionFromHash("619e250c133106bacc3e3b560839bd4b324dfda8", "sha1")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -166,8 +159,7 @@ func TestClient_VersionFromHash(t *testing.T) {
 
 func TestClient_GetLatestGameVersion(t *testing.T) {
 	t.Parallel()
-	c := NewClient("api.modrinth.com")
-	version, err := c.GetLatestGameVersion()
+	version, err := client.GetLatestGameVersion()
 	if err != nil {
 		t.Fatal(err)
 	}

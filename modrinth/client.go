@@ -7,17 +7,18 @@ import (
 )
 
 type ApiClient struct {
-	Http *http.Client
+	Http    *http.Client
+	BaseUrl string
 }
 
 func NewClient(host string) *ApiClient {
 	client := ApiClient{
-		Http: http.NewHttpClient(),
+		Http: http.ClientInstance,
 	}
 	u, err := url.Parse("https://" + host + "/")
 	if err != nil {
 		log.Fatalln(err)
 	}
-	client.Http.BaseUrl = u.String()
+	client.BaseUrl = u.String()
 	return &client
 }

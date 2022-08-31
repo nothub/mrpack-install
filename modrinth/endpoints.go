@@ -8,7 +8,7 @@ import (
 const apiVersion = "v2"
 
 func (client *ApiClient) LabrinthInfo() (*LabrinthInfo, error) {
-	url, err := url2.Parse(client.Http.BaseUrl)
+	url, err := url2.Parse(client.BaseUrl)
 	if err != nil {
 		return nil, err
 	}
@@ -26,7 +26,7 @@ func (client *ApiClient) LabrinthInfo() (*LabrinthInfo, error) {
 
 // GetProject https://docs.modrinth.com/api-spec/#tag/projects/operation/getProject
 func (client *ApiClient) GetProject(id string) (*Project, error) {
-	url, err := url2.Parse(client.Http.BaseUrl + apiVersion + "/project/" + id)
+	url, err := url2.Parse(client.BaseUrl + apiVersion + "/project/" + id)
 	if err != nil {
 		return nil, err
 	}
@@ -42,7 +42,7 @@ func (client *ApiClient) GetProject(id string) (*Project, error) {
 
 // GetProjects https://docs.modrinth.com/api-spec/#tag/projects/operation/getProjects
 func (client *ApiClient) GetProjects(ids []string) ([]*Project, error) {
-	url, err := url2.Parse(client.Http.BaseUrl + apiVersion + "/projects")
+	url, err := url2.Parse(client.BaseUrl + apiVersion + "/projects")
 	if err != nil {
 		return nil, err
 	}
@@ -62,7 +62,7 @@ func (client *ApiClient) GetProjects(ids []string) ([]*Project, error) {
 
 // CheckProjectValidity https://docs.modrinth.com/api-spec/#tag/projects/operation/checkProjectValidity
 func (client *ApiClient) CheckProjectValidity(id string) (*CheckResponse, error) {
-	url, err := url2.Parse(client.Http.BaseUrl + apiVersion + "/project/" + id + "/check")
+	url, err := url2.Parse(client.BaseUrl + apiVersion + "/project/" + id + "/check")
 	if err != nil {
 		return nil, err
 	}
@@ -78,7 +78,7 @@ func (client *ApiClient) CheckProjectValidity(id string) (*CheckResponse, error)
 
 // GetDependencies https://docs.modrinth.com/api-spec/#tag/projects/operation/getDependencies
 func (client *ApiClient) GetDependencies(id string) (*Dependencies, error) {
-	url, err := url2.Parse(client.Http.BaseUrl + apiVersion + "/project/" + id + "/dependencies")
+	url, err := url2.Parse(client.BaseUrl + apiVersion + "/project/" + id + "/dependencies")
 	if err != nil {
 		return nil, err
 	}
@@ -96,7 +96,7 @@ func (client *ApiClient) GetDependencies(id string) (*Dependencies, error) {
 
 // GetProjectVersions https://docs.modrinth.com/api-spec/#tag/versions/operation/getProjectVersions
 func (client *ApiClient) GetProjectVersions(id string, params *GetProjectVersionsParams) ([]*Version, error) {
-	url, err := url2.Parse(client.Http.BaseUrl + apiVersion + "/project/" + id + "/version")
+	url, err := url2.Parse(client.BaseUrl + apiVersion + "/project/" + id + "/version")
 	if err != nil {
 		return nil, err
 	}
@@ -130,7 +130,7 @@ type GetProjectVersionsParams struct {
 
 // GetVersion https://docs.modrinth.com/api-spec/#tag/versions/operation/getVersion
 func (client *ApiClient) GetVersion(id string) (*Version, error) {
-	url, err := url2.Parse(client.Http.BaseUrl + apiVersion + "/version/" + id)
+	url, err := url2.Parse(client.BaseUrl + apiVersion + "/version/" + id)
 	if err != nil {
 		return nil, err
 	}
@@ -146,7 +146,7 @@ func (client *ApiClient) GetVersion(id string) (*Version, error) {
 
 // GetVersions https://docs.modrinth.com/api-spec/#tag/versions/operation/getVersions
 func (client *ApiClient) GetVersions(ids []string) ([]*Version, error) {
-	url, err := url2.Parse(client.Http.BaseUrl + apiVersion + "/versions")
+	url, err := url2.Parse(client.BaseUrl + apiVersion + "/versions")
 	if err != nil {
 		return nil, err
 	}
@@ -168,7 +168,7 @@ func (client *ApiClient) GetVersions(ids []string) ([]*Version, error) {
 
 // VersionFromHash https://docs.modrinth.com/api-spec/#tag/version-files/operation/versionFromHash
 func (client *ApiClient) VersionFromHash(hash string, algorithm HashAlgo) (*Version, error) {
-	url, err := url2.Parse(client.Http.BaseUrl + apiVersion + "/version_file/" + hash)
+	url, err := url2.Parse(client.BaseUrl + apiVersion + "/version_file/" + hash)
 	if err != nil {
 		return nil, err
 	}
@@ -188,7 +188,7 @@ func (client *ApiClient) VersionFromHash(hash string, algorithm HashAlgo) (*Vers
 
 // GetLatestGameVersion https://docs.modrinth.com/api-spec/#tag/tags/operation/versionList
 func (client *ApiClient) GetLatestGameVersion() (string, error) {
-	url, err := url2.Parse(client.Http.BaseUrl + apiVersion + "/tag/game_version")
+	url, err := url2.Parse(client.BaseUrl + apiVersion + "/tag/game_version")
 	if err != nil {
 		return "", err
 	}

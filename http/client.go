@@ -10,28 +10,26 @@ import (
 	"strconv"
 )
 
-// TODO: http client provider server -> 1 http client per target host
-
 type ErrorModel interface {
 	String() string
 }
 
 type Client struct {
 	UserAgent  string
-	BaseUrl    string
 	HTTPClient *http.Client
 }
 
-func NewHttpClient() *Client {
-	client := &Client{
+var ClientInstance *Client = nil
+
+func init() {
+	ClientInstance = &Client{
 		UserAgent:  "gorinth",
 		HTTPClient: &http.Client{},
 	}
 	info, ok := debug.ReadBuildInfo()
 	if ok {
-		client.UserAgent = info.Main.Path + "/" + info.Main.Version
+		ClientInstance.UserAgent = info.Main.Path + "/" + info.Main.Version
 	}
-	return client
 }
 
 func (client *Client) JsonRequest(method string, url string, body io.Reader, reponseModel interface{}, errorModel ErrorModel) error {
