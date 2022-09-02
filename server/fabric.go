@@ -42,7 +42,7 @@ func latestFabricLoaderVersion(mcVer string) (string, error) {
 			Stable  bool   `json:"stable"`
 		} `json:"loader"`
 	}
-	err := http.Instance.GetJson("https://meta.fabricmc.net/v2/versions/loader/"+mcVer, nil, &loaders, nil)
+	err := http.Instance.GetJson("https://meta.fabricmc.net/v2/versions/loader/"+mcVer, &loaders, nil)
 	if err != nil {
 		return "", err
 	}
@@ -59,7 +59,7 @@ func latestFabricInstallerVersion() (string, error) {
 		Version string `json:"version"`
 		Stable  bool   `json:"stable"`
 	}
-	err := http.Instance.GetJson("https://meta.fabricmc.net/v2/versions/installer", nil, &installers, nil)
+	err := http.Instance.GetJson("https://meta.fabricmc.net/v2/versions/installer", &installers, nil)
 	if err != nil {
 		return "", err
 	}

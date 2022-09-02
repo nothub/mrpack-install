@@ -35,8 +35,8 @@ func init() {
 	}
 }
 
-func (client *Client) GetJson(url string, body io.Reader, respModel interface{}, errModel ErrorModel) error {
-	request, err := http.NewRequest(http.MethodGet, url, body)
+func (client *Client) GetJson(url string, respModel interface{}, errModel ErrorModel) error {
+	request, err := http.NewRequest(http.MethodGet, url, nil)
 	if err != nil {
 		return err
 	}

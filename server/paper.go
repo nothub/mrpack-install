@@ -24,7 +24,7 @@ func (supplier *Paper) GetUrl() (string, error) {
 			} `json:"downloads"`
 		} `json:"builds"`
 	}
-	err := http.Instance.GetJson("https://api.papermc.io/v2/projects/paper/versions/"+supplier.MinecraftVersion+"/builds", nil, &response, nil)
+	err := http.Instance.GetJson("https://api.papermc.io/v2/projects/paper/versions/"+supplier.MinecraftVersion+"/builds", &response, nil)
 	if err != nil {
 		return "", err
 	}

@@ -13,7 +13,7 @@ func LatestVersion() (string, error) {
 			Snapshot string `json:"snapshot"`
 		} `json:"latest"`
 	}
-	err := http.Instance.GetJson(manifestUrl, nil, &manifest, nil)
+	err := http.Instance.GetJson(manifestUrl, &manifest, nil)
 	if err != nil {
 		return "", err
 	}
