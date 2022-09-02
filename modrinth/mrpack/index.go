@@ -8,7 +8,7 @@ import (
 	"io"
 )
 
-import "github.com/nothub/gorinth/modrinth"
+import modrinth "github.com/nothub/gorinth/modrinth/api"
 
 type Index struct {
 	FormatVersion int          `json:"formatVersion"`

@@ -1,4 +1,4 @@
-package modrinth
+package api
 
 import (
 	"github.com/nothub/gorinth/http"

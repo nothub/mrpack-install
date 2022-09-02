@@ -16,8 +16,9 @@ test:
 	$(MOD_NAME) \
 	$(MOD_NAME)/cmd \
 	$(MOD_NAME)/http \
-	$(MOD_NAME)/modrinth \
+	$(MOD_NAME)/modrinth/api \
 	$(MOD_NAME)/modrinth/mrpack \
+	$(MOD_NAME)/mojang \
 	$(MOD_NAME)/server
 
 .PHONY: clean lint test

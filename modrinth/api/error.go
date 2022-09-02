@@ -1,4 +1,4 @@
-package modrinth
+package api
 
 import "fmt"
 

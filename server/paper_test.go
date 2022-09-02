@@ -1,7 +1,6 @@
 package server
 
 import (
-	"fmt"
 	"regexp"
 	"testing"
 )
@@ -20,7 +19,6 @@ func Test_Paper_latest(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	fmt.Println(url)
 	if !regexp.MustCompile(paperUrlPattern).MatchString(url) {
 		t.Fatal("wrong url!")
 	}
@@ -37,7 +35,6 @@ func Test_Paper_specific(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	fmt.Println(url)
 	if !regexp.MustCompile(paperUrlPattern).MatchString(url) {
 		t.Fatal("wrong url!")
 	}
