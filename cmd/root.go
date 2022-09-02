@@ -7,8 +7,9 @@ import (
 )
 
 func init() {
-	//rootCmd.PersistentFlags().BoolP("version", "V", false, "Print version infos")
-	//rootCmd.PersistentFlags().BoolP("verbose", "v", false, "Enable verbose output")
+	// TODO: flags
+	// rootCmd.PersistentFlags().BoolP("version", "V", false, "Print version infos")
+	// rootCmd.PersistentFlags().BoolP("verbose", "v", false, "Enable verbose output")
 }
 
 var rootCmd = &cobra.Command{

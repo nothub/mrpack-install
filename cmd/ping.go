@@ -26,7 +26,6 @@ var pingCmd = &cobra.Command{
 		}
 
 		client := modrinth.NewClient(host)
-
 		info, err := client.LabrinthInfo()
 		if err != nil {
 			log.Fatalln(err)
