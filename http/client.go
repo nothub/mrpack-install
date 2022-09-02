@@ -6,6 +6,9 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"os"
+	"path"
+	"regexp"
 	"runtime/debug"
 	"strconv"
 )
@@ -27,13 +30,13 @@ func init() {
 		HTTPClient: &http.Client{},
 	}
 	info, ok := debug.ReadBuildInfo()
-	if ok {
+	if ok && info.Main.Path != "" {
 		Instance.UserAgent = info.Main.Path + "/" + info.Main.Version
 	}
 }
 
 func (client *Client) GetJson(url string, body io.Reader, respModel interface{}, errModel ErrorModel) error {
-	request, err := http.NewRequest("GET", url, body)
+	request, err := http.NewRequest(http.MethodGet, url, body)
 	if err != nil {
 		return err
 	}
@@ -68,4 +71,54 @@ func (client *Client) GetJson(url string, body io.Reader, respModel interface{},
 	}
 
 	return nil
+}
+
+func (client *Client) DownloadFile(url string, downloadDir string) (string, error) {
+	request, err := http.NewRequest(http.MethodGet, url, nil)
+	if err != nil {
+		return "", err
+	}
+	request.Header.Set("User-Agent", client.UserAgent)
+	request.Close = true
+
+	response, err := client.HTTPClient.Do(request)
+	if err != nil {
+		return "", err
+	}
+
+	fileName := ""
+	if response.Header.Get("content-disposition") != "" {
+		matches := regexp.
+			MustCompile("attachment; filename=\"(.*)\"").
+			FindStringSubmatch(response.Header.Get("content-disposition"))
+		if len(matches) > 1 {
+			fileName = matches[1]
+		}
+	}
+	if fileName == "" {
+		fileName = path.Base(response.Request.URL.Path)
+	}
+
+	file, err := os.Create(path.Join(downloadDir, fileName))
+	if err != nil {
+		return "", err
+	}
+	err = file.Chmod(0644)
+	if err != nil {
+		return "", err
+	}
+	_, err = io.Copy(file, response.Body)
+	if err != nil {
+		return "", err
+	}
+	err = response.Body.Close()
+	if err != nil {
+		return "", err
+	}
+	err = file.Close()
+	if err != nil {
+		return "", err
+	}
+
+	return file.Name(), nil
 }

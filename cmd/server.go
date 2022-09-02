@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"fmt"
+	"github.com/nothub/gorinth/http"
 	"github.com/nothub/gorinth/mojang"
 	"github.com/nothub/gorinth/server"
 	"github.com/spf13/cobra"
@@ -72,6 +73,10 @@ var serverCmd = &cobra.Command{
 			log.Fatalln(err)
 		}
 
-		fmt.Println(url)
+		file, err := http.Instance.DownloadFile(url, ".")
+		if err != nil {
+			return
+		}
+		fmt.Println("Server jar downloaded to:", file)
 	},
 }

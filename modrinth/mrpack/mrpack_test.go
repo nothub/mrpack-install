@@ -1,20 +1,18 @@
 package mrpack
 
 import (
-	"io"
+	"github.com/nothub/gorinth/http"
 	"log"
-	"net/http"
 	"os"
-	"path"
 	"testing"
 )
 
 func init() {
-	_, err := download("https://cdn.modrinth.com/data/1KVo5zza/versions/1vRDfe1u/MR_Fabulously%20Optimized_4.2.1.mrpack")
+	_, err := http.Instance.DownloadFile("https://cdn.modrinth.com/data/1KVo5zza/versions/1vRDfe1u/MR_Fabulously%20Optimized_4.2.1.mrpack", os.TempDir())
 	if err != nil {
 		log.Fatalln("download failed", err)
 	}
-	_, err = download("https://cdn.modrinth.com/data/KmiWHzQ4/versions/1.5.0/Skyblocker-Modpack.mrpack")
+	_, err = http.Instance.DownloadFile("https://cdn.modrinth.com/data/KmiWHzQ4/versions/1.5.0/Skyblocker-Modpack.mrpack", os.TempDir())
 	if err != nil {
 		log.Fatalln("download failed", err)
 	}
@@ -66,32 +64,4 @@ func Test_Overrides_Skyblocker(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-}
-
-func download(url string) (string, error) {
-	resp, err := http.Get(url)
-	if err != nil {
-		return "", err
-	}
-	file, err := os.Create(path.Join(os.TempDir(), path.Base(resp.Request.URL.Path)))
-	if err != nil {
-		return "", err
-	}
-	err = file.Chmod(0644)
-	if err != nil {
-		return "", err
-	}
-	_, err = io.Copy(file, resp.Body)
-	if err != nil {
-		return "", err
-	}
-	err = resp.Body.Close()
-	if err != nil {
-		return "", err
-	}
-	err = file.Close()
-	if err != nil {
-		return "", err
-	}
-	return file.Name(), nil
 }
