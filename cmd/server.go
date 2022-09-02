@@ -2,13 +2,14 @@ package cmd
 
 import (
 	"fmt"
+	"github.com/nothub/gorinth/mojang"
 	"github.com/nothub/gorinth/server"
 	"github.com/spf13/cobra"
 	"log"
 )
 
 func init() {
-	serverCmd.Flags().String("minecraft-version", "1.19.2", "Minecraft version")
+	serverCmd.Flags().String("minecraft-version", "latest", "Minecraft version")
 	serverCmd.Flags().String("loader-version", "latest", "Mod loader version")
 	/*
 	   TODO: eula flag
@@ -36,37 +37,34 @@ var serverCmd = &cobra.Command{
 			log.Fatalln(err)
 		}
 
+		if minecraftVersion == "" || minecraftVersion == "latest" {
+			latestMinecraftVersion, err := mojang.LatestVersion()
+			if err != nil {
+				log.Fatalln(err)
+			}
+			minecraftVersion = latestMinecraftVersion
+		}
+
 		var supplier server.DownloadSupplier = nil
 		switch args[0] {
 		case "vanilla":
-			supplier = &server.Vanilla{
-				MinecraftVersion: minecraftVersion,
-			}
+			log.Fatalln("Not yet implemented!")
 		case "fabric":
 			supplier = &server.Fabric{
 				MinecraftVersion: minecraftVersion,
 				FabricVersion:    loaderVersion,
 			}
 		case "forge":
-			supplier = &server.Forge{
-				MinecraftVersion: minecraftVersion,
-				ForgeVersion:     loaderVersion,
-			}
+			log.Fatalln("Not yet implemented!")
 		case "quilt":
-			supplier = &server.Quilt{
-				MinecraftVersion: minecraftVersion,
-				QuiltVersion:     loaderVersion,
-			}
+			log.Fatalln("Not yet implemented!")
 		case "paper":
 			supplier = &server.Paper{
 				MinecraftVersion: minecraftVersion,
 				PaperVersion:     loaderVersion,
 			}
 		case "spigot":
-			supplier = &server.Spigot{
-				MinecraftVersion: minecraftVersion,
-				SpigotVersion:    loaderVersion,
-			}
+			log.Fatalln("Not yet implemented!")
 		}
 
 		url, err := supplier.GetUrl()

@@ -54,18 +54,3 @@ func Test_Fabric_Empty_Version(t *testing.T) {
 		t.Fatal("wrong url!")
 	}
 }
-
-func Test_Fabric_Too_Early(t *testing.T) {
-	t.Parallel()
-	var supplier DownloadSupplier
-	supplier = &Fabric{
-		MinecraftVersion: "1.12.2",
-	}
-	_, err := supplier.GetUrl()
-	if err == nil {
-		t.Fatal("insufficient error handling!")
-	}
-	if err.Error() != "no stable fabric loader release found" {
-		t.Fatal("wrong error message!")
-	}
-}

@@ -32,7 +32,7 @@ func init() {
 	}
 }
 
-func (client *Client) GetJson(url string, body io.Reader, reponseModel interface{}, errorModel ErrorModel) error {
+func (client *Client) GetJson(url string, body io.Reader, respModel interface{}, errModel ErrorModel) error {
 	request, err := http.NewRequest("GET", url, body)
 	if err != nil {
 		return err
@@ -56,13 +56,13 @@ func (client *Client) GetJson(url string, body io.Reader, reponseModel interface
 	}(response.Body)
 
 	if response.StatusCode < http.StatusOK || response.StatusCode >= http.StatusBadRequest {
-		if errorModel == nil || json.NewDecoder(response.Body).Decode(&errorModel) != nil {
+		if errModel == nil || json.NewDecoder(response.Body).Decode(&errModel) != nil {
 			return errors.New("http status " + strconv.Itoa(response.StatusCode))
 		}
-		return errors.New("http status " + strconv.Itoa(response.StatusCode) + " - " + errorModel.String())
+		return errors.New("http status " + strconv.Itoa(response.StatusCode) + " - " + errModel.String())
 	}
 
-	err = json.NewDecoder(response.Body).Decode(&reponseModel)
+	err = json.NewDecoder(response.Body).Decode(&respModel)
 	if err != nil {
 		return errors.New("http status " + strconv.Itoa(response.StatusCode) + " - " + err.Error())
 	}
