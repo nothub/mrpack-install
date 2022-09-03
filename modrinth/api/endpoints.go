@@ -7,7 +7,7 @@ import (
 
 const apiVersion = "v2"
 
-func (client *ApiClient) LabrinthInfo() (*LabrinthInfo, error) {
+func (client *ModrinthClient) LabrinthInfo() (*LabrinthInfo, error) {
 	u, err := url.Parse(client.BaseUrl)
 	if err != nil {
 		return nil, err
@@ -25,7 +25,7 @@ func (client *ApiClient) LabrinthInfo() (*LabrinthInfo, error) {
 /* projects */
 
 // GetProject https://docs.modrinth.com/api-spec/#tag/projects/operation/getProject
-func (client *ApiClient) GetProject(id string) (*Project, error) {
+func (client *ModrinthClient) GetProject(id string) (*Project, error) {
 	u, err := url.Parse(client.BaseUrl + apiVersion + "/project/" + id)
 	if err != nil {
 		return nil, err
@@ -41,7 +41,7 @@ func (client *ApiClient) GetProject(id string) (*Project, error) {
 }
 
 // GetProjects https://docs.modrinth.com/api-spec/#tag/projects/operation/getProjects
-func (client *ApiClient) GetProjects(ids []string) ([]*Project, error) {
+func (client *ModrinthClient) GetProjects(ids []string) ([]*Project, error) {
 	u, err := url.Parse(client.BaseUrl + apiVersion + "/projects")
 	if err != nil {
 		return nil, err
@@ -61,7 +61,7 @@ func (client *ApiClient) GetProjects(ids []string) ([]*Project, error) {
 }
 
 // CheckProjectValidity https://docs.modrinth.com/api-spec/#tag/projects/operation/checkProjectValidity
-func (client *ApiClient) CheckProjectValidity(id string) (*CheckResponse, error) {
+func (client *ModrinthClient) CheckProjectValidity(id string) (*CheckResponse, error) {
 	u, err := url.Parse(client.BaseUrl + apiVersion + "/project/" + id + "/check")
 	if err != nil {
 		return nil, err
@@ -77,7 +77,7 @@ func (client *ApiClient) CheckProjectValidity(id string) (*CheckResponse, error)
 }
 
 // GetDependencies https://docs.modrinth.com/api-spec/#tag/projects/operation/getDependencies
-func (client *ApiClient) GetDependencies(id string) (*Dependencies, error) {
+func (client *ModrinthClient) GetDependencies(id string) (*Dependencies, error) {
 	u, err := url.Parse(client.BaseUrl + apiVersion + "/project/" + id + "/dependencies")
 	if err != nil {
 		return nil, err
@@ -95,7 +95,7 @@ func (client *ApiClient) GetDependencies(id string) (*Dependencies, error) {
 /* versions */
 
 // GetProjectVersions https://docs.modrinth.com/api-spec/#tag/versions/operation/getProjectVersions
-func (client *ApiClient) GetProjectVersions(id string, params *GetProjectVersionsParams) ([]*Version, error) {
+func (client *ModrinthClient) GetProjectVersions(id string, params *GetProjectVersionsParams) ([]*Version, error) {
 	u, err := url.Parse(client.BaseUrl + apiVersion + "/project/" + id + "/version")
 	if err != nil {
 		return nil, err
@@ -131,7 +131,7 @@ type GetProjectVersionsParams struct {
 }
 
 // GetVersion https://docs.modrinth.com/api-spec/#tag/versions/operation/getVersion
-func (client *ApiClient) GetVersion(id string) (*Version, error) {
+func (client *ModrinthClient) GetVersion(id string) (*Version, error) {
 	u, err := url.Parse(client.BaseUrl + apiVersion + "/version/" + id)
 	if err != nil {
 		return nil, err
@@ -147,7 +147,7 @@ func (client *ApiClient) GetVersion(id string) (*Version, error) {
 }
 
 // GetVersions https://docs.modrinth.com/api-spec/#tag/versions/operation/getVersions
-func (client *ApiClient) GetVersions(ids []string) ([]*Version, error) {
+func (client *ModrinthClient) GetVersions(ids []string) ([]*Version, error) {
 	u, err := url.Parse(client.BaseUrl + apiVersion + "/versions")
 	if err != nil {
 		return nil, err
@@ -169,7 +169,7 @@ func (client *ApiClient) GetVersions(ids []string) ([]*Version, error) {
 /* version files */
 
 // VersionFromHash https://docs.modrinth.com/api-spec/#tag/version-files/operation/versionFromHash
-func (client *ApiClient) VersionFromHash(hash string, algorithm HashAlgo) (*Version, error) {
+func (client *ModrinthClient) VersionFromHash(hash string, algorithm HashAlgo) (*Version, error) {
 	u, err := url.Parse(client.BaseUrl + apiVersion + "/version_file/" + hash)
 	if err != nil {
 		return nil, err
@@ -189,7 +189,7 @@ func (client *ApiClient) VersionFromHash(hash string, algorithm HashAlgo) (*Vers
 }
 
 // GetLatestGameVersion https://docs.modrinth.com/api-spec/#tag/tags/operation/versionList
-func (client *ApiClient) GetLatestGameVersion() (string, error) {
+func (client *ModrinthClient) GetLatestGameVersion() (string, error) {
 	u, err := url.Parse(client.BaseUrl + apiVersion + "/tag/game_version")
 	if err != nil {
 		return "", err

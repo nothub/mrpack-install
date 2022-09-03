@@ -4,7 +4,7 @@ import (
 	"testing"
 )
 
-var client ApiClient
+var client ModrinthClient
 
 func init() {
 	client = *NewClient("api.modrinth.com")

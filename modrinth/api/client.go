@@ -6,13 +6,13 @@ import (
 	"net/url"
 )
 
-type ApiClient struct {
+type ModrinthClient struct {
 	Http    *http.Client
 	BaseUrl string
 }
 
-func NewClient(host string) *ApiClient {
-	client := ApiClient{
+func NewClient(host string) *ModrinthClient {
+	client := ModrinthClient{
 		Http: http.Instance,
 	}
 	u, err := url.Parse("https://" + host + "/")
