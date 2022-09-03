@@ -9,6 +9,7 @@ import (
 )
 
 func init() {
+	rootCmd.Flags().String("host", "api.modrinth.com", "Labrinth host")
 	rootCmd.AddCommand(pingCmd)
 }
 

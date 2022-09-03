@@ -23,7 +23,7 @@ func init() {
 }
 
 var serverCmd = &cobra.Command{
-	Use:       "server (vanilla|fabric|quilt|forge|paper|spigot)",
+	Use:       "server (vanilla | fabric | quilt | forge | paper | spigot)",
 	Short:     "Prepare a server environment",
 	Long:      `Download and configure one of several Minecraft server flavors.`,
 	Args:      cobra.ExactValidArgs(1),

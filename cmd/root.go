@@ -16,21 +16,17 @@ import (
 )
 
 func init() {
-	// TODO: global flags
-	// rootCmd.PersistentFlags().BoolP("version", "V", false, "Print version infos")
-	// rootCmd.PersistentFlags().BoolP("verbose", "v", false, "Enable verbose output")
-	rootCmd.PersistentFlags().String("host", "api.modrinth.com", "Labrinth host")
-
+	// TODO: rootCmd.PersistentFlags().BoolP("version", "V", false, "Print version infos")
+	// TODO: rootCmd.PersistentFlags().BoolP("verbose", "v", false, "Enable verbose output")
+	rootCmd.Flags().String("host", "api.modrinth.com", "Labrinth host")
 	rootCmd.Flags().String("server-dir", "mc", "Server directory path")
 	rootCmd.Flags().String("server-file", "", "Server jar file name")
 }
 
 var rootCmd = &cobra.Command{
-	Use:   "mrpack-install (<filepath>|<url>|<project-id> [<version>]|<project-slug> [<version>])",
-	Short: "Modrinth Modpack server deployment",
-	Long: `A cli application for installing Minecraft servers and Modrinth modpacks.
-Requires a mrpack file path, a modrinth url or project id as argument.`,
-	Args: cobra.RangeArgs(1, 2),
+	Use:   "mrpack-install (<filepath> | <url> | <slug> [<version>] | <id> [<version>])",
+	Short: "Installs Minecraft servers and Modrinth modpacks",
+	Args:  cobra.RangeArgs(1, 2),
 	Run: func(cmd *cobra.Command, args []string) {
 		host, err := cmd.PersistentFlags().GetString("host")
 		if err != nil {
