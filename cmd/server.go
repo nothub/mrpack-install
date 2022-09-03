@@ -7,6 +7,7 @@ import (
 	"github.com/nothub/mrpack-install/server"
 	"github.com/spf13/cobra"
 	"log"
+	"os"
 )
 
 func init() {
@@ -66,6 +67,12 @@ var serverCmd = &cobra.Command{
 		case "forge":
 			log.Fatalln("Not yet implemented!")
 		case "quilt":
+			err = os.MkdirAll("work/quilt", 0755)
+			if err != nil {
+				log.Fatalln(err)
+			}
+			// download https://maven.quiltmc.org/repository/release/org/quiltmc/quilt-installer/latest/quilt-installer-latest.jar
+			// java -jar quilt-installer-latest.jar install server ${minecraftVersion} --download-server
 			log.Fatalln("Not yet implemented!")
 		case "paper":
 			supplier = &server.Paper{
@@ -73,6 +80,13 @@ var serverCmd = &cobra.Command{
 				PaperVersion:     loaderVersion,
 			}
 		case "spigot":
+			err = os.MkdirAll("work/spigot", 0755)
+			if err != nil {
+				log.Fatalln(err)
+			}
+			// download https://hub.spigotmc.org/jenkins/job/BuildTools/lastSuccessfulBuild/artifact/target/BuildTools.jar
+			// git config --global --unset core.autocrlf
+			// java -jar BuildTools.jar --rev ${minecraftVersion}
 			log.Fatalln("Not yet implemented!")
 		}
 
