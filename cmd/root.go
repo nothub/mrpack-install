@@ -8,6 +8,8 @@ import (
 	"log"
 	"net/url"
 	"os"
+	"path"
+	"path/filepath"
 	"strings"
 
 	"github.com/spf13/cobra"
@@ -19,7 +21,8 @@ func init() {
 	// rootCmd.PersistentFlags().BoolP("verbose", "v", false, "Enable verbose output")
 	rootCmd.PersistentFlags().String("host", "api.modrinth.com", "Labrinth host")
 
-	rootCmd.Flags().String("dir", "mc", "Server directory path")
+	rootCmd.Flags().String("server-dir", "mc", "Server directory path")
+	rootCmd.Flags().String("server-file", "", "Server jar file name")
 }
 
 var rootCmd = &cobra.Command{
@@ -33,7 +36,11 @@ Requires a mrpack file path, a modrinth url or project id as argument.`,
 		if err != nil {
 			log.Fatalln(err)
 		}
-		dir, err := cmd.Flags().GetString("dir")
+		serverDir, err := cmd.Flags().GetString("server-dir")
+		if err != nil {
+			log.Fatalln(err)
+		}
+		serverFile, err := cmd.Flags().GetString("server-file")
 		if err != nil {
 			log.Fatalln(err)
 		}
@@ -44,7 +51,7 @@ Requires a mrpack file path, a modrinth url or project id as argument.`,
 			version = args[1]
 		}
 
-		err = os.MkdirAll(dir, 0755)
+		err = os.MkdirAll(serverDir, 0755)
 		if err != nil {
 			log.Fatalln(err)
 		}
@@ -55,7 +62,7 @@ Requires a mrpack file path, a modrinth url or project id as argument.`,
 
 		} else if isUrl(input) {
 			log.Println("Downloading mrpack file from", args)
-			file, err := http.Instance.DownloadFile(input, dir)
+			file, err := http.Instance.DownloadFile(input, serverDir, "")
 			if err != nil {
 				log.Fatalln(err)
 			}
@@ -89,7 +96,7 @@ Requires a mrpack file path, a modrinth url or project id as argument.`,
 			for i := range files {
 				if strings.HasSuffix(files[i].Filename, ".mrpack") {
 					log.Println("Downloading mrpack file from", files[i].Url)
-					file, err := http.Instance.DownloadFile(files[i].Url, dir)
+					file, err := http.Instance.DownloadFile(files[i].Url, serverDir, serverFile)
 					if err != nil {
 						log.Fatalln(err)
 					}
@@ -114,7 +121,7 @@ Requires a mrpack file path, a modrinth url or project id as argument.`,
 		}
 		log.Println("Installing", index.Name)
 
-		log.Printf("loader dependencies: %+v\n", index.Dependencies)
+		log.Printf("Loader dependencies: %+v\n", index.Dependencies)
 
 		// Determine server platform
 		var supplier server.DownloadSupplier = nil
@@ -132,19 +139,42 @@ Requires a mrpack file path, a modrinth url or project id as argument.`,
 		if err != nil {
 			log.Fatalln(err)
 		}
-		file, err := http.Instance.DownloadFile(u, dir)
-		if err != nil {
-			return
-		}
-		log.Println("Server downloaded to:", file)
-
-		// TODO: download mods
-		log.Println("TODO: download file dependencies:", len(index.Files))
-
-		err = mrpack.ExtractOverrides(archivePath, dir)
+		file, err := http.Instance.DownloadFile(u, serverDir, serverFile)
 		if err != nil {
 			log.Fatalln(err)
 		}
+		log.Println("Server downloaded to:", file)
+
+		// download mods
+		log.Printf("Downloading %v dependencies...\n", len(index.Files))
+		for i := range index.Files {
+			file := index.Files[i]
+			if file.Env.Server == modrinth.UnsupportedEnvSupport {
+				continue
+			}
+			success := false
+			// TODO: run x downloads parallel in goroutine
+			for j := range file.Downloads {
+				f, err := http.Instance.DownloadFile(file.Downloads[j], path.Join(serverDir, filepath.Dir(file.Path)), filepath.Base(file.Path))
+				if err != nil {
+					log.Println(err)
+				} else {
+					log.Println("Dependency downloaded:", f)
+				}
+				success = true
+			}
+			if !success {
+				log.Fatalf("Unable to download dependency: %+v\n", file)
+			}
+		}
+
+		log.Println("Extracting overrides...")
+		err = mrpack.ExtractOverrides(archivePath, serverDir)
+		if err != nil {
+			log.Fatalln(err)
+		}
+
+		log.Println("Done :) Have a nice day ✌️")
 	},
 }
 

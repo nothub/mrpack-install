@@ -12,6 +12,8 @@ import (
 func init() {
 	serverCmd.Flags().String("minecraft-version", "latest", "Minecraft version")
 	serverCmd.Flags().String("loader-version", "latest", "Mod loader version")
+	serverCmd.Flags().String("server-dir", "mc", "Server directory path")
+	serverCmd.Flags().String("server-file", "", "Server jar file name")
 	/*
 	   TODO: eula flag
 	   TODO: ops flag
@@ -32,6 +34,14 @@ var serverCmd = &cobra.Command{
 			log.Fatalln(err)
 		}
 		loaderVersion, err := cmd.Flags().GetString("loader-version")
+		if err != nil {
+			log.Fatalln(err)
+		}
+		serverDir, err := cmd.Flags().GetString("server-dir")
+		if err != nil {
+			log.Fatalln(err)
+		}
+		serverFile, err := cmd.Flags().GetString("server-file")
 		if err != nil {
 			log.Fatalln(err)
 		}
@@ -71,7 +81,7 @@ var serverCmd = &cobra.Command{
 			log.Fatalln(err)
 		}
 
-		file, err := http.Instance.DownloadFile(url, ".")
+		file, err := http.Instance.DownloadFile(url, serverDir, serverFile)
 		if err != nil {
 			return
 		}

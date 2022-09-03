@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"log"
 	"net/http"
 	"os"
 	"path"
@@ -21,6 +22,8 @@ type Client struct {
 	UserAgent  string
 	HTTPClient *http.Client
 }
+
+// TODO: global lookup map host -> ratelimit hits left and sleep wait strategy
 
 var Instance *Client = nil
 
@@ -73,7 +76,7 @@ func (client *Client) GetJson(url string, respModel interface{}, errModel ErrorM
 	return nil
 }
 
-func (client *Client) DownloadFile(url string, downloadDir string) (string, error) {
+func (client *Client) DownloadFile(url string, downloadDir string, fileName string) (string, error) {
 	request, err := http.NewRequest(http.MethodGet, url, nil)
 	if err != nil {
 		return "", err
@@ -86,8 +89,7 @@ func (client *Client) DownloadFile(url string, downloadDir string) (string, erro
 		return "", err
 	}
 
-	fileName := ""
-	if response.Header.Get("content-disposition") != "" {
+	if fileName == "" && response.Header.Get("content-disposition") != "" {
 		matches := regexp.
 			MustCompile("attachment; filename=\"(.*)\"").
 			FindStringSubmatch(response.Header.Get("content-disposition"))
@@ -102,6 +104,10 @@ func (client *Client) DownloadFile(url string, downloadDir string) (string, erro
 		return "", errors.New("unable to determine file name")
 	}
 
+	err = os.MkdirAll(downloadDir, 0755)
+	if err != nil {
+		log.Fatalln(err)
+	}
 	joined := path.Join(downloadDir, fileName)
 	file, err := os.Create(joined)
 	if err != nil {

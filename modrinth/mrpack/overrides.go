@@ -3,6 +3,7 @@ package mrpack
 import (
 	"archive/zip"
 	"fmt"
+	"log"
 	"os"
 	"path"
 	"path/filepath"
@@ -61,6 +62,8 @@ func ExtractOverrides(zipFile string, target string) error {
 		if err != nil {
 			return err
 		}
+
+		log.Println("Override file extracted:", targetPath)
 	}
 
 	return nil

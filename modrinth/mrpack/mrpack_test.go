@@ -8,11 +8,11 @@ import (
 )
 
 func init() {
-	_, err := http.Instance.DownloadFile("https://cdn.modrinth.com/data/1KVo5zza/versions/1vRDfe1u/MR_Fabulously%20Optimized_4.2.1.mrpack", os.TempDir())
+	_, err := http.Instance.DownloadFile("https://cdn.modrinth.com/data/1KVo5zza/versions/1vRDfe1u/MR_Fabulously%20Optimized_4.2.1.mrpack", os.TempDir(), "")
 	if err != nil {
 		log.Fatalln("download failed", err)
 	}
-	_, err = http.Instance.DownloadFile("https://cdn.modrinth.com/data/KmiWHzQ4/versions/1.5.0/Skyblocker-Modpack.mrpack", os.TempDir())
+	_, err = http.Instance.DownloadFile("https://cdn.modrinth.com/data/KmiWHzQ4/versions/1.5.0/Skyblocker-Modpack.mrpack", os.TempDir(), "")
 	if err != nil {
 		log.Fatalln("download failed", err)
 	}
