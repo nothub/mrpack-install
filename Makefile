@@ -7,10 +7,10 @@ out/$(BIN_NAME)-dev: clean lint test
 
 release: clean
 	mkdir -p out
-	GOOS=linux GOARCH=amd64 go build -o out/$(BIN_NAME)-linux
-	GOOS=linux GOARCH=arm64 go build -o out/$(BIN_NAME)-linux-arm64
-	GOOS=darwin GOARCH=amd64 go build -o out/$(BIN_NAME)-darwin
-	GOOS=darwin GOARCH=arm64 go build -o out/$(BIN_NAME)-darwin-arm64
+	GOOS=linux   GOARCH=amd64 go build -o out/$(BIN_NAME)-linux
+	GOOS=linux   GOARCH=arm64 go build -o out/$(BIN_NAME)-linux-arm64
+	GOOS=darwin  GOARCH=amd64 go build -o out/$(BIN_NAME)-darwin
+	GOOS=darwin  GOARCH=arm64 go build -o out/$(BIN_NAME)-darwin-arm64
 	GOOS=windows GOARCH=amd64 go build -o out/$(BIN_NAME)-windows
 
 clean:

@@ -1,8 +1,7 @@
 name: '🚔'
 on: [ push, pull_request ]
 jobs:
-  verify:
-    name: 'Verify'
+  job:
     runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@v3
@@ -14,3 +13,20 @@ jobs:
       - run: make lint test
       - run: make release
         if: startsWith(github.event.ref, 'refs/tags/v')
+      - uses: actions/create-release@v1
+        if: startsWith(github.event.ref, 'refs/tags/v')
+        id: create_release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ github.ref }}
+          release_name: ${{ github.ref }}
+          body: 'automated release of ${{ github.ref }} at commit ${{ github.sha }}'
+          draft: false
+          prerelease: false
+      - uses: csexton/release-asset-action@v2
+        if: startsWith(github.event.ref, 'refs/tags/v')
+        with:
+          pattern: "out/*"
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          release-url: ${{ steps.create_release.outputs.upload_url }}
