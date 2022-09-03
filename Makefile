@@ -5,7 +5,7 @@ out/$(BIN_NAME)-dev: clean lint test
 	mkdir -p out
 	go build -race -o $@
 
-release: clean lint test
+release: clean
 	mkdir -p out
 	GOOS=linux GOARCH=amd64 go build -o out/$(BIN_NAME)-linux
 	GOOS=linux GOARCH=arm64 go build -o out/$(BIN_NAME)-linux-arm64
