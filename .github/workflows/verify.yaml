@@ -12,3 +12,5 @@ jobs:
           check-latest: true
           cache: true
       - run: make lint test
+      - run: make release
+        if: startsWith(github.event.ref, 'refs/tags/v')
