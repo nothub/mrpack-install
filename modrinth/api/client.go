@@ -1,7 +1,7 @@
 package api
 
 import (
-	"github.com/nothub/gorinth/http"
+	"github.com/nothub/mrpack-install/http"
 	"log"
 	"net/url"
 )

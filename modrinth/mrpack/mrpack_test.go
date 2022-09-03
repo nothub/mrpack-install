@@ -1,7 +1,7 @@
 package mrpack
 
 import (
-	"github.com/nothub/gorinth/http"
+	"github.com/nothub/mrpack-install/http"
 	"log"
 	"os"
 	"testing"

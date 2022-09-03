@@ -1,7 +1,7 @@
 package mojang
 
 import (
-	"github.com/nothub/gorinth/http"
+	"github.com/nothub/mrpack-install/http"
 )
 
 const manifestUrl = "https://launchermeta.mojang.com/mc/game/version_manifest.json"

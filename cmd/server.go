@@ -2,9 +2,9 @@ package cmd
 
 import (
 	"fmt"
-	"github.com/nothub/gorinth/http"
-	"github.com/nothub/gorinth/mojang"
-	"github.com/nothub/gorinth/server"
+	"github.com/nothub/mrpack-install/http"
+	"github.com/nothub/mrpack-install/mojang"
+	"github.com/nothub/mrpack-install/server"
 	"github.com/spf13/cobra"
 	"log"
 )

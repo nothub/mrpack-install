@@ -2,7 +2,7 @@ package server
 
 import (
 	"errors"
-	"github.com/nothub/gorinth/http"
+	"github.com/nothub/mrpack-install/http"
 	"net/url"
 )
 

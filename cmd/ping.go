@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"log"
 
-	modrinth "github.com/nothub/gorinth/modrinth/api"
+	modrinth "github.com/nothub/mrpack-install/modrinth/api"
 	"github.com/spf13/cobra"
 )
 

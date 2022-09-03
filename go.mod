@@ -1,4 +1,4 @@
-module github.com/nothub/gorinth
+module github.com/nothub/mrpack-install
 
 go 1.19
 

@@ -1,7 +1,7 @@
 package main
 
 import (
-	"github.com/nothub/gorinth/cmd"
+	"github.com/nothub/mrpack-install/cmd"
 )
 
 func main() {

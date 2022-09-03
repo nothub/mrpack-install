@@ -26,7 +26,7 @@ var Instance *Client = nil
 
 func init() {
 	Instance = &Client{
-		UserAgent:  "gorinth",
+		UserAgent:  "mrpack-install",
 		HTTPClient: &http.Client{},
 	}
 	info, ok := debug.ReadBuildInfo()
