@@ -28,7 +28,7 @@ var rootCmd = &cobra.Command{
 	Short: "Installs Minecraft servers and Modrinth modpacks",
 	Args:  cobra.RangeArgs(1, 2),
 	Run: func(cmd *cobra.Command, args []string) {
-		host, err := cmd.PersistentFlags().GetString("host")
+		host, err := cmd.Flags().GetString("host")
 		if err != nil {
 			log.Fatalln(err)
 		}
@@ -115,31 +115,38 @@ var rootCmd = &cobra.Command{
 		if err != nil {
 			log.Fatalln(err)
 		}
-		log.Println("Installing", index.Name)
+		log.Println("Installing:", index.Name)
 
 		log.Printf("Loader dependencies: %+v\n", index.Dependencies)
 
-		// Determine server platform
-		var supplier server.DownloadSupplier = nil
-		if index.Dependencies.Fabric != "" {
-			supplier = &server.Fabric{
-				MinecraftVersion: index.Dependencies.Minecraft,
-				FabricVersion:    index.Dependencies.Fabric,
+		// download server if not present
+		if serverFile != "" && !isFilePath(path.Join(serverDir, serverFile)) {
+			// Determine server platform
+			var supplier server.DownloadSupplier = nil
+			if index.Dependencies.Fabric != "" {
+				supplier = &server.Fabric{
+					MinecraftVersion: index.Dependencies.Minecraft,
+					FabricVersion:    index.Dependencies.Fabric,
+				}
+			} else if index.Dependencies.Quilt != "" || index.Dependencies.Forge != "" {
+				log.Fatalln("Automatic server deployment not yet implemented for this platform! Supply the path to an existing server jar file with the --server-dir and --server-file flags.")
+			} else {
+				// TODO: vanilla server download
+			}
+
+			// Download server
+			u, err := supplier.GetUrl()
+			if err != nil {
+				log.Fatalln(err)
+			}
+			log.Println("Downloading mrpack file from", u)
+			_, err = http.Instance.DownloadFile(u, serverDir, serverFile)
+			if err != nil {
+				log.Fatalln(err)
 			}
 		} else {
-			log.Fatalln("Not yet implemented!")
+			log.Println("Server jar file already present, skipping download...")
 		}
-
-		// Download server
-		u, err := supplier.GetUrl()
-		if err != nil {
-			log.Fatalln(err)
-		}
-		file, err := http.Instance.DownloadFile(u, serverDir, serverFile)
-		if err != nil {
-			log.Fatalln(err)
-		}
-		log.Println("Server downloaded to:", file)
 
 		// download mods
 		log.Printf("Downloading %v dependencies...\n", len(index.Files))
