@@ -9,8 +9,6 @@ import (
 )
 
 func init() {
-	pingCmd.Flags().String("host", "api.modrinth.com", "Host address")
-
 	rootCmd.AddCommand(pingCmd)
 }
 
@@ -18,9 +16,8 @@ var pingCmd = &cobra.Command{
 	Use:   "ping",
 	Short: "Ping a Labrinth instance",
 	Long:  `Connect to a Labrinth instance and display basic information.`,
-
 	Run: func(cmd *cobra.Command, args []string) {
-		host, err := cmd.Flags().GetString("host")
+		host, err := rootCmd.PersistentFlags().GetString("host")
 		if err != nil {
 			log.Fatalln(err)
 		}

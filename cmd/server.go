@@ -21,13 +21,11 @@ func init() {
 }
 
 var serverCmd = &cobra.Command{
-	Use:   "server (vanilla|fabric|forge|quilt|paper|spigot)",
-	Short: "Prepare a server environment",
-	Long:  `Download and configure one of several Minecraft server flavors.`,
-
+	Use:       "server (vanilla|fabric|forge|quilt|paper|spigot)",
+	Short:     "Prepare a server environment",
+	Long:      `Download and configure one of several Minecraft server flavors.`,
 	Args:      cobra.ExactValidArgs(1),
 	ValidArgs: []string{"vanilla", "fabric", "forge", "quilt", "paper", "spigot"},
-
 	Run: func(cmd *cobra.Command, args []string) {
 		minecraftVersion, err := cmd.Flags().GetString("minecraft-version")
 		if err != nil {

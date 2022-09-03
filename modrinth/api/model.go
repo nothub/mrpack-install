@@ -5,45 +5,45 @@ import "time"
 type ProjectType string
 
 const (
-	Mod          ProjectType = "mod"
-	Modpack      ProjectType = "modpack"
-	Plugin       ProjectType = "plugin"
-	Resourcepack ProjectType = "resourcepack"
+	ModProjectType          ProjectType = "mod"
+	ModpackProjectType      ProjectType = "modpack"
+	PluginProjectType       ProjectType = "plugin"
+	ResourcepackProjectType ProjectType = "resourcepack"
 )
 
-type ProjectStatus string
+type Status string
 
 const (
-	Approved   ProjectStatus = "approved"
-	Rejected   ProjectStatus = "rejected"
-	Draft      ProjectStatus = "draft"
-	Unlisted   ProjectStatus = "unlisted"
-	Archived   ProjectStatus = "archived"
-	Processing ProjectStatus = "processing"
-	Unknown    ProjectStatus = "unknown"
+	ApprovedStatus   Status = "approved"
+	RejectedStatus   Status = "rejected"
+	DraftStatus      Status = "draft"
+	UnlistedStatus   Status = "unlisted"
+	ArchivedStatus   Status = "archived"
+	ProcessingStatus Status = "processing"
+	UnknownStatus    Status = "unknown"
 )
 
 type EnvSupport string
 
 const (
-	Required    EnvSupport = "required"
-	Optional    EnvSupport = "optional"
-	Unsupported EnvSupport = "unsupported"
+	RequiredEnvSupport    EnvSupport = "required"
+	OptionalEnvSupport    EnvSupport = "optional"
+	UnsupportedEnvSupport EnvSupport = "unsupported"
 )
 
-type ReleaseChannel string
+type VersionType string
 
 const (
-	Release ReleaseChannel = "release"
-	Beta    ReleaseChannel = "beta"
-	Alpha   ReleaseChannel = "alpha"
+	ReleaseVersionType VersionType = "release"
+	BetaVersionType    VersionType = "beta"
+	AlphaVersionType   VersionType = "alpha"
 )
 
 type HashAlgo string
 
 const (
-	Sha1   HashAlgo = "sha1"
-	Sha512 HashAlgo = "sha512"
+	Sha1HashAlgo   HashAlgo = "sha1"
+	Sha512HashAlgo HashAlgo = "sha512"
 )
 
 type LabrinthInfo struct {
@@ -77,7 +77,7 @@ type Project struct {
 	Updated              string           `json:"updated"`
 	Approved             string           `json:"approved"`
 	Followers            int              `json:"followers"`
-	Status               ProjectStatus    `json:"status"`
+	Status               Status           `json:"status"`
 	License              License          `json:"license"`
 	Versions             []string         `json:"versions"`
 	Gallery              []GalleryItem    `json:"gallery"`
@@ -109,20 +109,20 @@ type GalleryItem struct {
 }
 
 type Version struct {
-	Name          string         `json:"name"`
-	VersionNumber string         `json:"version_number"`
-	Changelog     string         `json:"changelog"`
-	Dependencies  []Dependency   `json:"dependencies"`
-	GameVersions  []string       `json:"game_versions"`
-	VersionType   ReleaseChannel `json:"version_type"`
-	Loaders       []string       `json:"loaders"`
-	Featured      bool           `json:"featured"`
-	Id            string         `json:"id"`
-	ProjectId     string         `json:"project_id"`
-	AuthorId      string         `json:"author_id"`
-	DatePublished string         `json:"date_published"`
-	Downloads     int            `json:"downloads"`
-	Files         []File         `json:"files"`
+	Name          string       `json:"name"`
+	VersionNumber string       `json:"version_number"`
+	Changelog     string       `json:"changelog"`
+	Dependencies  []Dependency `json:"dependencies"`
+	GameVersions  []string     `json:"game_versions"`
+	VersionType   VersionType  `json:"version_type"`
+	Loaders       []string     `json:"loaders"`
+	Featured      bool         `json:"featured"`
+	Id            string       `json:"id"`
+	ProjectId     string       `json:"project_id"`
+	AuthorId      string       `json:"author_id"`
+	DatePublished string       `json:"date_published"`
+	Downloads     int          `json:"downloads"`
+	Files         []File       `json:"files"`
 }
 
 type Dependency struct {
@@ -155,8 +155,8 @@ type CheckResponse struct {
 }
 
 type GameVersion struct {
-	Version     string    `json:"version"`
-	VersionType string    `json:"version_type"`
-	Date        time.Time `json:"date"`
-	Major       bool      `json:"major"`
+	Version     string      `json:"version"`
+	VersionType VersionType `json:"version_type"`
+	Date        time.Time   `json:"date"`
+	Major       bool        `json:"major"`
 }

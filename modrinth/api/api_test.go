@@ -19,7 +19,7 @@ func Test_GetProject_Success(t *testing.T) {
 	if project.Slug != "fabric-api" {
 		t.Fatal("wrong slug!")
 	}
-	if project.ProjectType != "mod" {
+	if project.ProjectType != ModProjectType {
 		t.Fatal("wrong type!")
 	}
 }
@@ -148,7 +148,7 @@ func TestClient_GetVersions(t *testing.T) {
 
 func TestClient_VersionFromHash(t *testing.T) {
 	t.Parallel()
-	version, err := client.VersionFromHash("619e250c133106bacc3e3b560839bd4b324dfda8", "sha1")
+	version, err := client.VersionFromHash("619e250c133106bacc3e3b560839bd4b324dfda8", Sha1HashAlgo)
 	if err != nil {
 		t.Fatal(err)
 	}

@@ -98,6 +98,9 @@ func (client *Client) DownloadFile(url string, downloadDir string) (string, erro
 	if fileName == "" {
 		fileName = path.Base(response.Request.URL.Path)
 	}
+	if fileName == "" {
+		return "", errors.New("unable to determine file name")
+	}
 
 	file, err := os.Create(path.Join(downloadDir, fileName))
 	if err != nil {
