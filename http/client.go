@@ -77,6 +77,8 @@ func (client *Client) GetJson(url string, respModel interface{}, errModel ErrorM
 }
 
 func (client *Client) DownloadFile(url string, downloadDir string, fileName string) (string, error) {
+	// TODO: hashsum based local file cache
+
 	request, err := http.NewRequest(http.MethodGet, url, nil)
 	if err != nil {
 		return "", err

@@ -96,7 +96,7 @@ Requires a mrpack file path, a modrinth url or project id as argument.`,
 			for i := range files {
 				if strings.HasSuffix(files[i].Filename, ".mrpack") {
 					log.Println("Downloading mrpack file from", files[i].Url)
-					file, err := http.Instance.DownloadFile(files[i].Url, serverDir, serverFile)
+					file, err := http.Instance.DownloadFile(files[i].Url, serverDir, "")
 					if err != nil {
 						log.Fatalln(err)
 					}
