@@ -102,7 +102,8 @@ func (client *Client) DownloadFile(url string, downloadDir string) (string, erro
 		return "", errors.New("unable to determine file name")
 	}
 
-	file, err := os.Create(path.Join(downloadDir, fileName))
+	joined := path.Join(downloadDir, fileName)
+	file, err := os.Create(joined)
 	if err != nil {
 		return "", err
 	}

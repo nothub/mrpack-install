@@ -4,6 +4,7 @@ import (
 	"github.com/nothub/mrpack-install/http"
 	modrinth "github.com/nothub/mrpack-install/modrinth/api"
 	"github.com/nothub/mrpack-install/modrinth/mrpack"
+	"github.com/nothub/mrpack-install/server"
 	"log"
 	"net/url"
 	"os"
@@ -18,7 +19,7 @@ func init() {
 	// rootCmd.PersistentFlags().BoolP("verbose", "v", false, "Enable verbose output")
 	rootCmd.PersistentFlags().String("host", "api.modrinth.com", "Labrinth host")
 
-	rootCmd.Flags().String("dir", "server", "Server directory path")
+	rootCmd.Flags().String("dir", "mc", "Server directory path")
 }
 
 var rootCmd = &cobra.Command{
@@ -32,6 +33,10 @@ Requires a mrpack file path, a modrinth url or project id as argument.`,
 		if err != nil {
 			log.Fatalln(err)
 		}
+		dir, err := cmd.Flags().GetString("dir")
+		if err != nil {
+			log.Fatalln(err)
+		}
 
 		input := args[0]
 		version := ""
@@ -39,17 +44,22 @@ Requires a mrpack file path, a modrinth url or project id as argument.`,
 			version = args[1]
 		}
 
-		filePath := ""
+		err = os.MkdirAll(dir, 0755)
+		if err != nil {
+			log.Fatalln(err)
+		}
+
+		archivePath := ""
 		if isFilePath(input) {
-			filePath = input
+			archivePath = input
 
 		} else if isUrl(input) {
 			log.Println("Downloading mrpack file from", args)
-			file, err := http.Instance.DownloadFile(input, ".")
+			file, err := http.Instance.DownloadFile(input, dir)
 			if err != nil {
 				log.Fatalln(err)
 			}
-			filePath = file
+			archivePath = file
 
 		} else { // input is project id or slug?
 			versions, err := modrinth.NewClient(host).GetProjectVersions(input, nil)
@@ -58,7 +68,7 @@ Requires a mrpack file path, a modrinth url or project id as argument.`,
 			}
 
 			// get files uploaded for specified version or latest stable if not specified
-			var files []modrinth.File
+			var files []modrinth.File = nil
 			for i := range versions {
 				if version != "" {
 					if versions[i].VersionNumber == version {
@@ -79,38 +89,59 @@ Requires a mrpack file path, a modrinth url or project id as argument.`,
 			for i := range files {
 				if strings.HasSuffix(files[i].Filename, ".mrpack") {
 					log.Println("Downloading mrpack file from", files[i].Url)
-					file, err := http.Instance.DownloadFile(files[i].Url, ".")
+					file, err := http.Instance.DownloadFile(files[i].Url, dir)
 					if err != nil {
 						log.Fatalln(err)
 					}
-					filePath = file
+					archivePath = file
 					break
 				}
 			}
-			if filePath == "" {
+			if archivePath == "" {
 				log.Fatalln("No mrpack file found for", input, version)
 			}
 		}
 
-		if filePath == "" {
+		if archivePath == "" {
 			log.Fatalln("An error occured!")
 		}
 
-		log.Println("Processing mrpack file", filePath)
+		log.Println("Processing mrpack file", archivePath)
 
-		index, err := mrpack.ReadIndex(filePath)
+		index, err := mrpack.ReadIndex(archivePath)
 		if err != nil {
 			log.Fatalln(err)
 		}
 		log.Println("Installing", index.Name)
 
 		log.Printf("loader dependencies: %+v\n", index.Dependencies)
-		// TODO: download server/loader dependencies
 
-		log.Println("file dependencies:", len(index.Files))
+		// Determine server platform
+		var supplier server.DownloadSupplier = nil
+		if index.Dependencies.Fabric != "" {
+			supplier = &server.Fabric{
+				MinecraftVersion: index.Dependencies.Minecraft,
+				FabricVersion:    index.Dependencies.Fabric,
+			}
+		} else {
+			log.Fatalln("Not yet implemented!")
+		}
+
+		// Download server
+		u, err := supplier.GetUrl()
+		if err != nil {
+			log.Fatalln(err)
+		}
+		file, err := http.Instance.DownloadFile(u, dir)
+		if err != nil {
+			return
+		}
+		log.Println("Server downloaded to:", file)
+
 		// TODO: download mods
+		log.Println("TODO: download file dependencies:", len(index.Files))
 
-		err = mrpack.ExtractOverrides(filePath, "testing")
+		err = mrpack.ExtractOverrides(archivePath, dir)
 		if err != nil {
 			log.Fatalln(err)
 		}

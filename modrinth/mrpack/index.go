@@ -41,9 +41,9 @@ type Env struct {
 
 type Dependencies struct {
 	Minecraft string `json:"minecraft"`
-	Forge     string `json:"forge"`
 	Fabric    string `json:"fabric-loader"`
 	Quilt     string `json:"quilt-loader"`
+	Forge     string `json:"forge"`
 }
 
 func ReadIndex(zipFile string) (*Index, error) {
