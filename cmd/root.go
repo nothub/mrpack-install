@@ -139,7 +139,7 @@ var rootCmd = &cobra.Command{
 			if err != nil {
 				log.Fatalln(err)
 			}
-			log.Println("Downloading mrpack file from", u)
+			log.Println("Downloading server file from", u)
 			_, err = http.Instance.DownloadFile(u, serverDir, serverFile)
 			if err != nil {
 				log.Fatalln(err)
