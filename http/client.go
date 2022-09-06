@@ -51,6 +51,15 @@ func (client *Client) SetProxy(CustomProxy string) error {
 	client.HTTPClient = &http.Client{
 		Transport: httpTransport,
 	}
+
+	httpUrl := "https://api.modrinth.com/"
+	response, err := client.HTTPClient.Get(httpUrl)
+	if err != nil {
+		return err
+	}
+	if response.StatusCode != http.StatusOK {
+		return err
+	}
 	return nil
 }
 
