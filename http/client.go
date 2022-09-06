@@ -7,11 +7,9 @@ import (
 	"io"
 	"log"
 	"net/http"
-	"net/url"
 	"os"
 	"path"
 	"regexp"
-	"runtime/debug"
 	"strconv"
 )
 
@@ -19,49 +17,7 @@ type ErrorModel interface {
 	String() string
 }
 
-type Client struct {
-	UserAgent  string
-	HTTPClient *http.Client
-}
-
-// TODO: global lookup map host -> ratelimit hits left and sleep wait strategy
-
-var Instance *Client = nil
-
-func init() {
-	Instance = &Client{
-		UserAgent:  "mrpack-install",
-		HTTPClient: &http.Client{},
-	}
-	info, ok := debug.ReadBuildInfo()
-	if ok && info.Main.Path != "" {
-		Instance.UserAgent = info.Main.Path + "/" + info.Main.Version
-	}
-}
-
-func (client *Client) SetProxy(CustomProxy string) error {
-	proxy := func(_ *http.Request) (*url.URL, error) {
-		return url.Parse(CustomProxy)
-	}
-
-	httpTransport := &http.Transport{
-		Proxy: proxy,
-	}
-
-	client.HTTPClient = &http.Client{
-		Transport: httpTransport,
-	}
-
-	httpUrl := "https://api.modrinth.com/"
-	response, err := client.HTTPClient.Get(httpUrl)
-	if err != nil {
-		return err
-	}
-	if response.StatusCode != http.StatusOK {
-		return err
-	}
-	return nil
-}
+var Instance = NewHTTPClient()
 
 func (client *Client) GetJson(url string, respModel interface{}, errModel ErrorModel) error {
 	request, err := http.NewRequest(http.MethodGet, url, nil)
@@ -74,7 +30,7 @@ func (client *Client) GetJson(url string, respModel interface{}, errModel ErrorM
 
 	request.Close = true
 
-	response, err := client.HTTPClient.Do(request)
+	response, err := client.Do(request)
 	if err != nil {
 		return err
 	}
@@ -111,7 +67,7 @@ func (client *Client) DownloadFile(url string, downloadDir string, fileName stri
 	request.Header.Set("User-Agent", client.UserAgent)
 	request.Close = true
 
-	response, err := client.HTTPClient.Do(request)
+	response, err := client.Do(request)
 	if err != nil {
 		return "", err
 	}
