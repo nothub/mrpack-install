@@ -7,6 +7,7 @@ import (
 	"io"
 	"log"
 	"net/http"
+	"net/url"
 	"os"
 	"path"
 	"regexp"
@@ -36,6 +37,21 @@ func init() {
 	if ok && info.Main.Path != "" {
 		Instance.UserAgent = info.Main.Path + "/" + info.Main.Version
 	}
+}
+
+func (client *Client) SetProxy(CustomProxy string) error {
+	proxy := func(_ *http.Request) (*url.URL, error) {
+		return url.Parse(CustomProxy)
+	}
+
+	httpTransport := &http.Transport{
+		Proxy: proxy,
+	}
+
+	client.HTTPClient = &http.Client{
+		Transport: httpTransport,
+	}
+	return nil
 }
 
 func (client *Client) GetJson(url string, respModel interface{}, errModel ErrorModel) error {
