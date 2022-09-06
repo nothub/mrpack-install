@@ -3,6 +3,7 @@ package mrpack
 import (
 	"archive/zip"
 	"fmt"
+	"io"
 	"log"
 	"os"
 	"path"
@@ -48,17 +49,19 @@ func ExtractOverrides(zipFile string, target string) error {
 			return err
 		}
 
-		var buf []byte
-		_, err = fileReader.Read(buf)
+		outFile, err := os.OpenFile(targetPath, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0644)
 		if err != nil {
 			return err
 		}
-		err = os.WriteFile(targetPath, buf, 0644)
-		if err != nil {
+		if _, err := io.Copy(outFile, fileReader); err != nil {
 			return err
 		}
 
 		err = fileReader.Close()
+		if err != nil {
+			return err
+		}
+		err = outFile.Close()
 		if err != nil {
 			return err
 		}
