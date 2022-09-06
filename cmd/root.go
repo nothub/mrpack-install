@@ -21,6 +21,7 @@ func init() {
 	rootCmd.Flags().String("host", "api.modrinth.com", "Labrinth host")
 	rootCmd.Flags().String("server-dir", "mc", "Server directory path")
 	rootCmd.Flags().String("server-file", "", "Server jar file name")
+	rootCmd.Flags().String("proxy", "", "Use a proxy to download")
 }
 
 var rootCmd = &cobra.Command{
@@ -39,6 +40,17 @@ var rootCmd = &cobra.Command{
 		serverFile, err := cmd.Flags().GetString("server-file")
 		if err != nil {
 			log.Fatalln(err)
+		}
+
+		proxy, err := cmd.Flags().GetString("proxy")
+		if err != nil {
+			log.Fatalln(err)
+		}
+		if proxy != "" {
+			err := http.Instance.SetProxy(proxy)
+			if err != nil {
+				log.Fatalln(err)
+			}
 		}
 
 		input := args[0]
