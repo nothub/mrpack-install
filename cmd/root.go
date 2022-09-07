@@ -151,8 +151,7 @@ Usage Examples:
 
 		// download server if not present
 		if !util.PathIsFile(path.Join(serverDir, serverFile)) {
-			fmt.Println("Server file not present, downloading...")
-			fmt.Println("(Point --server-dir and --server-file flags for an existing server file to skip this step.)")
+			fmt.Println("Server file not present, downloading...\n(Point --server-dir and --server-file flags to an existing server file to skip this step.)")
 
 			var provider server.Provider
 			if index.Dependencies.Fabric != "" {
