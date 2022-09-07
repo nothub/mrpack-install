@@ -2,8 +2,8 @@ package cmd
 
 import (
 	"fmt"
-	"github.com/nothub/mrpack-install/http"
 	"github.com/nothub/mrpack-install/mojang"
+	"github.com/nothub/mrpack-install/requester"
 	"github.com/nothub/mrpack-install/server"
 	"github.com/spf13/cobra"
 	"log"
@@ -95,7 +95,7 @@ var serverCmd = &cobra.Command{
 			log.Fatalln(err)
 		}
 
-		file, err := http.Instance.DownloadFile(url, serverDir, serverFile)
+		file, err := requester.DefaultHttpClient.DownloadFile(url, serverDir, serverFile)
 		if err != nil {
 			return
 		}

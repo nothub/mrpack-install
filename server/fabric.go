@@ -2,7 +2,7 @@ package server
 
 import (
 	"errors"
-	"github.com/nothub/mrpack-install/http"
+	"github.com/nothub/mrpack-install/requester"
 	"net/url"
 )
 
@@ -42,7 +42,7 @@ func latestFabricLoaderVersion(mcVer string) (string, error) {
 			Stable  bool   `json:"stable"`
 		} `json:"loader"`
 	}
-	err := http.Instance.GetJson("https://meta.fabricmc.net/v2/versions/loader/"+mcVer, &loaders, nil)
+	err := requester.DefaultHttpClient.GetJson("https://meta.fabricmc.net/v2/versions/loader/"+mcVer, &loaders, nil)
 	if err != nil {
 		return "", err
 	}
@@ -59,7 +59,7 @@ func latestFabricInstallerVersion() (string, error) {
 		Version string `json:"version"`
 		Stable  bool   `json:"stable"`
 	}
-	err := http.Instance.GetJson("https://meta.fabricmc.net/v2/versions/installer", &installers, nil)
+	err := requester.DefaultHttpClient.GetJson("https://meta.fabricmc.net/v2/versions/installer", &installers, nil)
 	if err != nil {
 		return "", err
 	}

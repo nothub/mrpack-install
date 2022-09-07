@@ -1,18 +1,17 @@
 package cmd
 
 import (
-	"github.com/nothub/mrpack-install/http"
 	modrinth "github.com/nothub/mrpack-install/modrinth/api"
 	"github.com/nothub/mrpack-install/modrinth/mrpack"
+	"github.com/nothub/mrpack-install/requester"
 	"github.com/nothub/mrpack-install/server"
+	"github.com/spf13/cobra"
 	"log"
 	"net/url"
 	"os"
 	"path"
 	"path/filepath"
 	"strings"
-
-	"github.com/spf13/cobra"
 )
 
 func init() {
@@ -22,6 +21,8 @@ func init() {
 	rootCmd.Flags().String("server-dir", "mc", "Server directory path")
 	rootCmd.Flags().String("server-file", "", "Server jar file name")
 	rootCmd.Flags().String("proxy", "", "Use a proxy to download")
+	rootCmd.Flags().Int("download-thread", 8, "Download threads")
+	rootCmd.Flags().Int("retry-times", 3, "Number of retries when a download fails")
 }
 
 var rootCmd = &cobra.Command{
@@ -41,16 +42,25 @@ var rootCmd = &cobra.Command{
 		if err != nil {
 			log.Fatalln(err)
 		}
-
 		proxy, err := cmd.Flags().GetString("proxy")
 		if err != nil {
 			log.Fatalln(err)
 		}
 		if proxy != "" {
-			err := http.Instance.SetProxy(proxy)
+			err := requester.DefaultHttpClient.SetProxy(proxy)
 			if err != nil {
 				log.Fatalln(err)
 			}
+		}
+		downloadThreads, err := cmd.Flags().GetInt("download-thread")
+		if err != nil || downloadThreads > 64 {
+			downloadThreads = 8
+			log.Println(err)
+		}
+		retryTimes, err := cmd.Flags().GetInt("retry-times")
+		if err != nil {
+			retryTimes = 3
+			log.Println(err)
 		}
 
 		input := args[0]
@@ -70,7 +80,7 @@ var rootCmd = &cobra.Command{
 
 		} else if isUrl(input) {
 			log.Println("Downloading mrpack file from", args)
-			file, err := http.Instance.DownloadFile(input, serverDir, "")
+			file, err := requester.DefaultHttpClient.DownloadFile(input, serverDir, "")
 			if err != nil {
 				log.Fatalln(err)
 			}
@@ -104,7 +114,7 @@ var rootCmd = &cobra.Command{
 			for i := range files {
 				if strings.HasSuffix(files[i].Filename, ".mrpack") {
 					log.Println("Downloading mrpack file from", files[i].Url)
-					file, err := http.Instance.DownloadFile(files[i].Url, serverDir, "")
+					file, err := requester.DefaultHttpClient.DownloadFile(files[i].Url, serverDir, "")
 					if err != nil {
 						log.Fatalln(err)
 					}
@@ -152,7 +162,7 @@ var rootCmd = &cobra.Command{
 				log.Fatalln(err)
 			}
 			log.Println("Downloading server file from", u)
-			_, err = http.Instance.DownloadFile(u, serverDir, serverFile)
+			_, err = requester.DefaultHttpClient.DownloadFile(u, serverDir, serverFile)
 			if err != nil {
 				log.Fatalln(err)
 			}
@@ -162,31 +172,32 @@ var rootCmd = &cobra.Command{
 
 		// download mods
 		log.Printf("Downloading %v dependencies...\n", len(index.Files))
+		var downloadPoolArray []*requester.DownloadPool
 		for i := range index.Files {
 			file := index.Files[i]
 			if file.Env.Server == modrinth.UnsupportedEnvSupport {
 				continue
 			}
-			success := false
-			// TODO: run x downloads parallel in goroutine
-			for j := range file.Downloads {
-				f, err := http.Instance.DownloadFile(file.Downloads[j], path.Join(serverDir, filepath.Dir(file.Path)), filepath.Base(file.Path))
-				if err != nil {
-					log.Println(err)
-				} else {
-					log.Println("Dependency downloaded:", f)
-				}
-				success = true
-			}
-			if !success {
-				log.Fatalf("Unable to download dependency: %+v\n", file)
-			}
+			downloadPoolArray = append(downloadPoolArray, requester.NewDownloadPool(file.Downloads, map[string]string{"sha1": string(file.Hashes.Sha1)}, filepath.Base(file.Path), path.Join(serverDir, filepath.Dir(file.Path))))
 		}
 
+		downloadPools := requester.NewDownloadPools(requester.DefaultHttpClient, downloadPoolArray, downloadThreads, retryTimes)
+		downloadPools.Do()
 		log.Println("Extracting overrides...")
 		err = mrpack.ExtractOverrides(archivePath, serverDir)
 		if err != nil {
 			log.Fatalln(err)
+		}
+		uncleanNotification := false
+		for i := range downloadPools.DownloadPool {
+			dl := downloadPools.DownloadPool[i]
+			if !dl.Success {
+				uncleanNotification = true
+				log.Println("Dependency downloaded Fail:", dl.FileName)
+			}
+		}
+		if uncleanNotification {
+			log.Fatalln("Download failed,You can fix the error manually")
 		}
 
 		log.Println("Done :) Have a nice day ✌️")

@@ -1,4 +1,4 @@
-package http
+package requester
 
 import (
 	"encoding/json"
@@ -17,20 +17,20 @@ type ErrorModel interface {
 	String() string
 }
 
-var Instance = NewHTTPClient()
+var DefaultHttpClient = NewHTTPClient()
 
-func (client *Client) GetJson(url string, respModel interface{}, errModel ErrorModel) error {
+func (httpClient *HTTPClient) GetJson(url string, respModel interface{}, errModel ErrorModel) error {
 	request, err := http.NewRequest(http.MethodGet, url, nil)
 	if err != nil {
 		return err
 	}
 
-	request.Header.Set("User-Agent", client.UserAgent)
+	request.Header.Set("User-Agent", httpClient.UserAgent)
 	request.Header.Set("Accept", "application/json")
 
 	request.Close = true
 
-	response, err := client.Do(request)
+	response, err := httpClient.Do(request)
 	if err != nil {
 		return err
 	}
@@ -57,17 +57,17 @@ func (client *Client) GetJson(url string, respModel interface{}, errModel ErrorM
 	return nil
 }
 
-func (client *Client) DownloadFile(url string, downloadDir string, fileName string) (string, error) {
+func (httpClient *HTTPClient) DownloadFile(url string, downloadDir string, fileName string) (string, error) {
 	// TODO: hashsum based local file cache
 
 	request, err := http.NewRequest(http.MethodGet, url, nil)
 	if err != nil {
 		return "", err
 	}
-	request.Header.Set("User-Agent", client.UserAgent)
+	request.Header.Set("User-Agent", httpClient.UserAgent)
 	request.Close = true
 
-	response, err := client.Do(request)
+	response, err := httpClient.Do(request)
 	if err != nil {
 		return "", err
 	}
