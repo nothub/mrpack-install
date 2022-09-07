@@ -172,6 +172,12 @@ var rootCmd = &cobra.Command{
 		// download mods
 		log.Printf("Downloading %v dependencies...\n", len(index.Files))
 
+		retryTimes, err := cmd.Flags().GetInt("retry-times")
+		if err != nil {
+			retryTimes = 3
+			log.Println(err)
+		}
+		
 		var wg sync.WaitGroup
 		ch := make(chan struct{}, downloadThreads)
 		var downloadFailFiles []string
@@ -189,7 +195,7 @@ var rootCmd = &cobra.Command{
 				success := false
 				for _, downloadLink := range file.Downloads {
 					// when download failed retry
-					for retryTime := 0; retryTime < 3; retryTime++ {
+					for retryTime := 0; retryTime < retryTimes; retryTime++ {
 						//download file
 						f, err := requester.DefaultHttpClient.DownloadFile(downloadLink, downloadDir, fileName)
 						if err != nil {
