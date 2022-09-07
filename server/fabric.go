@@ -12,10 +12,10 @@ type Fabric struct {
 	FabricVersion    string
 }
 
-func (supplier *Fabric) Provide(serverDir string, serverFile string) error {
-	loaderVersion := supplier.FabricVersion
+func (provider *Fabric) Provide(serverDir string, serverFile string) error {
+	loaderVersion := provider.FabricVersion
 	if loaderVersion == "" || loaderVersion == "latest" {
-		latestLoaderVersion, err := latestFabricLoaderVersion(supplier.MinecraftVersion)
+		latestLoaderVersion, err := latestFabricLoaderVersion(provider.MinecraftVersion)
 		if err != nil {
 			return err
 		}
@@ -27,7 +27,7 @@ func (supplier *Fabric) Provide(serverDir string, serverFile string) error {
 		return err
 	}
 
-	versionTriple := supplier.MinecraftVersion + "/" + loaderVersion + "/" + installerVersion
+	versionTriple := provider.MinecraftVersion + "/" + loaderVersion + "/" + installerVersion
 	u, err := url.Parse("https://meta.fabricmc.net/v2/versions/loader/" + versionTriple + "/server/jar")
 	if err != nil {
 		return err

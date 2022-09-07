@@ -2,7 +2,6 @@ package server
 
 import (
 	"errors"
-	"log"
 	"os"
 )
 
@@ -11,12 +10,12 @@ type Spigot struct {
 	SpigotVersion    string
 }
 
-func (supplier *Spigot) Provide(serverDir string, serverFile string) error {
+func (provider *Spigot) Provide(serverDir string, serverFile string) error {
 	return errors.New("spigot provider not yet implemented")
 
 	err := os.MkdirAll("work/spigot", 0755)
 	if err != nil {
-		log.Fatalln(err)
+		return err
 	}
 
 	// TODO: download https://hub.spigotmc.org/jenkins/job/BuildTools/lastSuccessfulBuild/artifact/target/BuildTools.jar

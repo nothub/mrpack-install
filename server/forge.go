@@ -9,6 +9,6 @@ type Forge struct {
 	ForgeVersion     string
 }
 
-func (supplier *Forge) Provide(serverDir string, serverFile string) error {
+func (provider *Forge) Provide(serverDir string, serverFile string) error {
 	return errors.New("forge provider not yet implemented")
 }

@@ -45,7 +45,7 @@ var serverCmd = &cobra.Command{
 		}
 
 		if minecraftVersion == "" || minecraftVersion == "latest" {
-			latestMinecraftVersion, err := mojang.LatestVersion()
+			latestMinecraftVersion, err := mojang.LatestRelease()
 			if err != nil {
 				log.Fatalln(err)
 			}
