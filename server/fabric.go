@@ -2,6 +2,7 @@ package server
 
 import (
 	"errors"
+	"fmt"
 	"github.com/nothub/mrpack-install/requester"
 	"net/url"
 )
@@ -11,28 +12,34 @@ type Fabric struct {
 	FabricVersion    string
 }
 
-func (supplier *Fabric) GetUrl() (string, error) {
+func (supplier *Fabric) Provide(serverDir string, serverFile string) error {
 	loaderVersion := supplier.FabricVersion
 	if loaderVersion == "" || loaderVersion == "latest" {
 		latestLoaderVersion, err := latestFabricLoaderVersion(supplier.MinecraftVersion)
 		if err != nil {
-			return "", err
+			return err
 		}
 		loaderVersion = latestLoaderVersion
 	}
 
 	installerVersion, err := latestFabricInstallerVersion()
 	if err != nil {
-		return "", err
+		return err
 	}
 
 	versionTriple := supplier.MinecraftVersion + "/" + loaderVersion + "/" + installerVersion
 	u, err := url.Parse("https://meta.fabricmc.net/v2/versions/loader/" + versionTriple + "/server/jar")
 	if err != nil {
-		return "", err
+		return err
 	}
 
-	return u.String(), nil
+	file, err := requester.DefaultHttpClient.DownloadFile(u.String(), serverDir, serverFile)
+	if err != nil {
+		return err
+	}
+
+	fmt.Println("Server jar downloaded to:", file)
+	return nil
 }
 
 func latestFabricLoaderVersion(mcVer string) (string, error) {

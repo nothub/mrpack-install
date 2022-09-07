@@ -2,6 +2,7 @@ package server
 
 import (
 	"errors"
+	"fmt"
 	"github.com/nothub/mrpack-install/requester"
 	"strconv"
 )
@@ -11,7 +12,7 @@ type Paper struct {
 	PaperVersion     string
 }
 
-func (supplier *Paper) GetUrl() (string, error) {
+func (supplier *Paper) Provide(serverDir string, serverFile string) error {
 	var response struct {
 		Builds []struct {
 			Id        int    `json:"build"`
@@ -26,13 +27,21 @@ func (supplier *Paper) GetUrl() (string, error) {
 	}
 	err := requester.DefaultHttpClient.GetJson("https://api.papermc.io/v2/projects/paper/versions/"+supplier.MinecraftVersion+"/builds", &response, nil)
 	if err != nil {
-		return "", err
+		return err
 	}
 	for i := range response.Builds {
 		i = len(response.Builds) - 1 - i
-		if response.Builds[i].Channel == "default" {
-			return "https://api.papermc.io/v2/projects/paper/versions/" + supplier.MinecraftVersion + "/builds/" + strconv.Itoa(response.Builds[i].Id) + "/downloads/" + response.Builds[i].Downloads.Application.Name, nil
+		b := response.Builds[i]
+		if b.Channel == "default" {
+			u := "https://api.papermc.io/v2/projects/paper/versions/" + supplier.MinecraftVersion + "/builds/" + strconv.Itoa(b.Id) + "/downloads/" + b.Downloads.Application.Name
+			file, err := requester.DefaultHttpClient.DownloadFile(u, serverDir, serverFile)
+			if err != nil {
+				return err
+			}
+
+			fmt.Println("Server jar downloaded to:", file)
+			return nil
 		}
 	}
-	return "", errors.New("no stable paper release found")
+	return errors.New("no stable paper release found")
 }

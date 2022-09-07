@@ -1,5 +1,5 @@
 package server
 
-type DownloadSupplier interface {
-	GetUrl() (string, error)
+type Provider interface {
+	Provide(serverDir string, serverFile string) error
 }

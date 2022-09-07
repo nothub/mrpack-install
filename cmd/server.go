@@ -1,24 +1,21 @@
 package cmd
 
 import (
-	"fmt"
 	"github.com/nothub/mrpack-install/mojang"
-	"github.com/nothub/mrpack-install/requester"
 	"github.com/nothub/mrpack-install/server"
 	"github.com/spf13/cobra"
 	"log"
-	"os"
 )
 
 func init() {
 	serverCmd.Flags().String("minecraft-version", "latest", "Minecraft version")
-	serverCmd.Flags().String("loader-version", "latest", "Mod loader version")
+	serverCmd.Flags().String("flavor-version", "latest", "Flavor build version")
 	serverCmd.Flags().String("server-dir", "mc", "Server directory path")
 	serverCmd.Flags().String("server-file", "", "Server jar file name")
 	/*
 	   TODO: eula flag
 	   TODO: ops flag
-	   TODO: whitelist flag
+	   TODO: whitelist flags
 	*/
 	rootCmd.AddCommand(serverCmd)
 }
@@ -34,7 +31,7 @@ var serverCmd = &cobra.Command{
 		if err != nil {
 			log.Fatalln(err)
 		}
-		loaderVersion, err := cmd.Flags().GetString("loader-version")
+		flavorVersion, err := cmd.Flags().GetString("flavor-version")
 		if err != nil {
 			log.Fatalln(err)
 		}
@@ -55,50 +52,42 @@ var serverCmd = &cobra.Command{
 			minecraftVersion = latestMinecraftVersion
 		}
 
-		var supplier server.DownloadSupplier = nil
+		var provider server.Provider = nil
 		switch args[0] {
 		case "vanilla":
-			log.Fatalln("Not yet implemented!")
-		case "fabric":
-			supplier = &server.Fabric{
+			provider = &server.Vanilla{
 				MinecraftVersion: minecraftVersion,
-				FabricVersion:    loaderVersion,
+			}
+		case "fabric":
+			provider = &server.Fabric{
+				MinecraftVersion: minecraftVersion,
+				FabricVersion:    flavorVersion,
+			}
+		case "quilt":
+			provider = &server.Quilt{
+				MinecraftVersion: minecraftVersion,
+				QuiltVersion:     flavorVersion,
 			}
 		case "forge":
-			log.Fatalln("Not yet implemented!")
-		case "quilt":
-			err = os.MkdirAll("work/quilt", 0755)
-			if err != nil {
-				log.Fatalln(err)
-			}
-			// download https://maven.quiltmc.org/repository/release/org/quiltmc/quilt-installer/latest/quilt-installer-latest.jar
-			// java -jar quilt-installer-latest.jar install server ${minecraftVersion} --download-server
-			log.Fatalln("Not yet implemented!")
-		case "paper":
-			supplier = &server.Paper{
+			provider = &server.Forge{
 				MinecraftVersion: minecraftVersion,
-				PaperVersion:     loaderVersion,
+				ForgeVersion:     flavorVersion,
+			}
+		case "paper":
+			provider = &server.Paper{
+				MinecraftVersion: minecraftVersion,
+				PaperVersion:     flavorVersion,
 			}
 		case "spigot":
-			err = os.MkdirAll("work/spigot", 0755)
-			if err != nil {
-				log.Fatalln(err)
+			provider = &server.Spigot{
+				MinecraftVersion: minecraftVersion,
+				SpigotVersion:    flavorVersion,
 			}
-			// download https://hub.spigotmc.org/jenkins/job/BuildTools/lastSuccessfulBuild/artifact/target/BuildTools.jar
-			// git config --global --unset core.autocrlf
-			// java -jar BuildTools.jar --rev ${minecraftVersion}
-			log.Fatalln("Not yet implemented!")
 		}
 
-		url, err := supplier.GetUrl()
+		err = provider.Provide(serverDir, serverFile)
 		if err != nil {
 			log.Fatalln(err)
 		}
-
-		file, err := requester.DefaultHttpClient.DownloadFile(url, serverDir, serverFile)
-		if err != nil {
-			return
-		}
-		fmt.Println("Server jar downloaded to:", file)
 	},
 }

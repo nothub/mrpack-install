@@ -5,9 +5,9 @@ import (
 	"github.com/nothub/mrpack-install/modrinth/mrpack"
 	"github.com/nothub/mrpack-install/requester"
 	"github.com/nothub/mrpack-install/server"
+	"github.com/nothub/mrpack-install/util"
 	"github.com/spf13/cobra"
 	"log"
-	"net/url"
 	"os"
 	"path"
 	"path/filepath"
@@ -75,10 +75,10 @@ var rootCmd = &cobra.Command{
 		}
 
 		archivePath := ""
-		if isFilePath(input) {
+		if util.FileExists(input) {
 			archivePath = input
 
-		} else if isUrl(input) {
+		} else if util.IsValidUrl(input) {
 			log.Println("Downloading mrpack file from", args)
 			file, err := requester.DefaultHttpClient.DownloadFile(input, serverDir, "")
 			if err != nil {
@@ -138,31 +138,25 @@ var rootCmd = &cobra.Command{
 			log.Fatalln(err)
 		}
 		log.Println("Installing:", index.Name)
-
-		log.Printf("Loader dependencies: %+v\n", index.Dependencies)
+		log.Printf("Flavor dependencies: %+v\n", index.Dependencies)
 
 		// download server if not present
-		if serverFile != "" && !isFilePath(path.Join(serverDir, serverFile)) {
+		if serverFile != "" && !util.FileExists(path.Join(serverDir, serverFile)) {
 			// Determine server platform
-			var supplier server.DownloadSupplier = nil
+			var provider server.Provider = nil
 			if index.Dependencies.Fabric != "" {
-				supplier = &server.Fabric{
+				provider = &server.Fabric{
 					MinecraftVersion: index.Dependencies.Minecraft,
 					FabricVersion:    index.Dependencies.Fabric,
 				}
 			} else if index.Dependencies.Quilt != "" || index.Dependencies.Forge != "" {
-				log.Fatalln("Automatic server deployment not yet implemented for this platform! Supply the path to an existing server jar file with the --server-dir and --server-file flags.")
+				log.Fatalln("Automatic server deployment not yet implemented for this flavor! Supply the path to an existing server jar file with the --server-dir and --server-file flags.")
 			} else {
 				// TODO: vanilla server download
 			}
 
 			// Download server
-			u, err := supplier.GetUrl()
-			if err != nil {
-				log.Fatalln(err)
-			}
-			log.Println("Downloading server file from", u)
-			_, err = requester.DefaultHttpClient.DownloadFile(u, serverDir, serverFile)
+			err := provider.Provide(serverDir, serverFile)
 			if err != nil {
 				log.Fatalln(err)
 			}
@@ -202,22 +196,6 @@ var rootCmd = &cobra.Command{
 
 		log.Println("Done :) Have a nice day ✌️")
 	},
-}
-
-func isFilePath(s string) bool {
-	_, err := os.Stat(s)
-	return err == nil
-}
-
-func isUrl(s string) bool {
-	u, err := url.Parse(s)
-	if err != nil {
-		return false
-	}
-	if u.Scheme == "" {
-		return false
-	}
-	return true
 }
 
 func Execute() {
