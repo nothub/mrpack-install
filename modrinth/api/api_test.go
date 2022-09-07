@@ -27,7 +27,7 @@ func Test_GetProject_Success(t *testing.T) {
 func Test_GetProject_404(t *testing.T) {
 	t.Parallel()
 	_, err := client.GetProject("x")
-	if err.Error() != "requester status 404" {
+	if err.Error() != "http status 404" {
 		t.Fatal("wrong status!")
 	}
 }

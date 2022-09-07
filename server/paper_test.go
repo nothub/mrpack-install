@@ -47,7 +47,7 @@ func Test_Paper_Empty_Version(t *testing.T) {
 		MinecraftVersion: "1.9001.42",
 	}
 	_, err := supplier.GetUrl()
-	if err.Error() != "requester status 404" {
+	if err.Error() != "http status 404" {
 		t.Fatal("wrong status!")
 	}
 }

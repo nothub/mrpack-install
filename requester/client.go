@@ -44,14 +44,14 @@ func (httpClient *HTTPClient) GetJson(url string, respModel interface{}, errMode
 
 	if response.StatusCode < http.StatusOK || response.StatusCode >= http.StatusBadRequest {
 		if errModel == nil || json.NewDecoder(response.Body).Decode(&errModel) != nil {
-			return errors.New("requester status " + strconv.Itoa(response.StatusCode))
+			return errors.New("http status " + strconv.Itoa(response.StatusCode))
 		}
-		return errors.New("requester status " + strconv.Itoa(response.StatusCode) + " - " + errModel.String())
+		return errors.New("http status " + strconv.Itoa(response.StatusCode) + " - " + errModel.String())
 	}
 
 	err = json.NewDecoder(response.Body).Decode(&respModel)
 	if err != nil {
-		return errors.New("requester status " + strconv.Itoa(response.StatusCode) + " - " + err.Error())
+		return errors.New("http status " + strconv.Itoa(response.StatusCode) + " - " + err.Error())
 	}
 
 	return nil
