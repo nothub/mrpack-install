@@ -9,7 +9,7 @@ import (
 
 func init() {
 	serverCmd.Flags().String("minecraft-version", "latest", "Minecraft version")
-	serverCmd.Flags().String("flavor-version", "latest", "Flavor build version")
+	serverCmd.Flags().String("flavor-version", "latest", "Flavor version")
 	serverCmd.Flags().String("server-dir", "mc", "Server directory path")
 	serverCmd.Flags().String("server-file", "", "Server jar file name")
 	/*
@@ -21,9 +21,13 @@ func init() {
 }
 
 var serverCmd = &cobra.Command{
-	Use:       "server (vanilla | fabric | quilt | forge | paper | spigot)",
-	Short:     "Prepare a server environment",
-	Long:      `Download and configure one of several Minecraft server flavors.`,
+	Use:   "server (vanilla | fabric | quilt | forge | paper | spigot)",
+	Short: "Prepare a plain server environment",
+	Long: `Download and configure one of several Minecraft server flavors.
+
+Usage Examples:
+  mrpack-install server fabric --server-dir fabric-srv
+  mrpack-install server paper --minecraft-version 1.18.2 --server-file srv.jar`,
 	Args:      cobra.ExactValidArgs(1),
 	ValidArgs: []string{"vanilla", "fabric", "quilt", "forge", "paper", "spigot"},
 	Run: func(cmd *cobra.Command, args []string) {
