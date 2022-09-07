@@ -9,13 +9,14 @@ import (
 type DownloadPool struct {
 	downloadLink []string
 	hash         map[string]string
-	fileName     string
+	FileName     string
 	downloadDir  string
+	Success      bool
 }
 
 type DownloadPools struct {
 	httpClient      *HTTPClient
-	downloadPool    []*DownloadPool
+	DownloadPool    []*DownloadPool
 	downloadThreads int
 	retryTimes      int
 }
@@ -25,31 +26,28 @@ func NewDownloadPools(httpClient *HTTPClient, downloadPool []*DownloadPool, down
 }
 
 func NewDownloadPool(downloadLink []string, hash map[string]string, fileName string, downloadDir string) *DownloadPool {
-	return &DownloadPool{downloadLink, hash, fileName, downloadDir}
+	return &DownloadPool{downloadLink, hash, fileName, downloadDir, false}
 }
 
-func (downloadPools *DownloadPools) Do() map[string]string {
+func (downloadPools *DownloadPools) Do() {
 	var wg sync.WaitGroup
 	ch := make(chan struct{}, downloadPools.downloadThreads)
-	downloadFailFiles := make(map[string]string)
-	for i := range downloadPools.downloadPool {
-		file := downloadPools.downloadPool[i]
+	for i := range downloadPools.DownloadPool {
+		file := downloadPools.DownloadPool[i]
 
 		//goroutine
 		ch <- struct{}{}
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			success := false
 			for _, downloadLink := range file.downloadLink {
 				// when download failed retry
 				for retryTime := 0; retryTime < downloadPools.retryTimes; retryTime++ {
 
 					//download file
-					f, err := downloadPools.httpClient.DownloadFile(downloadLink, file.downloadDir, file.fileName)
+					f, err := downloadPools.httpClient.DownloadFile(downloadLink, file.downloadDir, file.FileName)
 					if err != nil {
-						log.Println("Downloaded:", file.fileName, err, "retry times:", retryTime)
-						downloadFailFiles[file.fileName] = "Download Failed"
+						log.Println("Download failed for:", file.FileName, err, "retry times:", retryTime)
 						continue
 					}
 
@@ -58,17 +56,15 @@ func (downloadPools *DownloadPools) Do() map[string]string {
 						_, err = util.CheckFileSha1(sha1code, f)
 					}
 					if err != nil {
-						log.Println("Downloaded:", file.fileName, err, "retry times:", retryTime)
-						downloadFailFiles[file.fileName] = "Hash Check Failed"
+						log.Println("Hash check failed for:", file.FileName, err, "retry times:", retryTime)
 						continue
 					}
 
 					log.Println("Downloaded:", f)
-					success = true
+					file.Success = true
 					break
 				}
-				if success {
-					delete(downloadFailFiles, file.fileName)
+				if file.Success {
 					break
 				}
 			}
@@ -76,5 +72,4 @@ func (downloadPools *DownloadPools) Do() map[string]string {
 		}()
 	}
 	wg.Wait()
-	return downloadFailFiles
 }

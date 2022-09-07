@@ -178,27 +178,25 @@ var rootCmd = &cobra.Command{
 			if file.Env.Server == modrinth.UnsupportedEnvSupport {
 				continue
 			}
-			downloadPoolArray = append(downloadPoolArray,
-				requester.NewDownloadPool(
-					file.Downloads,
-					map[string]string{"sha1": string(file.Hashes.Sha1)},
-					filepath.Base(file.Path),
-					path.Join(serverDir, filepath.Dir(file.Path)),
-				),
-			)
+			downloadPoolArray = append(downloadPoolArray, requester.NewDownloadPool(file.Downloads, map[string]string{"sha1": string(file.Hashes.Sha1)}, filepath.Base(file.Path), path.Join(serverDir, filepath.Dir(file.Path))))
 		}
 
 		downloadPools := requester.NewDownloadPools(requester.DefaultHttpClient, downloadPoolArray, downloadThreads, retryTimes)
-		downloadFailFiles := downloadPools.Do()
+		downloadPools.Do()
 		log.Println("Extracting overrides...")
 		err = mrpack.ExtractOverrides(archivePath, serverDir)
 		if err != nil {
 			log.Fatalln(err)
 		}
-		for key, value := range downloadFailFiles {
-			log.Println("Dependency downloaded Fail:", key, value)
+		uncleanNotification := false
+		for i := range downloadPools.DownloadPool {
+			dl := downloadPools.DownloadPool[i]
+			if !dl.Success {
+				uncleanNotification = true
+				log.Println("Dependency downloaded Fail:", dl.FileName)
+			}
 		}
-		if len(downloadFailFiles) != 0 {
+		if uncleanNotification {
 			log.Fatalln("Download failed,You can fix the error manually")
 		}
 
