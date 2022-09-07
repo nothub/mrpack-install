@@ -29,10 +29,8 @@ func init() {
 var rootCmd = &cobra.Command{
 	Use:   "mrpack-install (<filepath> | <url> | <slug> [<version>] | <id> [<version>])",
 	Short: "Modrinth Modpack server deployment",
-	Long: `Deploys a Modrinth modpack including Minecraft server.
-
-Usage Examples:
-  mrpack-install downloads/cool-pack.mrpack
+	Long:  `Deploys a Modrinth modpack including Minecraft server.`,
+	Example: `  mrpack-install downloads/cool-pack.mrpack
   mrpack-install https://example.org/data/cool-pack.mrpack
   mrpack-install hexmc-modpack --server-file server.jar
   mrpack-install yK0ISmKn 1.0.0-1.18 --server-dir mcserver

@@ -23,10 +23,8 @@ func init() {
 var serverCmd = &cobra.Command{
 	Use:   "server (vanilla | fabric | quilt | forge | paper | spigot)",
 	Short: "Prepare a plain server environment",
-	Long: `Download and configure one of several Minecraft server flavors.
-
-Usage Examples:
-  mrpack-install server fabric --server-dir fabric-srv
+	Long:  `Download and configure one of several Minecraft server flavors.`,
+	Example: `  mrpack-install server fabric --server-dir fabric-srv
   mrpack-install server paper --minecraft-version 1.18.2 --server-file srv.jar`,
 	Args:      cobra.ExactValidArgs(1),
 	ValidArgs: []string{"vanilla", "fabric", "quilt", "forge", "paper", "spigot"},

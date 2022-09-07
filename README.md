@@ -10,16 +10,16 @@ A cli application for installing Minecraft servers and [Modrinth](https://modrin
 ```
 Deploys a Modrinth modpack including Minecraft server.
 
-Usage Examples:
+Usage:
+  mrpack-install (<filepath> | <url> | <slug> [<version>] | <id> [<version>]) [flags]
+  mrpack-install [command]
+
+Examples:
   mrpack-install downloads/cool-pack.mrpack
   mrpack-install https://example.org/data/cool-pack.mrpack
   mrpack-install hexmc-modpack --server-file server.jar
   mrpack-install yK0ISmKn 1.0.0-1.18 --server-dir mcserver
   mrpack-install communitypack9000 --host api.labrinth.example.org
-
-Usage:
-  mrpack-install (<filepath> | <url> | <slug> [<version>] | <id> [<version>]) [flags]
-  mrpack-install [command]
 
 Available Commands:
   completion  Generate the autocompletion script for the specified shell
@@ -46,12 +46,12 @@ Use "mrpack-install [command] --help" for more information about a command.
 ```
 Download and configure one of several Minecraft server flavors.
 
-Usage Examples:
-  mrpack-install server fabric --server-dir fabric-srv
-  mrpack-install server paper --minecraft-version 1.18.2 --server-file srv.jar
-
 Usage:
   mrpack-install server (vanilla | fabric | quilt | forge | paper | spigot) [flags]
+
+Examples:
+  mrpack-install server fabric --server-dir fabric-srv
+  mrpack-install server paper --minecraft-version 1.18.2 --server-file srv.jar
 
 Flags:
       --flavor-version string      Flavor version (default "latest")
