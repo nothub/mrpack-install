@@ -25,15 +25,19 @@ func (supplier *Paper) Provide(serverDir string, serverFile string) error {
 			} `json:"downloads"`
 		} `json:"builds"`
 	}
-	err := requester.DefaultHttpClient.GetJson("https://api.papermc.io/v2/projects/paper/versions/"+supplier.MinecraftVersion+"/builds", &response, nil)
+
+	err := requester.DefaultHttpClient.GetJson("https://api.papermc.io/v2/projects/paper/versions/"+
+		supplier.MinecraftVersion+"/builds", &response, nil)
 	if err != nil {
 		return err
 	}
+
 	for i := range response.Builds {
 		i = len(response.Builds) - 1 - i
-		b := response.Builds[i]
-		if b.Channel == "default" {
-			u := "https://api.papermc.io/v2/projects/paper/versions/" + supplier.MinecraftVersion + "/builds/" + strconv.Itoa(b.Id) + "/downloads/" + b.Downloads.Application.Name
+		if response.Builds[i].Channel == "default" {
+			u := "https://api.papermc.io/v2/projects/paper/versions/" + supplier.MinecraftVersion +
+				"/builds/" + strconv.Itoa(response.Builds[i].Id) +
+				"/downloads/" + response.Builds[i].Downloads.Application.Name
 			file, err := requester.DefaultHttpClient.DownloadFile(u, serverDir, serverFile)
 			if err != nil {
 				return err
@@ -43,5 +47,6 @@ func (supplier *Paper) Provide(serverDir string, serverFile string) error {
 			return nil
 		}
 	}
+
 	return errors.New("no stable paper release found")
 }

@@ -12,6 +12,8 @@ type Spigot struct {
 }
 
 func (supplier *Spigot) Provide(serverDir string, serverFile string) error {
+	return errors.New("spigot provider not yet implemented")
+
 	err := os.MkdirAll("work/spigot", 0755)
 	if err != nil {
 		log.Fatalln(err)
@@ -21,5 +23,5 @@ func (supplier *Spigot) Provide(serverDir string, serverFile string) error {
 	// TODO: git config --global --unset core.autocrlf
 	// TODO: java -jar BuildTools.jar --rev ${minecraftVersion}
 
-	return errors.New("spigot provider not yet implemented")
+	return nil
 }

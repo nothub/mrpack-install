@@ -52,39 +52,11 @@ var serverCmd = &cobra.Command{
 			minecraftVersion = latestMinecraftVersion
 		}
 
-		var provider server.Provider = nil
-		switch args[0] {
-		case "vanilla":
-			provider = &server.Vanilla{
-				MinecraftVersion: minecraftVersion,
-			}
-		case "fabric":
-			provider = &server.Fabric{
-				MinecraftVersion: minecraftVersion,
-				FabricVersion:    flavorVersion,
-			}
-		case "quilt":
-			provider = &server.Quilt{
-				MinecraftVersion: minecraftVersion,
-				QuiltVersion:     flavorVersion,
-			}
-		case "forge":
-			provider = &server.Forge{
-				MinecraftVersion: minecraftVersion,
-				ForgeVersion:     flavorVersion,
-			}
-		case "paper":
-			provider = &server.Paper{
-				MinecraftVersion: minecraftVersion,
-				PaperVersion:     flavorVersion,
-			}
-		case "spigot":
-			provider = &server.Spigot{
-				MinecraftVersion: minecraftVersion,
-				SpigotVersion:    flavorVersion,
-			}
+		flavor := args[0]
+		provider, err := server.NewProvider(flavor, minecraftVersion, flavorVersion)
+		if err != nil {
+			log.Fatalln(err)
 		}
-
 		err = provider.Provide(serverDir, serverFile)
 		if err != nil {
 			log.Fatalln(err)

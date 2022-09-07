@@ -1,6 +1,8 @@
 package server
 
-import "errors"
+import (
+	"errors"
+)
 
 type Forge struct {
 	MinecraftVersion string

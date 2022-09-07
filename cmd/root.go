@@ -21,7 +21,7 @@ func init() {
 	rootCmd.Flags().String("server-dir", "mc", "Server directory path")
 	rootCmd.Flags().String("server-file", "", "Server jar file name")
 	rootCmd.Flags().String("proxy", "", "Use a proxy to download")
-	rootCmd.Flags().Int("download-thread", 8, "Download threads")
+	rootCmd.Flags().Int("download-threads", 8, "Download threads")
 	rootCmd.Flags().Int("retry-times", 3, "Number of retries when a download fails")
 }
 
@@ -52,7 +52,7 @@ var rootCmd = &cobra.Command{
 				log.Fatalln(err)
 			}
 		}
-		downloadThreads, err := cmd.Flags().GetInt("download-thread")
+		downloadThreads, err := cmd.Flags().GetInt("download-threads")
 		if err != nil || downloadThreads > 64 {
 			downloadThreads = 8
 			log.Println(err)
@@ -75,7 +75,7 @@ var rootCmd = &cobra.Command{
 		}
 
 		archivePath := ""
-		if util.FileExists(input) {
+		if util.PathIsFile(input) {
 			archivePath = input
 
 		} else if util.IsValidUrl(input) {
@@ -141,32 +141,44 @@ var rootCmd = &cobra.Command{
 		log.Printf("Flavor dependencies: %+v\n", index.Dependencies)
 
 		// download server if not present
-		if serverFile != "" && !util.FileExists(path.Join(serverDir, serverFile)) {
-			// Determine server platform
-			var provider server.Provider = nil
+		if !util.PathIsFile(path.Join(serverDir, serverFile)) {
+			log.Println("Server file not present, downloading...")
+			log.Println("(Point --server-dir and --server-file flags for an existing server file to skip this step.)")
+
+			var provider server.Provider
 			if index.Dependencies.Fabric != "" {
-				provider = &server.Fabric{
-					MinecraftVersion: index.Dependencies.Minecraft,
-					FabricVersion:    index.Dependencies.Fabric,
+				provider, err = server.NewProvider("fabric", index.Dependencies.Minecraft, index.Dependencies.Fabric)
+				if err != nil {
+					log.Fatalln(err)
 				}
-			} else if index.Dependencies.Quilt != "" || index.Dependencies.Forge != "" {
-				log.Fatalln("Automatic server deployment not yet implemented for this flavor! Supply the path to an existing server jar file with the --server-dir and --server-file flags.")
+			} else if index.Dependencies.Quilt != "" {
+				provider, err = server.NewProvider("quilt", index.Dependencies.Minecraft, index.Dependencies.Quilt)
+				if err != nil {
+					log.Fatalln(err)
+				}
+			} else if index.Dependencies.Forge != "" {
+				provider, err = server.NewProvider("forge", index.Dependencies.Minecraft, index.Dependencies.Forge)
+				if err != nil {
+					log.Fatalln(err)
+				}
 			} else {
-				// TODO: vanilla server download
+				provider, err = server.NewProvider("vanilla", index.Dependencies.Minecraft, "")
+				if err != nil {
+					log.Fatalln(err)
+				}
 			}
 
-			// Download server
-			err := provider.Provide(serverDir, serverFile)
+			err = provider.Provide(serverDir, serverFile)
 			if err != nil {
 				log.Fatalln(err)
 			}
 		} else {
-			log.Println("Server jar file already present, skipping download...")
+			log.Println("Server file already present, proceeding...")
 		}
 
-		// download mods
+		// mod downloads
 		log.Printf("Downloading %v dependencies...\n", len(index.Files))
-		var downloadPoolArray []*requester.DownloadPool
+		var downloadPoolArray []*requester.Download
 		for i := range index.Files {
 			file := index.Files[i]
 			if file.Env.Server == modrinth.UnsupportedEnvSupport {
@@ -174,26 +186,27 @@ var rootCmd = &cobra.Command{
 			}
 			downloadPoolArray = append(downloadPoolArray, requester.NewDownloadPool(file.Downloads, map[string]string{"sha1": string(file.Hashes.Sha1)}, filepath.Base(file.Path), path.Join(serverDir, filepath.Dir(file.Path))))
 		}
-
 		downloadPools := requester.NewDownloadPools(requester.DefaultHttpClient, downloadPoolArray, downloadThreads, retryTimes)
 		downloadPools.Do()
+		modsUnclean := false
+		for i := range downloadPools.Downloads {
+			dl := downloadPools.Downloads[i]
+			if !dl.Success {
+				modsUnclean = true
+				log.Println("Dependency downloaded Fail:", dl.FileName)
+			}
+		}
+
+		// overrides
 		log.Println("Extracting overrides...")
 		err = mrpack.ExtractOverrides(archivePath, serverDir)
 		if err != nil {
 			log.Fatalln(err)
 		}
-		uncleanNotification := false
-		for i := range downloadPools.DownloadPool {
-			dl := downloadPools.DownloadPool[i]
-			if !dl.Success {
-				uncleanNotification = true
-				log.Println("Dependency downloaded Fail:", dl.FileName)
-			}
-		}
-		if uncleanNotification {
-			log.Fatalln("Download failed,You can fix the error manually")
-		}
 
+		if modsUnclean {
+			log.Println("There have been problems downloading downloading mods, you probably have to fix some dependency problems manually!")
+		}
 		log.Println("Done :) Have a nice day ✌️")
 	},
 }
