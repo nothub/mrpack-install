@@ -5,16 +5,13 @@ import (
 	"github.com/nothub/mrpack-install/modrinth/mrpack"
 	"github.com/nothub/mrpack-install/requester"
 	"github.com/nothub/mrpack-install/server"
-	"github.com/nothub/mrpack-install/util"
+	"github.com/spf13/cobra"
 	"log"
 	"net/url"
 	"os"
 	"path"
 	"path/filepath"
 	"strings"
-	"sync"
-
-	"github.com/spf13/cobra"
 )
 
 func init() {
@@ -45,7 +42,6 @@ var rootCmd = &cobra.Command{
 		if err != nil {
 			log.Fatalln(err)
 		}
-
 		proxy, err := cmd.Flags().GetString("proxy")
 		if err != nil {
 			log.Fatalln(err)
@@ -59,6 +55,11 @@ var rootCmd = &cobra.Command{
 		downloadThreads, err := cmd.Flags().GetInt("download-thread")
 		if err != nil || downloadThreads > 64 {
 			downloadThreads = 8
+			log.Println(err)
+		}
+		retryTimes, err := cmd.Flags().GetInt("retry-times")
+		if err != nil {
+			retryTimes = 3
 			log.Println(err)
 		}
 
@@ -171,66 +172,31 @@ var rootCmd = &cobra.Command{
 
 		// download mods
 		log.Printf("Downloading %v dependencies...\n", len(index.Files))
-
-		retryTimes, err := cmd.Flags().GetInt("retry-times")
-		if err != nil {
-			retryTimes = 3
-			log.Println(err)
-		}
-		
-		var wg sync.WaitGroup
-		ch := make(chan struct{}, downloadThreads)
-		var downloadFailFiles []string
+		var downloadPoolArray []*requester.DownloadPool
 		for i := range index.Files {
 			file := index.Files[i]
 			if file.Env.Server == modrinth.UnsupportedEnvSupport {
 				continue
 			}
-
-			//goroutine
-			ch <- struct{}{}
-			wg.Add(1)
-			go func(url []string, downloadDir string, fileName string) {
-				defer wg.Done()
-				success := false
-				for _, downloadLink := range file.Downloads {
-					// when download failed retry
-					for retryTime := 0; retryTime < retryTimes; retryTime++ {
-						//download file
-						f, err := requester.DefaultHttpClient.DownloadFile(downloadLink, downloadDir, fileName)
-						if err != nil {
-							log.Println("Dependency downloaded:", fileName, err, "retry times:", retryTime)
-							continue
-						}
-						//check sha1
-						_, err = util.CheckFileSha1(string(file.Hashes.Sha1), f)
-						if err != nil {
-							log.Println("Dependency downloaded:", fileName, err, "retry times:", retryTime)
-						} else {
-							log.Println("Dependency downloaded:", f)
-							success = true
-							break
-						}
-					}
-					if success {
-						break
-					}
-				}
-				if !success {
-					downloadFailFiles = append(downloadFailFiles, fileName)
-				}
-				<-ch
-			}(file.Downloads, path.Join(serverDir, filepath.Dir(file.Path)), filepath.Base(file.Path))
+			downloadPoolArray = append(downloadPoolArray,
+				requester.NewDownloadPool(
+					file.Downloads,
+					map[string]string{"sha1": string(file.Hashes.Sha1)},
+					filepath.Base(file.Path),
+					path.Join(serverDir, filepath.Dir(file.Path)),
+				),
+			)
 		}
-		wg.Wait()
 
+		downloadPools := requester.NewDownloadPools(requester.DefaultHttpClient, downloadPoolArray, downloadThreads, retryTimes)
+		downloadFailFiles := downloadPools.Do()
 		log.Println("Extracting overrides...")
 		err = mrpack.ExtractOverrides(archivePath, serverDir)
 		if err != nil {
 			log.Fatalln(err)
 		}
-		for _, downloadFailFile := range downloadFailFiles {
-			log.Println("Dependency downloaded Fail:", downloadFailFile)
+		for key, value := range downloadFailFiles {
+			log.Println("Dependency downloaded Fail:", key, value)
 		}
 		if len(downloadFailFiles) != 0 {
 			log.Fatalln("Download failed,You can fix the error manually")

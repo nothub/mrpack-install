@@ -11,9 +11,8 @@ import (
 
 type HTTPClient struct {
 	http.Client
-	insecureSkipVerify bool
-	UserAgent          string
-	transport          *http.Transport
+	UserAgent string
+	transport *http.Transport
 }
 
 // TODO: global lookup map host -> ratelimit hits left and sleep wait strategy
