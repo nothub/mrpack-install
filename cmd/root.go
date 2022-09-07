@@ -206,6 +206,9 @@ var rootCmd = &cobra.Command{
 							break
 						}
 					}
+					if success {
+						break
+					}
 				}
 				if !success {
 					downloadFailFiles = append(downloadFailFiles, fileName)
