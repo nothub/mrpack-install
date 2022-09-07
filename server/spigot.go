@@ -11,7 +11,7 @@ type Spigot struct {
 }
 
 func (provider *Spigot) Provide(serverDir string, serverFile string) error {
-	return errors.New("spigot provider not yet implemented")
+	return errors.New("spigot provider not implemented")
 
 	err := os.MkdirAll("work/spigot", 0755)
 	if err != nil {

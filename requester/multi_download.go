@@ -1,8 +1,8 @@
 package requester
 
 import (
+	"fmt"
 	"github.com/nothub/mrpack-install/util"
-	"log"
 	"sync"
 )
 
@@ -47,7 +47,7 @@ func (downloadPools *DownloadPools) Do() {
 					// download file
 					f, err := downloadPools.httpClient.DownloadFile(link, dl.downloadDir, dl.FileName)
 					if err != nil {
-						log.Println("Download failed for:", dl.FileName, err, "attempt:", retries+1)
+						fmt.Println("Download failed for:", dl.FileName, err, "attempt:", retries+1)
 						continue
 					}
 
@@ -56,11 +56,11 @@ func (downloadPools *DownloadPools) Do() {
 						_, err = util.CheckFileSha1(sha1code, f)
 					}
 					if err != nil {
-						log.Println("Hash check failed for:", dl.FileName, err, "attempt:", retries+1)
+						fmt.Println("Hash check failed for:", dl.FileName, err, "attempt:", retries+1)
 						continue
 					}
 
-					log.Println("Downloaded:", f)
+					fmt.Println("Downloaded:", f)
 					dl.Success = true
 					break
 				}

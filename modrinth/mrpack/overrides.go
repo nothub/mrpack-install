@@ -4,7 +4,6 @@ import (
 	"archive/zip"
 	"fmt"
 	"io"
-	"log"
 	"os"
 	"path"
 	"path/filepath"
@@ -66,7 +65,7 @@ func ExtractOverrides(zipFile string, target string) error {
 			return err
 		}
 
-		log.Println("Override file extracted:", targetPath)
+		fmt.Println("Override file extracted:", targetPath)
 	}
 
 	return nil

@@ -11,7 +11,7 @@ type Quilt struct {
 }
 
 func (provider *Quilt) Provide(serverDir string, serverFile string) error {
-	return errors.New("quilt provider not yet implemented")
+	return errors.New("quilt provider not implemented")
 
 	err := os.MkdirAll("work/quilt", 0755)
 	if err != nil {

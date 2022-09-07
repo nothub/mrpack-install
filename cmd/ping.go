@@ -2,10 +2,9 @@ package cmd
 
 import (
 	"fmt"
-	"log"
-
 	modrinth "github.com/nothub/mrpack-install/modrinth/api"
 	"github.com/spf13/cobra"
+	"log"
 )
 
 func init() {

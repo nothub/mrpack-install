@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"fmt"
 	modrinth "github.com/nothub/mrpack-install/modrinth/api"
 	"github.com/nothub/mrpack-install/modrinth/mrpack"
 	"github.com/nothub/mrpack-install/requester"
@@ -55,12 +56,12 @@ var rootCmd = &cobra.Command{
 		downloadThreads, err := cmd.Flags().GetInt("download-threads")
 		if err != nil || downloadThreads > 64 {
 			downloadThreads = 8
-			log.Println(err)
+			fmt.Println(err)
 		}
 		retryTimes, err := cmd.Flags().GetInt("retry-times")
 		if err != nil {
 			retryTimes = 3
-			log.Println(err)
+			fmt.Println(err)
 		}
 
 		input := args[0]
@@ -79,7 +80,7 @@ var rootCmd = &cobra.Command{
 			archivePath = input
 
 		} else if util.IsValidUrl(input) {
-			log.Println("Downloading mrpack file from", args)
+			fmt.Println("Downloading mrpack file from", args)
 			file, err := requester.DefaultHttpClient.DownloadFile(input, serverDir, "")
 			if err != nil {
 				log.Fatalln(err)
@@ -113,7 +114,7 @@ var rootCmd = &cobra.Command{
 
 			for i := range files {
 				if strings.HasSuffix(files[i].Filename, ".mrpack") {
-					log.Println("Downloading mrpack file from", files[i].Url)
+					fmt.Println("Downloading mrpack file from", files[i].Url)
 					file, err := requester.DefaultHttpClient.DownloadFile(files[i].Url, serverDir, "")
 					if err != nil {
 						log.Fatalln(err)
@@ -131,19 +132,19 @@ var rootCmd = &cobra.Command{
 			log.Fatalln("An error occured!")
 		}
 
-		log.Println("Processing mrpack file", archivePath)
+		fmt.Println("Processing mrpack file", archivePath)
 
 		index, err := mrpack.ReadIndex(archivePath)
 		if err != nil {
 			log.Fatalln(err)
 		}
-		log.Println("Installing:", index.Name)
-		log.Printf("Flavor dependencies: %+v\n", index.Dependencies)
+		fmt.Println("Installing:", index.Name)
+		fmt.Printf("Flavor dependencies: %+v\n", index.Dependencies)
 
 		// download server if not present
 		if !util.PathIsFile(path.Join(serverDir, serverFile)) {
-			log.Println("Server file not present, downloading...")
-			log.Println("(Point --server-dir and --server-file flags for an existing server file to skip this step.)")
+			fmt.Println("Server file not present, downloading...")
+			fmt.Println("(Point --server-dir and --server-file flags for an existing server file to skip this step.)")
 
 			var provider server.Provider
 			if index.Dependencies.Fabric != "" {
@@ -173,11 +174,11 @@ var rootCmd = &cobra.Command{
 				log.Fatalln(err)
 			}
 		} else {
-			log.Println("Server file already present, proceeding...")
+			fmt.Println("Server file already present, proceeding...")
 		}
 
 		// mod downloads
-		log.Printf("Downloading %v dependencies...\n", len(index.Files))
+		fmt.Printf("Downloading %v dependencies...\n", len(index.Files))
 		var downloads []*requester.Download
 		for i := range index.Files {
 			file := index.Files[i]
@@ -193,21 +194,21 @@ var rootCmd = &cobra.Command{
 			dl := downloadPools.Downloads[i]
 			if !dl.Success {
 				modsUnclean = true
-				log.Println("Dependency downloaded Fail:", dl.FileName)
+				fmt.Println("Dependency downloaded Fail:", dl.FileName)
 			}
 		}
 
 		// overrides
-		log.Println("Extracting overrides...")
+		fmt.Println("Extracting overrides...")
 		err = mrpack.ExtractOverrides(archivePath, serverDir)
 		if err != nil {
 			log.Fatalln(err)
 		}
 
 		if modsUnclean {
-			log.Println("There have been problems downloading downloading mods, you probably have to fix some dependency problems manually!")
+			fmt.Println("There have been problems downloading downloading mods, you probably have to fix some dependency problems manually!")
 		}
-		log.Println("Done :) Have a nice day ✌️")
+		fmt.Println("Done :) Have a nice day ✌️")
 	},
 }
 
