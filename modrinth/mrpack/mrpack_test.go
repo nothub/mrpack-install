@@ -1,5 +1,7 @@
 package mrpack
 
+// It is probably not ideal to run this in ci all the time 🙈
+/*
 import (
 	"github.com/nothub/mrpack-install/requester"
 	"log"
@@ -65,3 +67,4 @@ func Test_Overrides_Skyblocker(t *testing.T) {
 		t.Fatal(err)
 	}
 }
+*/
