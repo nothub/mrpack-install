@@ -11,6 +11,7 @@ import (
 	"path"
 	"path/filepath"
 	"strings"
+	"sync"
 
 	"github.com/spf13/cobra"
 )
@@ -22,6 +23,7 @@ func init() {
 	rootCmd.Flags().String("server-dir", "mc", "Server directory path")
 	rootCmd.Flags().String("server-file", "", "Server jar file name")
 	rootCmd.Flags().String("proxy", "", "Use a proxy to download")
+	rootCmd.Flags().Int("download-thread", 8, "Download threads")
 }
 
 var rootCmd = &cobra.Command{
@@ -51,6 +53,11 @@ var rootCmd = &cobra.Command{
 			if err != nil {
 				log.Fatalln(err)
 			}
+		}
+		downloadThreads, err := cmd.Flags().GetInt("download-thread")
+		if err != nil || downloadThreads > 64 {
+			downloadThreads = 8
+			log.Println(err)
 		}
 
 		input := args[0]
@@ -162,31 +169,45 @@ var rootCmd = &cobra.Command{
 
 		// download mods
 		log.Printf("Downloading %v dependencies...\n", len(index.Files))
+
+		var wg sync.WaitGroup
+		ch := make(chan struct{}, downloadThreads)
+		var downloadFailFiles []string
 		for i := range index.Files {
 			file := index.Files[i]
 			if file.Env.Server == modrinth.UnsupportedEnvSupport {
 				continue
 			}
-			success := false
-			// TODO: run x downloads parallel in goroutine
 			for j := range file.Downloads {
-				f, err := requester.DefaultHttpClient.DownloadFile(file.Downloads[j], path.Join(serverDir, filepath.Dir(file.Path)), filepath.Base(file.Path))
-				if err != nil {
-					log.Println(err)
-				} else {
-					log.Println("Dependency downloaded:", f)
-				}
-				success = true
-			}
-			if !success {
-				log.Fatalf("Unable to download dependency: %+v\n", file)
+				ch <- struct{}{}
+				wg.Add(1)
+				go func(url string, downloadDir string, fileName string) {
+					defer wg.Done()
+					f, err := requester.DefaultHttpClient.DownloadFile(url, downloadDir, fileName)
+					if err != nil {
+						// TODO: If the file download fails, retry the download
+						downloadFailFiles = append(downloadFailFiles, fileName)
+						log.Println(err)
+					} else {
+						log.Println("Dependency downloaded:", f)
+					}
+					// TODO: Verifying the file hash value
+					<-ch
+				}(file.Downloads[j], path.Join(serverDir, filepath.Dir(file.Path)), filepath.Base(file.Path))
 			}
 		}
+		wg.Wait()
 
 		log.Println("Extracting overrides...")
 		err = mrpack.ExtractOverrides(archivePath, serverDir)
 		if err != nil {
 			log.Fatalln(err)
+		}
+		for _, downloadFailFile := range downloadFailFiles {
+			log.Println("Dependency downloaded Fail:", downloadFailFile)
+		}
+		if len(downloadFailFiles) != 0 {
+			log.Fatalln("Download failed,You can fix the error manually")
 		}
 
 		log.Println("Done :) Have a nice day ✌️")
