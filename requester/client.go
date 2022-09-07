@@ -1,4 +1,4 @@
-package http
+package requester
 
 import (
 	"encoding/json"
@@ -17,20 +17,20 @@ type ErrorModel interface {
 	String() string
 }
 
-var Instance = NewHTTPClient()
+var DefaultHttpClient = NewHTTPClient()
 
-func (client *Client) GetJson(url string, respModel interface{}, errModel ErrorModel) error {
+func (httpClient *HTTPClient) GetJson(url string, respModel interface{}, errModel ErrorModel) error {
 	request, err := http.NewRequest(http.MethodGet, url, nil)
 	if err != nil {
 		return err
 	}
 
-	request.Header.Set("User-Agent", client.UserAgent)
+	request.Header.Set("User-Agent", httpClient.UserAgent)
 	request.Header.Set("Accept", "application/json")
 
 	request.Close = true
 
-	response, err := client.Do(request)
+	response, err := httpClient.Do(request)
 	if err != nil {
 		return err
 	}
@@ -44,30 +44,30 @@ func (client *Client) GetJson(url string, respModel interface{}, errModel ErrorM
 
 	if response.StatusCode < http.StatusOK || response.StatusCode >= http.StatusBadRequest {
 		if errModel == nil || json.NewDecoder(response.Body).Decode(&errModel) != nil {
-			return errors.New("http status " + strconv.Itoa(response.StatusCode))
+			return errors.New("requester status " + strconv.Itoa(response.StatusCode))
 		}
-		return errors.New("http status " + strconv.Itoa(response.StatusCode) + " - " + errModel.String())
+		return errors.New("requester status " + strconv.Itoa(response.StatusCode) + " - " + errModel.String())
 	}
 
 	err = json.NewDecoder(response.Body).Decode(&respModel)
 	if err != nil {
-		return errors.New("http status " + strconv.Itoa(response.StatusCode) + " - " + err.Error())
+		return errors.New("requester status " + strconv.Itoa(response.StatusCode) + " - " + err.Error())
 	}
 
 	return nil
 }
 
-func (client *Client) DownloadFile(url string, downloadDir string, fileName string) (string, error) {
+func (httpClient *HTTPClient) DownloadFile(url string, downloadDir string, fileName string) (string, error) {
 	// TODO: hashsum based local file cache
 
 	request, err := http.NewRequest(http.MethodGet, url, nil)
 	if err != nil {
 		return "", err
 	}
-	request.Header.Set("User-Agent", client.UserAgent)
+	request.Header.Set("User-Agent", httpClient.UserAgent)
 	request.Close = true
 
-	response, err := client.Do(request)
+	response, err := httpClient.Do(request)
 	if err != nil {
 		return "", err
 	}

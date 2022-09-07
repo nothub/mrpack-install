@@ -1,9 +1,9 @@
 package cmd
 
 import (
-	"github.com/nothub/mrpack-install/http"
 	modrinth "github.com/nothub/mrpack-install/modrinth/api"
 	"github.com/nothub/mrpack-install/modrinth/mrpack"
+	"github.com/nothub/mrpack-install/requester"
 	"github.com/nothub/mrpack-install/server"
 	"log"
 	"net/url"
@@ -47,7 +47,7 @@ var rootCmd = &cobra.Command{
 			log.Fatalln(err)
 		}
 		if proxy != "" {
-			err := http.Instance.SetProxy(proxy)
+			err := requester.DefaultHttpClient.SetProxy(proxy)
 			if err != nil {
 				log.Fatalln(err)
 			}
@@ -70,7 +70,7 @@ var rootCmd = &cobra.Command{
 
 		} else if isUrl(input) {
 			log.Println("Downloading mrpack file from", args)
-			file, err := http.Instance.DownloadFile(input, serverDir, "")
+			file, err := requester.DefaultHttpClient.DownloadFile(input, serverDir, "")
 			if err != nil {
 				log.Fatalln(err)
 			}
@@ -104,7 +104,7 @@ var rootCmd = &cobra.Command{
 			for i := range files {
 				if strings.HasSuffix(files[i].Filename, ".mrpack") {
 					log.Println("Downloading mrpack file from", files[i].Url)
-					file, err := http.Instance.DownloadFile(files[i].Url, serverDir, "")
+					file, err := requester.DefaultHttpClient.DownloadFile(files[i].Url, serverDir, "")
 					if err != nil {
 						log.Fatalln(err)
 					}
@@ -152,7 +152,7 @@ var rootCmd = &cobra.Command{
 				log.Fatalln(err)
 			}
 			log.Println("Downloading server file from", u)
-			_, err = http.Instance.DownloadFile(u, serverDir, serverFile)
+			_, err = requester.DefaultHttpClient.DownloadFile(u, serverDir, serverFile)
 			if err != nil {
 				log.Fatalln(err)
 			}
@@ -170,7 +170,7 @@ var rootCmd = &cobra.Command{
 			success := false
 			// TODO: run x downloads parallel in goroutine
 			for j := range file.Downloads {
-				f, err := http.Instance.DownloadFile(file.Downloads[j], path.Join(serverDir, filepath.Dir(file.Path)), filepath.Base(file.Path))
+				f, err := requester.DefaultHttpClient.DownloadFile(file.Downloads[j], path.Join(serverDir, filepath.Dir(file.Path)), filepath.Base(file.Path))
 				if err != nil {
 					log.Println(err)
 				} else {

@@ -1,7 +1,7 @@
 package mojang
 
 import (
-	"github.com/nothub/mrpack-install/http"
+	"github.com/nothub/mrpack-install/requester"
 )
 
 const manifestUrl = "https://launchermeta.mojang.com/mc/game/version_manifest.json"
@@ -13,7 +13,7 @@ func LatestVersion() (string, error) {
 			Snapshot string `json:"snapshot"`
 		} `json:"latest"`
 	}
-	err := http.Instance.GetJson(manifestUrl, &manifest, nil)
+	err := requester.DefaultHttpClient.GetJson(manifestUrl, &manifest, nil)
 	if err != nil {
 		return "", err
 	}
