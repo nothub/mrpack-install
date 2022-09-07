@@ -178,15 +178,15 @@ var rootCmd = &cobra.Command{
 
 		// mod downloads
 		log.Printf("Downloading %v dependencies...\n", len(index.Files))
-		var downloadPoolArray []*requester.Download
+		var downloads []*requester.Download
 		for i := range index.Files {
 			file := index.Files[i]
 			if file.Env.Server == modrinth.UnsupportedEnvSupport {
 				continue
 			}
-			downloadPoolArray = append(downloadPoolArray, requester.NewDownloadPool(file.Downloads, map[string]string{"sha1": string(file.Hashes.Sha1)}, filepath.Base(file.Path), path.Join(serverDir, filepath.Dir(file.Path))))
+			downloads = append(downloads, requester.NewDownload(file.Downloads, map[string]string{"sha1": string(file.Hashes.Sha1)}, filepath.Base(file.Path), path.Join(serverDir, filepath.Dir(file.Path))))
 		}
-		downloadPools := requester.NewDownloadPools(requester.DefaultHttpClient, downloadPoolArray, downloadThreads, retryTimes)
+		downloadPools := requester.NewDownloadPools(requester.DefaultHttpClient, downloads, downloadThreads, retryTimes)
 		downloadPools.Do()
 		modsUnclean := false
 		for i := range downloadPools.Downloads {
