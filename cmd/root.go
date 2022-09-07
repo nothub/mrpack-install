@@ -5,6 +5,7 @@ import (
 	"github.com/nothub/mrpack-install/modrinth/mrpack"
 	"github.com/nothub/mrpack-install/requester"
 	"github.com/nothub/mrpack-install/server"
+	"github.com/nothub/mrpack-install/util"
 	"log"
 	"net/url"
 	"os"
@@ -24,6 +25,7 @@ func init() {
 	rootCmd.Flags().String("server-file", "", "Server jar file name")
 	rootCmd.Flags().String("proxy", "", "Use a proxy to download")
 	rootCmd.Flags().Int("download-thread", 8, "Download threads")
+	rootCmd.Flags().Int("retry-times", 3, "Number of retries when a download fails")
 }
 
 var rootCmd = &cobra.Command{
@@ -178,23 +180,38 @@ var rootCmd = &cobra.Command{
 			if file.Env.Server == modrinth.UnsupportedEnvSupport {
 				continue
 			}
-			for j := range file.Downloads {
-				ch <- struct{}{}
-				wg.Add(1)
-				go func(url string, downloadDir string, fileName string) {
-					defer wg.Done()
-					f, err := requester.DefaultHttpClient.DownloadFile(url, downloadDir, fileName)
-					if err != nil {
-						// TODO: If the file download fails, retry the download
-						downloadFailFiles = append(downloadFailFiles, fileName)
-						log.Println(err)
-					} else {
-						log.Println("Dependency downloaded:", f)
+
+			//goroutine
+			ch <- struct{}{}
+			wg.Add(1)
+			go func(url []string, downloadDir string, fileName string) {
+				defer wg.Done()
+				success := false
+				for _, downloadLink := range file.Downloads {
+					// when download failed retry
+					for retryTime := 0; retryTime < 3; retryTime++ {
+						//download file
+						f, err := requester.DefaultHttpClient.DownloadFile(downloadLink, downloadDir, fileName)
+						if err != nil {
+							log.Println("Dependency downloaded:", fileName, err, "retry times:", retryTime)
+							continue
+						}
+						//check sha1
+						_, err = util.CheckFileSha1(string(file.Hashes.Sha1), f)
+						if err != nil {
+							log.Println("Dependency downloaded:", fileName, err, "retry times:", retryTime)
+						} else {
+							log.Println("Dependency downloaded:", f)
+							success = true
+							break
+						}
 					}
-					// TODO: Verifying the file hash value
-					<-ch
-				}(file.Downloads[j], path.Join(serverDir, filepath.Dir(file.Path)), filepath.Base(file.Path))
-			}
+				}
+				if !success {
+					downloadFailFiles = append(downloadFailFiles, fileName)
+				}
+				<-ch
+			}(file.Downloads, path.Join(serverDir, filepath.Dir(file.Path)), filepath.Base(file.Path))
 		}
 		wg.Wait()
 
