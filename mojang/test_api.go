@@ -1,3 +1,0 @@
-package mojang
-
-// TODO
