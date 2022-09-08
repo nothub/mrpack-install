@@ -15,8 +15,6 @@ type HTTPClient struct {
 	transport *http.Transport
 }
 
-// TODO: global lookup map host -> ratelimit hits left and sleep wait strategy
-
 func NewHTTPClient() *HTTPClient {
 	httpClient := &HTTPClient{
 		Client:    http.Client{},

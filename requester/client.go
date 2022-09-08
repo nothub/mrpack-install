@@ -24,13 +24,11 @@ func (httpClient *HTTPClient) GetJson(url string, respModel interface{}, errMode
 	if err != nil {
 		return err
 	}
-
 	request.Header.Set("User-Agent", httpClient.UserAgent)
 	request.Header.Set("Accept", "application/json")
-
 	request.Close = true
 
-	response, err := httpClient.Do(request)
+	response, err := httpClient.sendRequest(request)
 	if err != nil {
 		return err
 	}
@@ -67,7 +65,7 @@ func (httpClient *HTTPClient) DownloadFile(url string, downloadDir string, fileN
 	request.Header.Set("User-Agent", httpClient.UserAgent)
 	request.Close = true
 
-	response, err := httpClient.Do(request)
+	response, err := httpClient.sendRequest(request)
 	if err != nil {
 		return "", err
 	}
@@ -114,4 +112,14 @@ func (httpClient *HTTPClient) DownloadFile(url string, downloadDir string, fileN
 	}
 
 	return file.Name(), nil
+}
+
+func (httpClient *HTTPClient) sendRequest(request *http.Request) (*http.Response, error) {
+	awaitRateLimits(request.Host)
+	response, err := httpClient.Do(request)
+	if err != nil {
+		return nil, err
+	}
+	updateRateLimits(response)
+	return response, nil
 }
