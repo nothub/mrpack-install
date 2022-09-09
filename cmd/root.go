@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"fmt"
+	"github.com/nothub/mrpack-install/buildinfo"
 	modrinth "github.com/nothub/mrpack-install/modrinth/api"
 	"github.com/nothub/mrpack-install/modrinth/mrpack"
 	"github.com/nothub/mrpack-install/requester"
@@ -16,14 +17,18 @@ import (
 )
 
 func init() {
-	// TODO: rootCmd.PersistentFlags().BoolP("version", "V", false, "Print version infos")
+	rootCmd.PersistentFlags().BoolP("version", "V", false, "Print version and exit")
 	// TODO: rootCmd.PersistentFlags().BoolP("verbose", "v", false, "Enable verbose output")
-	rootCmd.Flags().String("host", "api.modrinth.com", "Labrinth host")
-	rootCmd.Flags().String("server-dir", "mc", "Server directory path")
-	rootCmd.Flags().String("server-file", "", "Server jar file name")
-	rootCmd.Flags().String("proxy", "", "Use a proxy to download")
-	rootCmd.Flags().Int("download-threads", 8, "Download threads")
-	rootCmd.Flags().Int("retry-times", 3, "Number of retries when a download fails")
+	rootCmd.PersistentFlags().String("host", "api.modrinth.com", "Labrinth host")
+	rootCmd.PersistentFlags().String("server-dir", "mc", "Server directory path")
+	rootCmd.PersistentFlags().String("server-file", "", "Server jar file name")
+	rootCmd.PersistentFlags().String("proxy", "", "Use a proxy to download")
+	rootCmd.PersistentFlags().Int("download-threads", 8, "Download threads")
+	rootCmd.PersistentFlags().Int("retry-times", 3, "Number of retries when a download fails")
+	// TODO: --eula
+	// TODO: --op <uuid>...
+	// TODO: --whitelist <uuid>...
+	// TODO: --start-server
 }
 
 var rootCmd = &cobra.Command{
@@ -34,9 +39,32 @@ var rootCmd = &cobra.Command{
   mrpack-install https://example.org/data/cool-pack.mrpack
   mrpack-install hexmc-modpack --server-file server.jar
   mrpack-install yK0ISmKn 1.0.0-1.18 --server-dir mcserver
-  mrpack-install communitypack9000 --host api.labrinth.example.org`,
-	Args: cobra.RangeArgs(1, 2),
+  mrpack-install communitypack9000 --host api.labrinth.example.org
+  mrpack-install --version`,
+	Args: cobra.RangeArgs(0, 2),
 	Run: func(cmd *cobra.Command, args []string) {
+		ver, err := cmd.Flags().GetBool("version")
+		if err != nil {
+			log.Fatalln(err)
+		}
+		if ver {
+			fmt.Println("mrpack-install", buildinfo.Version)
+			return
+		}
+
+		if len(args) < 1 {
+			err = cmd.Help()
+			if err != nil {
+				fmt.Println(err)
+			}
+			os.Exit(1)
+		}
+		input := args[0]
+		version := ""
+		if len(args) > 1 {
+			version = args[1]
+		}
+
 		host, err := cmd.Flags().GetString("host")
 		if err != nil {
 			log.Fatalln(err)
@@ -68,12 +96,6 @@ var rootCmd = &cobra.Command{
 		if err != nil {
 			retryTimes = 3
 			fmt.Println(err)
-		}
-
-		input := args[0]
-		version := ""
-		if len(args) > 1 {
-			version = args[1]
 		}
 
 		err = os.MkdirAll(serverDir, 0755)

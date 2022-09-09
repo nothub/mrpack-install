@@ -8,7 +8,6 @@ import (
 )
 
 func init() {
-	pingCmd.Flags().String("host", "api.modrinth.com", "Labrinth host")
 	rootCmd.AddCommand(pingCmd)
 }
 
@@ -22,6 +21,7 @@ var pingCmd = &cobra.Command{
 			log.Fatalln(err)
 		}
 
+		log.Println("Connecting to:", host)
 		client := modrinth.NewClient(host)
 		info, err := client.LabrinthInfo()
 		if err != nil {

@@ -2,10 +2,7 @@ package cmd
 
 import (
 	"fmt"
-	"log"
-	"path"
-	"runtime/debug"
-
+	"github.com/nothub/mrpack-install/buildinfo"
 	"github.com/spf13/cobra"
 )
 
@@ -18,11 +15,6 @@ var versionCmd = &cobra.Command{
 	Short: "Print version infos",
 	Long:  `Extract and display the running binaries embedded version information.`,
 	Run: func(cmd *cobra.Command, args []string) {
-		info, ok := debug.ReadBuildInfo()
-		if ok {
-			fmt.Println(path.Base(info.Main.Path), info.Main.Version, info.Main.Sum)
-		} else {
-			log.Fatalln("Unable to extract build infos from running binary!")
-		}
+		fmt.Println("mrpack-install", buildinfo.Version)
 	},
 }

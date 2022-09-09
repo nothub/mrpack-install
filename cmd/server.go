@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"github.com/nothub/mrpack-install/mojang"
+	"github.com/nothub/mrpack-install/requester"
 	"github.com/nothub/mrpack-install/server"
 	"github.com/spf13/cobra"
 	"log"
@@ -10,13 +11,6 @@ import (
 func init() {
 	serverCmd.Flags().String("minecraft-version", "latest", "Minecraft version")
 	serverCmd.Flags().String("flavor-version", "latest", "Flavor version")
-	serverCmd.Flags().String("server-dir", "mc", "Server directory path")
-	serverCmd.Flags().String("server-file", "", "Server jar file name")
-	/*
-	   TODO: eula flag
-	   TODO: ops flag
-	   TODO: whitelist flags
-	*/
 	rootCmd.AddCommand(serverCmd)
 }
 
@@ -44,6 +38,16 @@ var serverCmd = &cobra.Command{
 		serverFile, err := cmd.Flags().GetString("server-file")
 		if err != nil {
 			log.Fatalln(err)
+		}
+		proxy, err := cmd.Flags().GetString("proxy")
+		if err != nil {
+			log.Fatalln(err)
+		}
+		if proxy != "" {
+			err := requester.DefaultHttpClient.SetProxy(proxy)
+			if err != nil {
+				log.Fatalln(err)
+			}
 		}
 
 		if minecraftVersion == "" || minecraftVersion == "latest" {
