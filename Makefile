@@ -11,7 +11,7 @@ release: clean
 	GOOS=linux   GOARCH=arm64 go build -o out/$(BIN_NAME)-linux-arm64
 	GOOS=darwin  GOARCH=amd64 go build -o out/$(BIN_NAME)-darwin
 	GOOS=darwin  GOARCH=arm64 go build -o out/$(BIN_NAME)-darwin-arm64
-	GOOS=windows GOARCH=amd64 go build -o out/$(BIN_NAME)-windows
+	GOOS=windows GOARCH=amd64 go build -o out/$(BIN_NAME)-windows.exe
 
 README.md: out/$(BIN_NAME)-dev
 	@echo "# $(BIN_NAME)" > README.md
