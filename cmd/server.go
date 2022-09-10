@@ -6,6 +6,7 @@ import (
 	"github.com/nothub/mrpack-install/server"
 	"github.com/spf13/cobra"
 	"log"
+	"os"
 )
 
 func init() {
@@ -56,6 +57,11 @@ var serverCmd = &cobra.Command{
 				log.Fatalln(err)
 			}
 			minecraftVersion = latestMinecraftVersion
+		}
+
+		err = os.MkdirAll(serverDir, 0755)
+		if err != nil {
+			log.Fatalln(err)
 		}
 
 		flavor := args[0]
