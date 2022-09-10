@@ -17,7 +17,8 @@ import (
 )
 
 func init() {
-	rootCmd.PersistentFlags().BoolP("version", "V", false, "Print version and exit")
+	rootCmd.Flags().BoolP("version", "V", false, "Print version and exit")
+
 	// TODO: rootCmd.PersistentFlags().BoolP("verbose", "v", false, "Enable verbose output")
 	rootCmd.PersistentFlags().String("host", "api.modrinth.com", "Labrinth host")
 	rootCmd.PersistentFlags().String("server-dir", "mc", "Server directory path")
