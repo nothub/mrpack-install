@@ -20,6 +20,7 @@ Examples:
   mrpack-install hexmc-modpack --server-file server.jar
   mrpack-install yK0ISmKn 1.0.0-1.18 --server-dir mcserver
   mrpack-install communitypack9000 --host api.labrinth.example.org
+  mrpack-install --version
 
 Available Commands:
   completion  Generate the autocompletion script for the specified shell
@@ -36,6 +37,7 @@ Flags:
       --retry-times int        Number of retries when a download fails (default 3)
       --server-dir string      Server directory path (default "mc")
       --server-file string     Server jar file name
+  -V, --version                Print version and exit
 
 Use "mrpack-install [command] --help" for more information about a command.
 ```
@@ -57,6 +59,13 @@ Flags:
       --flavor-version string      Flavor version (default "latest")
   -h, --help                       help for server
       --minecraft-version string   Minecraft version (default "latest")
-      --server-dir string          Server directory path (default "mc")
-      --server-file string         Server jar file name
+
+Global Flags:
+      --download-threads int   Download threads (default 8)
+      --host string            Labrinth host (default "api.modrinth.com")
+      --proxy string           Use a proxy to download
+      --retry-times int        Number of retries when a download fails (default 3)
+      --server-dir string      Server directory path (default "mc")
+      --server-file string     Server jar file name
+  -V, --version                Print version and exit
 ```
