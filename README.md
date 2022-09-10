@@ -67,5 +67,4 @@ Global Flags:
       --retry-times int        Number of retries when a download fails (default 3)
       --server-dir string      Server directory path (default "mc")
       --server-file string     Server jar file name
-  -V, --version                Print version and exit
 ```
