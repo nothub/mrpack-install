@@ -9,7 +9,6 @@ import (
 
 type Paper struct {
 	MinecraftVersion string
-	PaperVersion     string
 }
 
 func (provider *Paper) Provide(serverDir string, serverFile string) error {

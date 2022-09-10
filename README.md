@@ -49,7 +49,7 @@ Use "mrpack-install [command] --help" for more information about a command.
 Download and configure one of several Minecraft server flavors.
 
 Usage:
-  mrpack-install server (vanilla | fabric | quilt | forge | paper | spigot) [flags]
+  mrpack-install server (vanilla | fabric | quilt | forge | paper) [flags]
 
 Examples:
   mrpack-install server fabric --server-dir fabric-srv

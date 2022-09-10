@@ -35,12 +35,6 @@ func NewProvider(flavor string, minecraftVersion string, flavorVersion string) (
 	case "paper":
 		provider = &Paper{
 			MinecraftVersion: minecraftVersion,
-			PaperVersion:     flavorVersion,
-		}
-	case "spigot":
-		provider = &Spigot{
-			MinecraftVersion: minecraftVersion,
-			SpigotVersion:    flavorVersion,
 		}
 	}
 
