@@ -1,18 +1,18 @@
 MOD_NAME = $(shell go list -m)
 BIN_NAME = $(shell basename $(MOD_NAME))
-LDFLAGS  = "-X '$(MOD_NAME)/buildinfo.Version=$(shell git describe --tags 2> /dev/null || echo "devel")'"
+LDFLAGS  = -ldflags="-X '$(MOD_NAME)/buildinfo.Version=$(shell git describe --tags 2> /dev/null || echo "devel")'"
 
 out/$(BIN_NAME)-dev: clean lint test
 	mkdir -p out
-	go build -ldflags=$(LDFLAGS) -race -o $@
+	go build $(LDFLAGS) -race -o $@
 
 release: clean
 	mkdir -p out
-	GOOS=linux   GOARCH=amd64 go build -ldflags=$(LDFLAGS) -o out/$(BIN_NAME)-linux
-	GOOS=linux   GOARCH=arm64 go build -ldflags=$(LDFLAGS) -o out/$(BIN_NAME)-linux-arm64
-	GOOS=darwin  GOARCH=amd64 go build -ldflags=$(LDFLAGS) -o out/$(BIN_NAME)-darwin
-	GOOS=darwin  GOARCH=arm64 go build -ldflags=$(LDFLAGS) -o out/$(BIN_NAME)-darwin-arm64
-	GOOS=windows GOARCH=amd64 go build -ldflags=$(LDFLAGS) -o out/$(BIN_NAME)-windows.exe
+	GOOS=linux   GOARCH=amd64 go build $(LDFLAGS) -o out/$(BIN_NAME)-linux
+	GOOS=linux   GOARCH=arm64 go build $(LDFLAGS) -o out/$(BIN_NAME)-linux-arm64
+	GOOS=darwin  GOARCH=amd64 go build $(LDFLAGS) -o out/$(BIN_NAME)-darwin
+	GOOS=darwin  GOARCH=arm64 go build $(LDFLAGS) -o out/$(BIN_NAME)-darwin-arm64
+	GOOS=windows GOARCH=amd64 go build $(LDFLAGS) -o out/$(BIN_NAME)-windows.exe
 
 README.md: out/$(BIN_NAME)-dev
 	@echo "# $(BIN_NAME)" > README.md
