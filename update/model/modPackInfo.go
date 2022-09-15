@@ -1,24 +1,25 @@
 package model
 
 import (
+	"bytes"
 	"encoding/json"
+	"github.com/nothub/mrpack-install/modrinth/mrpack"
 	"github.com/nothub/mrpack-install/requester"
 	"os"
 	"path"
 )
 
 type ModPackInfo struct {
-	File        *[]fileInfo `json:"file"`
-	GameVersion string      `json:"gameVersion"`
-	Loader      string      `json:"loader"`
-	ModPackName string      `json:"modPackName"`
+	ModPackVersion string              `json:"modPackVersion"`
+	ModPackName    string              `json:"modPackName"`
+	File           []FileInfo          `json:"file"`
+	Dependencies   mrpack.Dependencies `json:"dependencies"`
 }
 
-type fileInfo struct {
+type FileInfo struct {
 	FileHash     string   `json:"Hash"`
-	FilePath     string   `json:"Path"`
-	DownloadLink []string `json:"DownloadLink"`
 	TargetPath   string   `json:"TargetPath"`
+	DownloadLink []string `json:"DownloadLink"`
 }
 
 func ReadModPackInfo(modPackJsonFile string) (*ModPackInfo, error) {
@@ -39,13 +40,15 @@ func ReadModPackInfo(modPackJsonFile string) (*ModPackInfo, error) {
 	return &modPackJson, nil
 }
 
-func WriteModPackInfo(modPack *ModPackInfo, modPackJsonFile string) error {
-	if modPack != nil {
-		modPackJsonByte, err := json.Marshal(modPack)
+func (modPackInfo *ModPackInfo) Write(modPackJsonFile string) error {
+	if modPackInfo != nil {
+		modPackJsonByte, err := json.Marshal(modPackInfo)
+		var out bytes.Buffer
+		err = json.Indent(&out, modPackJsonByte, "", "\t")
 		if err != nil {
 			return err
 		}
-		err = os.WriteFile(modPackJsonFile, modPackJsonByte, 0644)
+		err = os.WriteFile(modPackJsonFile, out.Bytes(), 0644)
 		if err != nil {
 			return err
 		}
@@ -54,9 +57,9 @@ func WriteModPackInfo(modPack *ModPackInfo, modPackJsonFile string) error {
 }
 
 func (modPackInfo *ModPackInfo) GetDownloadPool(downloadPools *requester.DownloadPools) *requester.DownloadPools {
-	for _, file := range *modPackInfo.File {
-		if file.FilePath == "" && file.DownloadLink != nil {
-			downloadPools.Downloads = append(downloadPools.Downloads, requester.NewDownload(file.DownloadLink, map[string]string{"sha1": file.FileHash}, path.Base(file.FilePath), path.Dir(file.FilePath)))
+	for _, file := range modPackInfo.File {
+		if file.DownloadLink != nil {
+			downloadPools.Downloads = append(downloadPools.Downloads, requester.NewDownload(file.DownloadLink, map[string]string{"sha1": file.FileHash}, path.Base(file.TargetPath), path.Dir(file.TargetPath)))
 		}
 	}
 	return downloadPools

@@ -7,6 +7,7 @@ import (
 	"github.com/nothub/mrpack-install/modrinth/mrpack"
 	"github.com/nothub/mrpack-install/requester"
 	"github.com/nothub/mrpack-install/server"
+	"github.com/nothub/mrpack-install/update"
 	"github.com/nothub/mrpack-install/util"
 	"github.com/spf13/cobra"
 	"log"
@@ -231,6 +232,15 @@ var rootCmd = &cobra.Command{
 		err = mrpack.ExtractOverrides(archivePath, serverDir)
 		if err != nil {
 			log.Fatalln(err)
+		}
+
+		info, err := update.GenerateModPackInfo(archivePath)
+		if err != nil {
+			fmt.Println(err)
+		}
+		err = info.Write(path.Join(serverDir, "modpack.json"))
+		if err != nil {
+			fmt.Println(err)
 		}
 
 		if modsUnclean {
