@@ -2,10 +2,12 @@ package model
 
 import (
 	"encoding/json"
+	"github.com/nothub/mrpack-install/requester"
 	"os"
+	"path"
 )
 
-type modPackInfo struct {
+type ModPackInfo struct {
 	File        *[]fileInfo `json:"file"`
 	GameVersion string      `json:"gameVersion"`
 	Loader      string      `json:"loader"`
@@ -13,11 +15,13 @@ type modPackInfo struct {
 }
 
 type fileInfo struct {
-	FileHash string `json:"Hash"`
-	FilePath string `json:"Path"`
+	FileHash     string   `json:"Hash"`
+	FilePath     string   `json:"Path"`
+	DownloadLink []string `json:"DownloadLink"`
+	TargetPath   string   `json:"TargetPath"`
 }
 
-func ReadModPackInfo(modPackJsonFile string) (*modPackInfo, error) {
+func ReadModPackInfo(modPackJsonFile string) (*ModPackInfo, error) {
 
 	var modPackJsonByte []byte
 	var err error
@@ -26,7 +30,7 @@ func ReadModPackInfo(modPackJsonFile string) (*modPackInfo, error) {
 		return nil, err
 	}
 
-	modPackJson := modPackInfo{}
+	modPackJson := ModPackInfo{}
 	err = json.Unmarshal(modPackJsonByte, &modPackJson)
 
 	if err != nil {
@@ -35,7 +39,7 @@ func ReadModPackInfo(modPackJsonFile string) (*modPackInfo, error) {
 	return &modPackJson, nil
 }
 
-func WriteModPackInfo(modPack *modPackInfo, modPackJsonFile string) error {
+func WriteModPackInfo(modPack *ModPackInfo, modPackJsonFile string) error {
 	if modPack != nil {
 		modPackJsonByte, err := json.Marshal(modPack)
 		if err != nil {
@@ -47,4 +51,13 @@ func WriteModPackInfo(modPack *modPackInfo, modPackJsonFile string) error {
 		}
 	}
 	return nil
+}
+
+func (modPackInfo *ModPackInfo) GetDownloadPool(downloadPools *requester.DownloadPools) *requester.DownloadPools {
+	for _, file := range *modPackInfo.File {
+		if file.FilePath == "" && file.DownloadLink != nil {
+			downloadPools.Downloads = append(downloadPools.Downloads, requester.NewDownload(file.DownloadLink, map[string]string{"sha1": file.FileHash}, path.Base(file.FilePath), path.Dir(file.FilePath)))
+		}
+	}
+	return downloadPools
 }
