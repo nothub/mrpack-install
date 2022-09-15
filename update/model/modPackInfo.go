@@ -12,12 +12,11 @@ import (
 type ModPackInfo struct {
 	ModPackVersion string              `json:"modPackVersion"`
 	ModPackName    string              `json:"modPackName"`
-	File           []FileInfo          `json:"file"`
+	File           map[string]FileInfo `json:"file"`
 	Dependencies   mrpack.Dependencies `json:"dependencies"`
 }
 
 type FileInfo struct {
-	FileHash     string   `json:"Hash"`
 	TargetPath   string   `json:"TargetPath"`
 	DownloadLink []string `json:"DownloadLink"`
 }
@@ -57,9 +56,9 @@ func (modPackInfo *ModPackInfo) Write(modPackJsonFile string) error {
 }
 
 func (modPackInfo *ModPackInfo) GetDownloadPool(downloadPools *requester.DownloadPools) *requester.DownloadPools {
-	for _, file := range modPackInfo.File {
-		if file.DownloadLink != nil {
-			downloadPools.Downloads = append(downloadPools.Downloads, requester.NewDownload(file.DownloadLink, map[string]string{"sha1": file.FileHash}, path.Base(file.TargetPath), path.Dir(file.TargetPath)))
+	for key, value := range modPackInfo.File {
+		if value.DownloadLink != nil {
+			downloadPools.Downloads = append(downloadPools.Downloads, requester.NewDownload(value.DownloadLink, map[string]string{"sha1": key}, path.Base(value.TargetPath), path.Dir(value.TargetPath)))
 		}
 	}
 	return downloadPools

@@ -11,6 +11,7 @@ import (
 
 func GenerateModPackInfo(modPackPatch string) (*model.ModPackInfo, error) {
 	var modPackInfo model.ModPackInfo
+	modPackInfo.File = make(map[string]model.FileInfo)
 
 	modrinthIndex, err := mrpack.ReadIndex(modPackPatch)
 	if err != nil {
@@ -23,12 +24,7 @@ func GenerateModPackInfo(modPackPatch string) (*model.ModPackInfo, error) {
 
 	// Add modrinth.index file
 	for _, file := range modrinthIndex.Files {
-		var tmpFileInfo model.FileInfo
-		tmpFileInfo.FileHash = string(file.Hashes.Sha1)
-		tmpFileInfo.TargetPath = file.Path
-		tmpFileInfo.DownloadLink = file.Downloads
-
-		modPackInfo.File = append(modPackInfo.File, tmpFileInfo)
+		modPackInfo.File[string(file.Hashes.Sha1)] = model.FileInfo{TargetPath: file.Path, DownloadLink: file.Downloads}
 	}
 
 	// Add overrides file
@@ -57,20 +53,16 @@ func GenerateModPackInfo(modPackPatch string) (*model.ModPackInfo, error) {
 			continue
 		}
 
-		var tmpFileInfo model.FileInfo
-
 		readCloser, err := f.Open()
 		if err != nil {
 			return nil, err
 		}
 
-		tmpFileInfo.FileHash, err = util.GetReadCloserSha1(readCloser)
+		fileHash, err := util.GetReadCloserSha1(readCloser)
 		if err != nil {
 			return nil, err
 		}
-		tmpFileInfo.TargetPath = filePath
-
-		modPackInfo.File = append(modPackInfo.File, tmpFileInfo)
+		modPackInfo.File[fileHash] = model.FileInfo{TargetPath: filePath}
 	}
 
 	return &modPackInfo, nil
