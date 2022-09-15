@@ -62,6 +62,10 @@ func GenerateModPackInfo(modPackPatch string) (*model.ModPackInfo, error) {
 		if err != nil {
 			return nil, err
 		}
+		err = readCloser.Close()
+		if err != nil {
+			return nil, err
+		}
 		modPackInfo.File[fileHash] = model.FileInfo{TargetPath: filePath}
 	}
 
