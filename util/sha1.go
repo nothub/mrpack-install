@@ -36,10 +36,6 @@ func GetReadCloserSha1(readCloser io.ReadCloser) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	err = readCloser.Close()
-	if err != nil {
-		return "", err
-	}
 	return getSha1(&verifyByte), nil
 }
 
