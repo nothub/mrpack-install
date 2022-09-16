@@ -2,10 +2,12 @@ package update
 
 import (
 	"archive/zip"
+	"errors"
 	"fmt"
 	"github.com/nothub/mrpack-install/modrinth/mrpack"
 	"github.com/nothub/mrpack-install/update/model"
 	"github.com/nothub/mrpack-install/util"
+	"reflect"
 	"strings"
 )
 
@@ -72,8 +74,17 @@ func GenerateModPackInfo(modPackPatch string) (*model.ModPackInfo, error) {
 	return &modPackInfo, nil
 }
 
-// CompareModPackInfo Todo: Compare the two modPackInfo and generate a list of deletions and updates
-func CompareModPackInfo(oldVersion *model.ModPackInfo, newVersion *model.ModPackInfo) (delete *model.ModPackInfo, add *model.ModPackInfo) {
+func CompareModPackInfo(oldVersion model.ModPackInfo, newVersion model.ModPackInfo) (deleteList *model.ModPackInfo, addList *model.ModPackInfo, err error) {
+	if oldVersion.ModPackName != newVersion.ModPackName || !reflect.DeepEqual(oldVersion.Dependencies, newVersion.Dependencies) {
+		return nil, nil, errors.New("for mismatched versions, please upgrade manually")
+	}
 
-	return nil, nil
+	for hash := range oldVersion.File {
+		if reflect.DeepEqual(newVersion.File[hash], oldVersion.File[hash]) {
+			delete(oldVersion.File, hash)
+			delete(newVersion.File, hash)
+		}
+	}
+
+	return &oldVersion, &newVersion, nil
 }
