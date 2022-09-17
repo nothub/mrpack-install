@@ -166,6 +166,11 @@ var updateCmd = &cobra.Command{
 			log.Fatalln(err)
 		}
 		util.RemoveEmptyDir(serverDir)
+
+		err = newModPackInfo.Write(path.Join(serverDir, "modpack.json"))
+		if err != nil {
+			fmt.Println(err)
+		}
 		fmt.Println("Done :) Have a nice day ✌️")
 
 	},
