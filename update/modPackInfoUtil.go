@@ -13,7 +13,7 @@ import (
 
 func GenerateModPackInfo(modPackPatch string) (*model.ModPackInfo, error) {
 	var modPackInfo model.ModPackInfo
-	modPackInfo.File = make(map[string]model.FileInfo)
+	modPackInfo.File = make(model.FileMap)
 
 	modrinthIndex, err := mrpack.ReadIndex(modPackPatch)
 	if err != nil {
@@ -26,7 +26,7 @@ func GenerateModPackInfo(modPackPatch string) (*model.ModPackInfo, error) {
 
 	// Add modrinth.index file
 	for _, file := range modrinthIndex.Files {
-		modPackInfo.File[string(file.Hashes.Sha1)] = model.FileInfo{TargetPath: file.Path, DownloadLink: file.Downloads}
+		modPackInfo.File[model.Path(file.Path)] = model.FileInfo{Hash: string(file.Hashes.Sha1), DownloadLink: file.Downloads}
 	}
 
 	// Add overrides file
@@ -68,21 +68,21 @@ func GenerateModPackInfo(modPackPatch string) (*model.ModPackInfo, error) {
 		if err != nil {
 			return nil, err
 		}
-		modPackInfo.File[fileHash] = model.FileInfo{TargetPath: filePath}
+		modPackInfo.File[model.Path(filePath)] = model.FileInfo{Hash: fileHash}
 	}
 
 	return &modPackInfo, nil
 }
 
-func CompareModPackInfo(oldVersion model.ModPackInfo, newVersion model.ModPackInfo) (deleteList *model.ModPackInfo, addList *model.ModPackInfo, err error) {
+func CompareModPackInfo(oldVersion model.ModPackInfo, newVersion model.ModPackInfo) (deleteFileInfo *model.ModPackInfo, updateFileInfo *model.ModPackInfo, err error) {
 	if oldVersion.ModPackName != newVersion.ModPackName || !reflect.DeepEqual(oldVersion.Dependencies, newVersion.Dependencies) {
 		return nil, nil, errors.New("for mismatched versions, please upgrade manually")
 	}
 
-	for hash := range oldVersion.File {
-		if reflect.DeepEqual(newVersion.File[hash], oldVersion.File[hash]) {
-			delete(oldVersion.File, hash)
-			delete(newVersion.File, hash)
+	for path := range oldVersion.File {
+		if newVersion.File[path].Hash == oldVersion.File[path].Hash {
+			delete(oldVersion.File, path)
+			delete(newVersion.File, path)
 		}
 	}
 

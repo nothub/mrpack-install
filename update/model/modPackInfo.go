@@ -4,20 +4,21 @@ import (
 	"bytes"
 	"encoding/json"
 	"github.com/nothub/mrpack-install/modrinth/mrpack"
-	"github.com/nothub/mrpack-install/requester"
 	"os"
-	"path"
 )
+
+type Path string
+type FileMap map[Path]FileInfo
 
 type ModPackInfo struct {
 	ModPackVersion string              `json:"modPackVersion"`
 	ModPackName    string              `json:"modPackName"`
-	File           map[string]FileInfo `json:"file"`
+	File           FileMap             `json:"file"`
 	Dependencies   mrpack.Dependencies `json:"dependencies"`
 }
 
 type FileInfo struct {
-	TargetPath   string   `json:"TargetPath"`
+	Hash         string   `json:"Hash"`
 	DownloadLink []string `json:"DownloadLink"`
 }
 
@@ -53,13 +54,4 @@ func (modPackInfo *ModPackInfo) Write(modPackJsonFile string) error {
 		}
 	}
 	return nil
-}
-
-func (modPackInfo *ModPackInfo) GetDownloadPool(downloadPools *requester.DownloadPools) *requester.DownloadPools {
-	for key, value := range modPackInfo.File {
-		if value.DownloadLink != nil {
-			downloadPools.Downloads = append(downloadPools.Downloads, requester.NewDownload(value.DownloadLink, map[string]string{"sha1": key}, path.Base(value.TargetPath), path.Dir(value.TargetPath)))
-		}
-	}
-	return downloadPools
 }
