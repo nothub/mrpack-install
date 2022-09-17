@@ -116,6 +116,12 @@ var rootCmd = &cobra.Command{
 				log.Fatalln(err)
 			}
 			archivePath = file
+			defer func(name string) {
+				err := os.Remove(name)
+				if err != nil {
+					fmt.Println(err)
+				}
+			}(archivePath)
 
 		} else { // input is project id or slug?
 			versions, err := modrinth.NewClient(host).GetProjectVersions(input, nil)
@@ -156,6 +162,12 @@ var rootCmd = &cobra.Command{
 			if archivePath == "" {
 				log.Fatalln("No mrpack file found for", input, version)
 			}
+			defer func(name string) {
+				err := os.Remove(name)
+				if err != nil {
+					fmt.Println(err)
+				}
+			}(archivePath)
 		}
 
 		if archivePath == "" {

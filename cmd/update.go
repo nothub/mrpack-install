@@ -81,7 +81,12 @@ var updateCmd = &cobra.Command{
 				log.Fatalln(err)
 			}
 			archivePath = file
-
+			defer func(name string) {
+				err := os.Remove(name)
+				if err != nil {
+					fmt.Println(err)
+				}
+			}(archivePath)
 		} else { // input is project id or slug?
 			versions, err := modrinth.NewClient(host).GetProjectVersions(input, nil)
 			if err != nil {
@@ -121,6 +126,12 @@ var updateCmd = &cobra.Command{
 			if archivePath == "" {
 				log.Fatalln("No mrpack file found for", input, version)
 			}
+			defer func(name string) {
+				err := os.Remove(name)
+				if err != nil {
+					fmt.Println(err)
+				}
+			}(archivePath)
 		}
 
 		if archivePath == "" {
@@ -133,6 +144,10 @@ var updateCmd = &cobra.Command{
 		downloadPools := requester.NewDownloadPools(requester.DefaultHttpClient, downloads, downloadThreads, retryTimes)
 
 		newModPackInfo, err := update.GenerateModPackInfo(archivePath)
+		if err != nil {
+			log.Fatalln(err)
+		}
+		err = newModPackInfo.Write(path.Join(serverDir, "modpack.json.update"))
 		if err != nil {
 			log.Fatalln(err)
 		}
@@ -167,11 +182,11 @@ var updateCmd = &cobra.Command{
 		}
 		util.RemoveEmptyDir(serverDir)
 
-		err = newModPackInfo.Write(path.Join(serverDir, "modpack.json"))
+		err = os.Rename(path.Join(serverDir, "modpack.json.update"), path.Join(serverDir, "modpack.json"))
 		if err != nil {
-			fmt.Println(err)
+			log.Fatalln(err)
 		}
-		fmt.Println("Done :) Have a nice day ✌️")
 
+		fmt.Println("Done :) Have a nice day ✌️")
 	},
 }
