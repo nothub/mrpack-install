@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"log"
 	"os"
 )
 
@@ -40,6 +41,10 @@ func GetReadCloserSha1(readCloser io.ReadCloser) (string, error) {
 }
 
 func CheckFileSha1(verifyHash string, verifyFile string) (bool, error) {
+	_, err := os.Stat(verifyFile)
+	if err != nil {
+		log.Fatalln("The validated file does not exist", verifyFile)
+	}
 	file, err := os.Open(verifyFile)
 	defer func(file *os.File) {
 		err := file.Close()

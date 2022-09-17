@@ -5,15 +5,14 @@ import (
 	"errors"
 	"fmt"
 	"github.com/nothub/mrpack-install/modrinth/mrpack"
-	"github.com/nothub/mrpack-install/update/model"
 	"github.com/nothub/mrpack-install/util"
 	"reflect"
 	"strings"
 )
 
-func GenerateModPackInfo(modPackPatch string) (*model.ModPackInfo, error) {
-	var modPackInfo model.ModPackInfo
-	modPackInfo.File = make(model.FileMap)
+func GenerateModPackInfo(modPackPatch string) (*ModPackInfo, error) {
+	var modPackInfo ModPackInfo
+	modPackInfo.File = make(FileMap)
 
 	modrinthIndex, err := mrpack.ReadIndex(modPackPatch)
 	if err != nil {
@@ -26,7 +25,10 @@ func GenerateModPackInfo(modPackPatch string) (*model.ModPackInfo, error) {
 
 	// Add modrinth.index file
 	for _, file := range modrinthIndex.Files {
-		modPackInfo.File[model.Path(file.Path)] = model.FileInfo{Hash: string(file.Hashes.Sha1), DownloadLink: file.Downloads}
+		if file.Env.Server == "unsupported" {
+			continue
+		}
+		modPackInfo.File[Path(file.Path)] = FileInfo{Hash: string(file.Hashes.Sha1), DownloadLink: file.Downloads}
 	}
 
 	// Add overrides file
@@ -68,13 +70,13 @@ func GenerateModPackInfo(modPackPatch string) (*model.ModPackInfo, error) {
 		if err != nil {
 			return nil, err
 		}
-		modPackInfo.File[model.Path(filePath)] = model.FileInfo{Hash: fileHash}
+		modPackInfo.File[Path(filePath)] = FileInfo{Hash: fileHash}
 	}
 
 	return &modPackInfo, nil
 }
 
-func CompareModPackInfo(oldVersion model.ModPackInfo, newVersion model.ModPackInfo) (deleteFileInfo *model.ModPackInfo, updateFileInfo *model.ModPackInfo, err error) {
+func CompareModPackInfo(oldVersion ModPackInfo, newVersion ModPackInfo) (deleteFileInfo *ModPackInfo, updateFileInfo *ModPackInfo, err error) {
 	if oldVersion.ModPackName != newVersion.ModPackName || !reflect.DeepEqual(oldVersion.Dependencies, newVersion.Dependencies) {
 		return nil, nil, errors.New("for mismatched versions, please upgrade manually")
 	}
@@ -83,6 +85,10 @@ func CompareModPackInfo(oldVersion model.ModPackInfo, newVersion model.ModPackIn
 		if newVersion.File[path].Hash == oldVersion.File[path].Hash {
 			delete(oldVersion.File, path)
 			delete(newVersion.File, path)
+		}
+
+		if _, ok := newVersion.File[path]; ok {
+			delete(oldVersion.File, path)
 		}
 	}
 

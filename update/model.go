@@ -1,4 +1,4 @@
-package model
+package update
 
 import (
 	"bytes"

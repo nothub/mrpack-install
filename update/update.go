@@ -4,7 +4,6 @@ import (
 	"archive/zip"
 	"fmt"
 	"github.com/nothub/mrpack-install/requester"
-	"github.com/nothub/mrpack-install/update/model"
 	"github.com/nothub/mrpack-install/util"
 	"io"
 	"os"
@@ -12,24 +11,23 @@ import (
 	"strings"
 )
 
-type DetectList map[model.Path]util.DetectType
+type DetectList map[Path]util.DetectType
 
 // PreDelete Three scenarios
 // 1.File does not exist Notice
 // 2.File exists but hash value does not match,Change the original file name to xxx.bak
 // 3.File exists and the hash value matches
-func PreDelete(deleteList *model.ModPackInfo) DetectList {
+func PreDelete(deleteList *ModPackInfo, serverPath string) DetectList {
 	detectType := make(DetectList, 10)
 	for filePath := range deleteList.File {
-		switch util.FileDetection(deleteList.File[filePath].Hash, string(filePath)) {
+		t := util.FileDetection(deleteList.File[filePath].Hash, filepath.Join(serverPath, string(filePath)))
+		switch t {
 		case util.PathMatchHashMatch:
-			fmt.Printf("%s will remove\n", filePath)
+			fmt.Printf("[Delete]: %s \n", filePath)
 			detectType[filePath] = util.PathMatchHashMatch
 		case util.PathMatchHashNoMatch:
-			fmt.Printf("%s will remove,The original file will be move to updateBack folder", filePath)
+			fmt.Printf("[Delete]: %s ,The original file will be move to updateBack folder\n", filePath)
 			detectType[filePath] = util.PathMatchHashNoMatch
-		case util.PathNoMatch:
-			fmt.Printf("%s isn't exist\n", filePath)
 		}
 	}
 	return detectType
@@ -39,41 +37,46 @@ func PreDelete(deleteList *model.ModPackInfo) DetectList {
 // 1.File does not exist
 // 2.File exists but hash value does not match,Change the original file name to xxx.bak
 // 3.File exists and the hash value matches,Remove the item from the queue
-func PreUpdate(updateList *model.ModPackInfo) DetectList {
+func PreUpdate(updateList *ModPackInfo, serverPath string) DetectList {
 	detectType := make(DetectList, 10)
 	for filePath := range updateList.File {
-		switch util.FileDetection(updateList.File[filePath].Hash, string(filePath)) {
+		switch util.FileDetection(updateList.File[filePath].Hash, filepath.Join(serverPath, string(filePath))) {
 		case util.PathMatchHashMatch:
 			delete(updateList.File, filePath)
 		case util.PathMatchHashNoMatch:
-			fmt.Printf("%s will update,The original file will be move to updateBack folder", filePath)
+			fmt.Printf("[Update]: %s ,The original file will be move to updateBack folder\n", filePath)
 			detectType[filePath] = util.PathMatchHashNoMatch
 		case util.PathNoMatch:
-			fmt.Printf("%s will download\n", filePath)
+			fmt.Printf("[Download]: %s \n", filePath)
 			detectType[filePath] = util.PathNoMatch
 		}
 	}
 	return detectType
 }
 
-func ModPackDeleteDo(deleteList DetectList, serverPath string) {
+func ModPackDeleteDo(deleteList DetectList, serverPath string) error {
 	for filePath := range deleteList {
 		switch deleteList[filePath] {
 		case util.PathMatchHashMatch:
 			err := os.Remove(filepath.Join(serverPath, string(filePath)))
 			if err != nil {
-				fmt.Println(err)
+				return err
 			}
 		case util.PathMatchHashNoMatch:
-			err := os.Rename(filepath.Join(serverPath, string(filePath)), filepath.Join(serverPath, "updateBack", string(filePath)))
+			err := os.MkdirAll(filepath.Dir(filepath.Join(serverPath, "updateBack", string(filePath))), 0755)
 			if err != nil {
-				fmt.Println(err)
+				return err
+			}
+			err = os.Rename(filepath.Join(serverPath, string(filePath)), filepath.Join(serverPath, "updateBack", string(filePath)))
+			if err != nil {
+				return err
 			}
 		}
 	}
+	return nil
 }
 
-func ModPackUpdateDo(updateList DetectList, updateFileInfo model.FileMap, serverPath string, modPackPath string, downloadPools requester.DownloadPools) error {
+func ModPackUpdateDo(updateList DetectList, updateFileInfo FileMap, serverPath string, modPackPath string, downloadPools *requester.DownloadPools) error {
 	//backup file and download file in modrinth index
 	for filePath := range updateList {
 		switch updateList[filePath] {
@@ -82,7 +85,11 @@ func ModPackUpdateDo(updateList DetectList, updateFileInfo model.FileMap, server
 				downloadPools.Downloads = append(downloadPools.Downloads, requester.NewDownload(updateFileInfo[filePath].DownloadLink, map[string]string{"sha1": updateFileInfo[filePath].Hash}, filepath.Base(string(filePath)), filepath.Join(serverPath, filepath.Dir(string(filePath)))))
 			}
 		case util.PathMatchHashNoMatch:
-			err := os.Rename(filepath.Join(serverPath, string(filePath)), filepath.Join(serverPath, "updateBack", string(filePath)))
+			err := os.MkdirAll(filepath.Dir(filepath.Join(serverPath, "updateBack", string(filePath))), 0755)
+			if err != nil {
+				return err
+			}
+			err = os.Rename(filepath.Join(serverPath, string(filePath)), filepath.Join(serverPath, "updateBack", string(filePath)))
 			if err != nil {
 				return err
 			}
@@ -119,7 +126,7 @@ func ModPackUpdateDo(updateList DetectList, updateFileInfo model.FileMap, server
 			continue
 		}
 
-		if _, ok := updateFileInfo[model.Path(filePathInZip)]; ok && updateFileInfo[model.Path(filePathInZip)].DownloadLink == nil {
+		if _, ok := updateFileInfo[Path(filePathInZip)]; ok && updateFileInfo[Path(filePathInZip)].DownloadLink == nil {
 
 			targetPath := filepath.Join(serverPath, filePathInZip)
 
