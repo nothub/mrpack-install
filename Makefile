@@ -30,7 +30,14 @@ README.md: out/$(BIN_NAME)-dev
 	@echo "" >> README.md
 	@echo "---" >> README.md
 	@echo "" >> README.md
-	@echo "#### server deployment" >> README.md
+	@echo "#### modpack update" >> README.md
+	@echo "\`\`\`" >> README.md
+	./out/mrpack-install-dev update --help >> README.md
+	@echo "\`\`\`" >> README.md
+	@echo "" >> README.md
+	@echo "---" >> README.md
+	@echo "" >> README.md
+	@echo "#### plain server deployment" >> README.md
 	@echo "\`\`\`" >> README.md
 	./out/mrpack-install-dev server --help >> README.md
 	@echo "\`\`\`" >> README.md

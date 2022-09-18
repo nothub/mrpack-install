@@ -45,7 +45,28 @@ Use "mrpack-install [command] --help" for more information about a command.
 
 ---
 
-#### server deployment
+#### modpack update
+```
+Use file's hash and compare,Update the config and mods file'
+
+Usage:
+  mrpack-install update [flags]
+
+Flags:
+  -h, --help   help for update
+
+Global Flags:
+      --download-threads int   Download threads (default 8)
+      --host string            Labrinth host (default "api.modrinth.com")
+      --proxy string           Use a proxy to download
+      --retry-times int        Number of retries when a download fails (default 3)
+      --server-dir string      Server directory path (default "mc")
+      --server-file string     Server jar file name
+```
+
+---
+
+#### plain server deployment
 ```
 Download and configure one of several Minecraft server flavors.
 
