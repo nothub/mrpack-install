@@ -7,6 +7,7 @@ import (
 	"github.com/nothub/mrpack-install/modrinth/mrpack"
 	"github.com/nothub/mrpack-install/requester"
 	"github.com/nothub/mrpack-install/server"
+	"github.com/nothub/mrpack-install/update"
 	"github.com/nothub/mrpack-install/util"
 	"github.com/spf13/cobra"
 	"log"
@@ -115,6 +116,12 @@ var rootCmd = &cobra.Command{
 				log.Fatalln(err)
 			}
 			archivePath = file
+			defer func(name string) {
+				err := os.Remove(name)
+				if err != nil {
+					fmt.Println(err)
+				}
+			}(archivePath)
 
 		} else { // input is project id or slug?
 			versions, err := modrinth.NewClient(host).GetProjectVersions(input, nil)
@@ -155,6 +162,12 @@ var rootCmd = &cobra.Command{
 			if archivePath == "" {
 				log.Fatalln("No mrpack file found for", input, version)
 			}
+			defer func(name string) {
+				err := os.Remove(name)
+				if err != nil {
+					fmt.Println(err)
+				}
+			}(archivePath)
 		}
 
 		if archivePath == "" {
@@ -231,6 +244,15 @@ var rootCmd = &cobra.Command{
 		err = mrpack.ExtractOverrides(archivePath, serverDir)
 		if err != nil {
 			log.Fatalln(err)
+		}
+
+		info, err := update.GenerateModPackInfo(archivePath)
+		if err != nil {
+			fmt.Println(err)
+		}
+		err = info.Write(path.Join(serverDir, "modpack.json"))
+		if err != nil {
+			fmt.Println(err)
 		}
 
 		if modsUnclean {
