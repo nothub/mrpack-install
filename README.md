@@ -15,7 +15,7 @@ Usage:
   mrpack-install [command]
 
 Examples:
-  mrpack-install downloads/cool-pack.mrpack
+  mrpack-install downloads/cool-pack.mrpack  --proxy socks5://127.0.0.1:7890
   mrpack-install https://example.org/data/cool-pack.mrpack
   mrpack-install hexmc-modpack --server-file server.jar
   mrpack-install yK0ISmKn 1.0.0-1.18 --server-dir mcserver
@@ -27,6 +27,7 @@ Available Commands:
   help        Help about any command
   ping        Ping a Labrinth instance
   server      Prepare a plain server environment
+  update      Update the server
   version     Print version infos
 
 Flags:
