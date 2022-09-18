@@ -56,7 +56,7 @@ func RemoveEmptyDir(dir string) {
 		return err
 	})
 	if err != nil {
-		panic(err)
+		fmt.Println(err)
 	}
 
 	fileNamesAll := strings.Join(fileNames, "")
