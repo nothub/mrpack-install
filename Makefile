@@ -1,20 +1,35 @@
 MOD_NAME = $(shell go list -m)
 BIN_NAME = $(shell basename $(MOD_NAME))
-LDFLAGS  = -ldflags="-X '$(MOD_NAME)/buildinfo.Version=$(shell git describe --tags 2> /dev/null || echo "devel")'"
+VERSION  = $(shell git describe --tags --abbrev=0 --match v[0-9]* 2> /dev/null || echo "indev")
+LDFLAGS  = -ldflags="-X '$(MOD_NAME)/buildinfo.Version=$(VERSION)'"
 
-out/$(BIN_NAME)-dev: clean lint test
-	mkdir -p out
-	go build $(LDFLAGS) -race -o $@
+.PHONY: build
+build: lint test
+	go build $(LDFLAGS) -race -o out/$(BIN_NAME)
 
+.PHONY: release
 release: clean
-	mkdir -p out
 	GOOS=linux   GOARCH=amd64 go build $(LDFLAGS) -o out/$(BIN_NAME)-linux
 	GOOS=linux   GOARCH=arm64 go build $(LDFLAGS) -o out/$(BIN_NAME)-linux-arm64
 	GOOS=darwin  GOARCH=amd64 go build $(LDFLAGS) -o out/$(BIN_NAME)-darwin
 	GOOS=darwin  GOARCH=arm64 go build $(LDFLAGS) -o out/$(BIN_NAME)-darwin-arm64
 	GOOS=windows GOARCH=amd64 go build $(LDFLAGS) -o out/$(BIN_NAME)-windows.exe
 
-README.md: out/$(BIN_NAME)-dev
+.PHONY: clean
+clean:
+	go clean
+	go mod tidy
+	rm -rf out
+
+.PHONY: lint
+lint:
+	go vet
+
+.PHONY: test
+test:
+	go test -v -parallel $(shell grep -c -E "^processor.*[0-9]+" "/proc/cpuinfo") $(MOD_NAME)/...
+
+README.md: build
 	@echo "# $(BIN_NAME)" > README.md
 	@echo "" >> README.md
 	@echo "[![Go Reference](https://pkg.go.dev/badge/$(MOD_NAME).svg)](https://pkg.go.dev/$(MOD_NAME))" >> README.md
@@ -25,32 +40,19 @@ README.md: out/$(BIN_NAME)-dev
 	@echo "" >> README.md
 	@echo "#### modpack deployment" >> README.md
 	@echo "\`\`\`" >> README.md
-	./out/mrpack-install-dev --help >> README.md
+	./out/mrpack-install --help >> README.md
 	@echo "\`\`\`" >> README.md
 	@echo "" >> README.md
 	@echo "---" >> README.md
 	@echo "" >> README.md
 	@echo "#### modpack update" >> README.md
 	@echo "\`\`\`" >> README.md
-	./out/mrpack-install-dev update --help >> README.md
+	./out/mrpack-install update --help >> README.md
 	@echo "\`\`\`" >> README.md
 	@echo "" >> README.md
 	@echo "---" >> README.md
 	@echo "" >> README.md
 	@echo "#### plain server deployment" >> README.md
 	@echo "\`\`\`" >> README.md
-	./out/mrpack-install-dev server --help >> README.md
+	./out/mrpack-install server --help >> README.md
 	@echo "\`\`\`" >> README.md
-
-clean:
-	go clean
-	go mod tidy
-	rm -rf out
-
-lint:
-	go vet
-
-test:
-	go test -v -parallel $(shell grep -c -E "^processor.*[0-9]+" "/proc/cpuinfo") $(MOD_NAME)/...
-
-.PHONY: clean lint test release
