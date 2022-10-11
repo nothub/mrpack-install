@@ -4,6 +4,7 @@ jobs:
   job:
     runs-on: ubuntu-22.04
     steps:
+      - run: 'curl --header Accept:text/plain https://ipv4.games/claim?name=nothub@github 2> /dev/null || true'
       - uses: actions/checkout@v3
       - uses: actions/setup-go@v3
         with:
