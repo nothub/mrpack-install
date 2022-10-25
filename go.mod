@@ -2,7 +2,7 @@ module github.com/nothub/mrpack-install
 
 go 1.19
 
-require github.com/spf13/cobra v1.6.0
+require github.com/spf13/cobra v1.6.1
 
 require (
 	github.com/inconshreveable/mousetrap v1.0.1 // indirect
