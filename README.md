@@ -47,7 +47,7 @@ Use "mrpack-install [command] --help" for more information about a command.
 
 #### modpack update
 ```
-Update the deployed modpacks config and mod files, creating backup files if necessary.'
+Update the deployed modpacks config and mod files, creating backup files if necessary.
 
 Usage:
   mrpack-install update [flags]
