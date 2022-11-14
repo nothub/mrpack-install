@@ -13,9 +13,9 @@ import (
 
 type DetectList map[Path]util.DetectType
 
-// PreDelete Three scenarios
-// 1.File does not exist Notice
-// 2.File exists but hash value does not match,Change the original file name to xxx.bak
+// PreDelete Three scenarios are possible:
+// 1.File does not exist notice
+// 2.File exists but hash value does not match, change the original file name to xxx.bak
 // 3.File exists and the hash value matches
 func PreDelete(deleteList *ModPackInfo, serverPath string) DetectList {
 	detectType := make(DetectList, 10)
@@ -33,10 +33,10 @@ func PreDelete(deleteList *ModPackInfo, serverPath string) DetectList {
 	return detectType
 }
 
-// PreUpdate Three scenarios
+// PreUpdate Three scenarios are possible:
 // 1.File does not exist
-// 2.File exists but hash value does not match,Change the original file name to xxx.bak
-// 3.File exists and the hash value matches,Remove the item from the queue
+// 2.File exists but hash value does not match, change the original file name to xxx.bak
+// 3.File exists and the hash value matches, remove the item from the queue
 func PreUpdate(updateList *ModPackInfo, serverPath string) DetectList {
 	detectType := make(DetectList, 10)
 	for filePath := range updateList.File {
@@ -77,7 +77,7 @@ func ModPackDeleteDo(deleteList DetectList, serverPath string) error {
 }
 
 func ModPackUpdateDo(updateList DetectList, updateFileInfo FileMap, serverPath string, modPackPath string, downloadPools *requester.DownloadPools) error {
-	//backup file and download file in modrinth index
+	// backup file and download file in modrinth index
 	for filePath := range updateList {
 		switch updateList[filePath] {
 		case util.PathNoMatch:

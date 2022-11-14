@@ -27,7 +27,7 @@ Available Commands:
   help        Help about any command
   ping        Ping a Labrinth instance
   server      Prepare a plain server environment
-  update      Update the server
+  update      Update the deployed modpack
   version     Print version infos
 
 Flags:
@@ -47,7 +47,7 @@ Use "mrpack-install [command] --help" for more information about a command.
 
 #### modpack update
 ```
-Use file's hash and compare,Update the config and mods file'
+Update the deployed modpacks config and mod files, creating backup files if necessary.'
 
 Usage:
   mrpack-install update [flags]
