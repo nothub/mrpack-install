@@ -21,7 +21,7 @@ func init() {
 var updateCmd = &cobra.Command{
 	Use:   "update",
 	Short: "Update the deployed modpack",
-	Long:  `Update the deployed modpacks config and mod files, creating backup files if necessary.'`,
+	Long:  `Update the deployed modpacks config and mod files, creating backup files if necessary.`,
 	Run: func(cmd *cobra.Command, args []string) {
 		if len(args) < 1 {
 			err := cmd.Help()
