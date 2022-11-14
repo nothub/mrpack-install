@@ -12,7 +12,7 @@ jobs:
           go-version-file: 'go.mod'
           check-latest: true
           cache: true
-      - run: make lint test
+      - run: make lint check
       - run: make release
         if: startsWith(github.event.ref, 'refs/tags/v')
       - uses: softprops/action-gh-release@v1
