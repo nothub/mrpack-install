@@ -4,7 +4,7 @@ VERSION  = $(shell git describe --tags --abbrev=0 --match v[0-9]* 2> /dev/null |
 LDFLAGS  = -ldflags="-X '$(MOD_NAME)/buildinfo.Version=$(VERSION)'"
 
 .PHONY: build
-build: lint test
+build: lint check
 	go build $(LDFLAGS) -race -o out/$(BIN_NAME)
 
 .PHONY: release
@@ -25,8 +25,8 @@ clean:
 lint:
 	go vet
 
-.PHONY: test
-test:
+.PHONY: check
+check:
 	go test -v -parallel $(shell grep -c -E "^processor.*[0-9]+" "/proc/cpuinfo") $(MOD_NAME)/...
 
 README.md: build
