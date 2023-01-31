@@ -147,6 +147,17 @@ var updateCmd = &cobra.Command{
 		if err != nil {
 			log.Fatalln(err)
 		}
+
+		for path, _ := range newModPackInfo.File {
+			ok, err := util.PathIsSubpath(string(path), serverDir)
+			if err != nil {
+				log.Println(err)
+			}
+			if err != nil || !ok {
+				log.Fatalln("File path is not safe: " + path)
+			}
+		}
+
 		err = newModPackInfo.Write(path.Join(serverDir, "modpack.json.update"))
 		if err != nil {
 			log.Fatalln(err)

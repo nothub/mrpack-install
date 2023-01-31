@@ -31,6 +31,20 @@ func PathIsDir(path string) bool {
 	return info.Mode().IsDir()
 }
 
+func PathIsSubpath(path string, basePath string) (bool, error) {
+	absBasePath, err := filepath.Abs(basePath)
+	if err != nil {
+		return false, err
+	}
+
+	_, err = filepath.Rel(absBasePath, path)
+	if err != nil {
+		return false, err
+	}
+
+	return true, nil
+}
+
 func FileDetection(hash string, path string) DetectType {
 	_, err := os.Stat(path)
 	if err != nil {

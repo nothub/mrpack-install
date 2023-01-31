@@ -180,6 +180,17 @@ var rootCmd = &cobra.Command{
 		if err != nil {
 			log.Fatalln(err)
 		}
+
+		for _, file := range index.Files {
+			ok, err := util.PathIsSubpath(file.Path, serverDir)
+			if err != nil {
+				log.Println(err)
+			}
+			if err != nil || !ok {
+				log.Fatalln("File path is not safe: " + file.Path)
+			}
+		}
+
 		fmt.Println("Installing:", index.Name)
 		fmt.Printf("Flavor dependencies: %+v\n", index.Dependencies)
 
