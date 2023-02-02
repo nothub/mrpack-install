@@ -184,7 +184,7 @@ var rootCmd = &cobra.Command{
 		for _, file := range index.Files {
 			ok, err := util.PathIsSubpath(file.Path, serverDir)
 			if err != nil {
-				log.Println(err)
+				log.Println(err.Error())
 			}
 			if err != nil || !ok {
 				log.Fatalln("File path is not safe: " + file.Path)

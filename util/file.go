@@ -1,6 +1,7 @@
 package util
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -31,18 +32,38 @@ func PathIsDir(path string) bool {
 	return info.Mode().IsDir()
 }
 
-func PathIsSubpath(path string, basePath string) (bool, error) {
-	absBasePath, err := filepath.Abs(basePath)
+func ResolvePath(path string) (string, error) {
+	// resolve absolute path
+	path, err := filepath.Abs(path)
+	if err != nil {
+		return "", err
+	}
+
+	if _, err := os.Stat(path); err == nil {
+		// resolve symlinks
+		path, err = filepath.EvalSymlinks(path)
+		if err != nil {
+			return "", err
+		}
+	} else if !errors.Is(err, os.ErrNotExist) {
+		return "", err
+	}
+
+	return path, nil
+}
+
+func PathIsSubpath(subPath string, basePath string) (bool, error) {
+	subPath, err := ResolvePath(subPath)
 	if err != nil {
 		return false, err
 	}
 
-	_, err = filepath.Rel(absBasePath, path)
+	basePath, err = ResolvePath(basePath)
 	if err != nil {
 		return false, err
 	}
 
-	return true, nil
+	return strings.HasPrefix(subPath, basePath), nil
 }
 
 func FileDetection(hash string, path string) DetectType {
