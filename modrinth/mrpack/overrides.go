@@ -3,7 +3,9 @@ package mrpack
 import (
 	"archive/zip"
 	"fmt"
+	"github.com/nothub/mrpack-install/util"
 	"io"
+	"log"
 	"os"
 	"path"
 	"path/filepath"
@@ -37,8 +39,15 @@ func ExtractOverrides(zipFile string, target string) error {
 		}
 
 		targetPath := path.Join(target, filePath)
+		ok, err := util.PathIsSubpath(targetPath, target)
+		if err != nil {
+			log.Println(err.Error())
+		}
+		if err != nil || !ok {
+			log.Fatalln("File path is not safe: " + targetPath)
+		}
 
-		err := os.MkdirAll(filepath.Dir(targetPath), 0755)
+		err = os.MkdirAll(filepath.Dir(targetPath), 0755)
 		if err != nil {
 			return err
 		}
