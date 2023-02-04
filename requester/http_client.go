@@ -28,7 +28,6 @@ func NewHTTPClient() *HTTPClient {
 	info, ok := debug.ReadBuildInfo()
 	if ok && info.Main.Path != "" {
 		httpClient.UserAgent = fmt.Sprintf("%s (+https://%s)", httpClient.UserAgent, info.Main.Path)
-		fmt.Println("UA:", httpClient.UserAgent)
 	}
 
 	return httpClient
