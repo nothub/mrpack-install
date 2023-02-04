@@ -13,43 +13,39 @@ import (
 	"strconv"
 )
 
-type ErrorModel interface {
-	String() string
-}
-
 var DefaultHttpClient = NewHTTPClient()
 
-func (httpClient *HTTPClient) GetJson(url string, respModel interface{}, errModel ErrorModel) error {
-	request, err := http.NewRequest(http.MethodGet, url, nil)
+func (httpClient *HTTPClient) GetJson(url string, respModel interface{}, errModel error) error {
+	req, err := http.NewRequest(http.MethodGet, url, nil)
 	if err != nil {
 		return err
 	}
-	request.Header.Set("User-Agent", httpClient.UserAgent)
-	request.Header.Set("Accept", "application/json")
-	request.Close = true
+	req.Header.Set("User-Agent", httpClient.UserAgent)
+	req.Header.Set("Accept", "application/json")
+	req.Close = true
 
-	response, err := httpClient.sendRequest(request)
+	res, err := httpClient.sendRequest(req)
 	if err != nil {
 		return err
 	}
 
-	defer func(Body io.ReadCloser) {
+	defer func(Body io.Closer) {
 		err := Body.Close()
 		if err != nil {
 			fmt.Println(err)
 		}
-	}(response.Body)
+	}(res.Body)
 
-	if response.StatusCode < http.StatusOK || response.StatusCode >= http.StatusBadRequest {
-		if errModel == nil || json.NewDecoder(response.Body).Decode(&errModel) != nil {
-			return errors.New("http status " + strconv.Itoa(response.StatusCode))
+	if res.StatusCode < http.StatusOK || res.StatusCode >= http.StatusBadRequest {
+		if errModel == nil || json.NewDecoder(res.Body).Decode(&errModel) != nil {
+			return errors.New("http status " + strconv.Itoa(res.StatusCode))
 		}
-		return errors.New("http status " + strconv.Itoa(response.StatusCode) + " - " + errModel.String())
+		return errors.New("http status " + strconv.Itoa(res.StatusCode) + " - " + errModel.Error())
 	}
 
-	err = json.NewDecoder(response.Body).Decode(&respModel)
+	err = json.NewDecoder(res.Body).Decode(&respModel)
 	if err != nil {
-		return errors.New("http status " + strconv.Itoa(response.StatusCode) + " - " + err.Error())
+		return errors.New("http status " + strconv.Itoa(res.StatusCode) + " - " + err.Error())
 	}
 
 	return nil
