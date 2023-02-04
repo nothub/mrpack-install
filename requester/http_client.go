@@ -2,6 +2,8 @@ package requester
 
 import (
 	"crypto/tls"
+	"fmt"
+	"github.com/nothub/mrpack-install/buildinfo"
 	"net/http"
 	"net/http/cookiejar"
 	"net/url"
@@ -17,14 +19,18 @@ type HTTPClient struct {
 
 func NewHTTPClient() *HTTPClient {
 	httpClient := &HTTPClient{
-		Client:    http.Client{},
-		UserAgent: "mrpack-install",
+		Client: http.Client{},
 	}
+
 	httpClient.Client.Jar, _ = cookiejar.New(nil)
+
+	httpClient.UserAgent = fmt.Sprintf("%s/%s", "mrpack-install", buildinfo.Version)
 	info, ok := debug.ReadBuildInfo()
 	if ok && info.Main.Path != "" {
-		httpClient.UserAgent = info.Main.Path + "/" + info.Main.Version
+		httpClient.UserAgent = fmt.Sprintf("%s (+https://%s)", httpClient.UserAgent, info.Main.Path)
+		fmt.Println("UA:", httpClient.UserAgent)
 	}
+
 	return httpClient
 }
 
