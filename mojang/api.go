@@ -1,12 +1,18 @@
 package mojang
 
 import (
+	"encoding/hex"
 	"errors"
+	"github.com/google/uuid"
 	"github.com/nothub/mrpack-install/requester"
 	"time"
 )
 
 const manifestUrl = "https://launchermeta.mojang.com/mc/game/version_manifest.json"
+
+var playerUrl = func(name string) string {
+	return "https://api.mojang.com/users/profiles/minecraft/" + name
+}
 
 type Manifest struct {
 	Latest struct {
@@ -99,6 +105,11 @@ type Meta struct {
 	Type                   string    `json:"type"`
 }
 
+type Player struct {
+	Uuid string `json:"id"`
+	Name string `json:"name"`
+}
+
 func GetManifest() (*Manifest, error) {
 	var manifest Manifest
 	err := requester.DefaultHttpClient.GetJson(manifestUrl, &manifest, nil)
@@ -143,4 +154,34 @@ func GetMeta(version string) (*Meta, error) {
 	}
 
 	return &meta, nil
+}
+
+func GetPlayer(name string) (*Player, error) {
+	var player Player
+	err := requester.DefaultHttpClient.GetJson(playerUrl(name), &player, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	id, err := formatUuid(player.Uuid)
+	if err != nil {
+		return nil, err
+	}
+	player.Uuid = id
+
+	return &player, nil
+}
+
+func formatUuid(s string) (string, error) {
+	b, err := hex.DecodeString(s)
+	if err != nil {
+		return "", err
+	}
+
+	id, err := uuid.FromBytes(b)
+	if err != nil {
+		return "", err
+	}
+
+	return id.String(), nil
 }
