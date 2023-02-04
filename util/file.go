@@ -86,26 +86,26 @@ func FileDetection(hash string, path string) DetectType {
 }
 
 func RemoveEmptyDir(dir string) {
-	fileNames := make([]string, 0)
-	dirNames := make([]string, 0)
+	var files []string
+	var dirs []string
 
 	err := filepath.Walk(dir, func(path string, info os.FileInfo, err error) error {
 		if info.IsDir() {
-			dirNames = append(dirNames, path)
+			dirs = append(dirs, path)
 		} else {
-			fileNames = append(fileNames, path)
+			files = append(files, path)
 		}
 		return err
 	})
 	if err != nil {
-		fmt.Println(err)
+		log.Fatalln("Unable to walk file tree!", err.Error())
 	}
 
-	fileNamesAll := strings.Join(fileNames, "")
-
-	for i := len(dirNames) - 1; i >= 0; i-- {
-		if !strings.Contains(fileNamesAll, dirNames[i]) {
-			err := os.Remove(dirNames[i])
+	// TODO: clean this up
+	fileNamesAll := strings.Join(files, "")
+	for i := len(dirs) - 1; i >= 0; i-- {
+		if !strings.Contains(fileNamesAll, dirs[i]) {
+			err := os.Remove(dirs[i])
 			if err != nil {
 				fmt.Println(err)
 			}
