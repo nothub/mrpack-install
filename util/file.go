@@ -3,6 +3,7 @@ package util
 import (
 	"errors"
 	"fmt"
+	"log"
 	"os"
 	"path/filepath"
 	"strings"
@@ -19,6 +20,9 @@ const (
 func PathIsFile(path string) bool {
 	info, err := os.Stat(path)
 	if err != nil {
+		if !errors.Is(err, os.ErrNotExist) {
+			log.Fatalln(err.Error())
+		}
 		return false
 	}
 	return info.Mode().IsRegular()
@@ -27,6 +31,9 @@ func PathIsFile(path string) bool {
 func PathIsDir(path string) bool {
 	info, err := os.Stat(path)
 	if err != nil {
+		if !errors.Is(err, os.ErrNotExist) {
+			log.Fatalln(err.Error())
+		}
 		return false
 	}
 	return info.Mode().IsDir()
