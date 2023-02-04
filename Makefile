@@ -3,8 +3,9 @@ BIN_NAME = $(shell basename $(MOD_NAME))
 VERSION  = $(shell git describe --tags --abbrev=0 --match v[0-9]* 2> /dev/null || echo "indev")
 LDFLAGS  = -ldflags="-X '$(MOD_NAME)/buildinfo.Version=$(VERSION)'"
 
-.PHONY: build
-build: lint check
+build: out/$(BIN_NAME)
+
+out/$(BIN_NAME): $(shell ls **/*.go)
 	go build $(LDFLAGS) -race -o out/$(BIN_NAME)
 
 .PHONY: release
@@ -29,7 +30,7 @@ lint:
 check:
 	go test -v -parallel $(shell grep -c -E "^processor.*[0-9]+" "/proc/cpuinfo") $(MOD_NAME)/...
 
-README.md: build
+README.md: out/$(BIN_NAME)
 	@echo "# $(BIN_NAME)" > README.md
 	@echo "" >> README.md
 	@echo "[![Go Reference](https://pkg.go.dev/badge/$(MOD_NAME).svg)](https://pkg.go.dev/$(MOD_NAME))" >> README.md
