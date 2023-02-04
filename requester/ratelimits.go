@@ -12,23 +12,23 @@ var rateLimits = make(map[string]*rateLimitInfos)
 type rateLimitInfos struct {
 	Remaining  uint64        // requests remaining
 	ResetDelay time.Duration // time until limit reset
-	Timestamp  time.Time
+	LastUpdate time.Time
 }
 
 func (infos *rateLimitInfos) IsExpired() bool {
-	return !infos.Timestamp.Add(infos.ResetDelay).After(time.Now())
+	return !infos.LastUpdate.Add(infos.ResetDelay).After(time.Now())
 }
 
 func updateRateLimits(response *http.Response) {
-	if response.Header.Get("x-ratelimit-remaining") == "" ||
-		response.Header.Get("x-ratelimit-reset") == "" {
+	if response.Header.Get("x-ratelimit-remaining") == "" || response.Header.Get("x-ratelimit-reset") == "" {
 		return
 	}
 
 	limits := rateLimitInfos{
-		Timestamp: time.Now(),
+		LastUpdate: time.Now(),
 	}
 
+	// number of requests left for the time window
 	remaining, err := strconv.ParseUint(response.Header.Get("x-ratelimit-remaining"), 10, 0)
 	if err != nil {
 		fmt.Println("Failed to parse ratelimit-remaining value", err, "sent by", response.Request.Host)
@@ -36,6 +36,7 @@ func updateRateLimits(response *http.Response) {
 	}
 	limits.Remaining = remaining
 
+	// number of seconds before the rate limit resets
 	reset, err := strconv.ParseUint(response.Header.Get("x-ratelimit-reset"), 10, 0)
 	if err != nil {
 		fmt.Println("Failed to parse ratelimit-reset value", err, "sent by", response.Request.Host)
