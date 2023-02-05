@@ -191,7 +191,8 @@ var updateCmd = &cobra.Command{
 		if err != nil {
 			log.Fatalln(err)
 		}
-		util.RemoveEmptyDir(serverDir)
+
+		util.RemoveEmptyDirs(serverDir)
 
 		err = os.Rename(path.Join(serverDir, "modpack.json.update"), path.Join(serverDir, "modpack.json"))
 		if err != nil {

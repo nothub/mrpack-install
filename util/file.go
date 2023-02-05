@@ -12,31 +12,20 @@ import (
 type DetectType int8
 
 const (
-	PathMatchHashMatch   DetectType = 0
-	PathMatchHashNoMatch DetectType = 1
-	PathNoMatch          DetectType = 2
+	PathMatchHashMatch DetectType = iota
+	PathMatchHashNoMatch
+	PathNoMatch
 )
 
 func PathIsFile(path string) bool {
 	info, err := os.Stat(path)
 	if err != nil {
-		if !errors.Is(err, os.ErrNotExist) {
-			log.Fatalln(err.Error())
+		if errors.Is(err, os.ErrNotExist) {
+			return false
 		}
-		return false
+		log.Fatalln(err.Error())
 	}
-	return info.Mode().IsRegular()
-}
-
-func PathIsDir(path string) bool {
-	info, err := os.Stat(path)
-	if err != nil {
-		if !errors.Is(err, os.ErrNotExist) {
-			log.Fatalln(err.Error())
-		}
-		return false
-	}
-	return info.Mode().IsDir()
+	return !info.IsDir()
 }
 
 func ResolvePath(path string) (string, error) {
@@ -85,15 +74,30 @@ func FileDetection(hash string, path string) DetectType {
 	}
 }
 
-func RemoveEmptyDir(dir string) {
-	var files []string
-	var dirs []string
-
+func CountFiles(dir string) int {
+	count := 0
 	err := filepath.Walk(dir, func(path string, info os.FileInfo, err error) error {
-		if info.IsDir() {
-			dirs = append(dirs, path)
-		} else {
-			files = append(files, path)
+		if !info.IsDir() {
+			count = count + 1
+		}
+		return err
+	})
+	if err != nil {
+		log.Fatalln("Unable to walk file tree!", err.Error())
+	}
+	return count
+}
+
+func RemoveEmptyDirs(dir string) {
+	var dirs []string
+	err := filepath.Walk(dir, func(path string, info os.FileInfo, err error) error {
+		// ignore tree root
+		if dir == path {
+			return err
+		}
+		if info.IsDir() && CountFiles(path) == 0 {
+			// prepend because we want to delete the innermost children first
+			dirs = append([]string{path}, dirs...)
 		}
 		return err
 	})
@@ -101,14 +105,10 @@ func RemoveEmptyDir(dir string) {
 		log.Fatalln("Unable to walk file tree!", err.Error())
 	}
 
-	// TODO: clean this up
-	fileNamesAll := strings.Join(files, "")
-	for i := len(dirs) - 1; i >= 0; i-- {
-		if !strings.Contains(fileNamesAll, dirs[i]) {
-			err := os.Remove(dirs[i])
-			if err != nil {
-				fmt.Println(err)
-			}
+	for _, path := range dirs {
+		err := os.Remove(path)
+		if err != nil {
+			fmt.Printf("Unable to delete empty directory %s. %s\n", path, err.Error())
 		}
 	}
 }
