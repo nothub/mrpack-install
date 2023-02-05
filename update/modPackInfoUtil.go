@@ -76,21 +76,23 @@ func GenerateModPackInfo(modPackPatch string) (*ModPackInfo, error) {
 	return &modPackInfo, nil
 }
 
-func CompareModPackInfo(oldVersion ModPackInfo, newVersion ModPackInfo) (deleteFileInfo *ModPackInfo, updateFileInfo *ModPackInfo, err error) {
-	if oldVersion.ModPackName != newVersion.ModPackName || !reflect.DeepEqual(oldVersion.Dependencies, newVersion.Dependencies) {
+func CompareModPackInfo(old ModPackInfo, new ModPackInfo) (deleteFileInfo *ModPackInfo, updateFileInfo *ModPackInfo, err error) {
+	if old.ModPackName != new.ModPackName || !reflect.DeepEqual(old.Dependencies, new.Dependencies) {
 		return nil, nil, errors.New("for mismatched versions, please upgrade manually")
 	}
 
-	for path := range oldVersion.File {
-		if newVersion.File[path].Hash == oldVersion.File[path].Hash {
-			delete(oldVersion.File, path)
-			delete(newVersion.File, path)
+	for path := range old.File {
+		// ignore unchanged files
+		if new.File[path].Hash == old.File[path].Hash {
+			delete(old.File, path)
+			delete(new.File, path)
 		}
 
-		if _, ok := newVersion.File[path]; ok {
-			delete(oldVersion.File, path)
+		// do not delete old files that we overwrite with new files
+		if _, found := new.File[path]; found {
+			delete(old.File, path)
 		}
 	}
 
-	return &oldVersion, &newVersion, nil
+	return &old, &new, nil
 }
