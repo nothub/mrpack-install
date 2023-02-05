@@ -12,6 +12,11 @@ import (
 func init() {
 	serverCmd.Flags().String("minecraft-version", "latest", "Minecraft version")
 	serverCmd.Flags().String("flavor-version", "latest", "Flavor version")
+	// TODO: --eula
+	// TODO: --op <uuid>...
+	// TODO: --whitelist <uuid>...
+	// TODO: --start-server
+
 	rootCmd.AddCommand(serverCmd)
 }
 

@@ -12,22 +12,47 @@ import (
 	"strings"
 )
 
-func ExtractOverrides(zipFile string, target string) error {
-	zipReader, err := zip.OpenReader(zipFile)
-	if err != nil {
-		return err
-	}
-	defer func(zipReader *zip.ReadCloser) {
-		err := zipReader.Close()
-		if err != nil {
-			fmt.Println(err)
-		}
-	}(zipReader)
+func GetOverrideHashes(zipFile string) (*util.Hashes, error) {
+	hashes := make(util.Hashes)
 
-	for _, file := range zipReader.File {
-		if file.FileInfo().IsDir() {
-			continue
+	err := util.IterZip(zipFile, func(file *zip.File) error {
+		var name string
+		if strings.HasPrefix(file.Name, "overrides/") {
+			name = strings.TrimPrefix(file.Name, "overrides/")
+		} else if strings.HasPrefix(file.Name, "server-overrides/") {
+			name = strings.TrimPrefix(file.Name, "server-overrides/")
+		} else {
+			return nil
 		}
+
+		reader, err := file.Open()
+		if err != nil {
+			return err
+		}
+
+		hash, err := util.GetReadCloserSha1(reader)
+		if err != nil {
+			return err
+		}
+
+		err = reader.Close()
+		if err != nil {
+			return err
+		}
+
+		hashes[name] = hash
+
+		return nil
+	})
+	if err != nil {
+		log.Fatalln(err.Error())
+	}
+
+	return &hashes, nil
+}
+
+func ExtractOverrides(zipFile string, target string) error {
+	err := util.IterZip(zipFile, func(file *zip.File) error {
 
 		filePath := file.Name
 		if strings.HasPrefix(filePath, "overrides/") {
@@ -35,7 +60,7 @@ func ExtractOverrides(zipFile string, target string) error {
 		} else if strings.HasPrefix(filePath, "server-overrides/") {
 			filePath = strings.TrimPrefix(filePath, "server-overrides/")
 		} else {
-			continue
+			return nil
 		}
 
 		targetPath := path.Join(target, filePath)
@@ -75,6 +100,12 @@ func ExtractOverrides(zipFile string, target string) error {
 		}
 
 		fmt.Println("Override file extracted:", targetPath)
+
+		return nil
+	})
+
+	if err != nil {
+		log.Fatalln(err.Error())
 	}
 
 	return nil

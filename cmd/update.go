@@ -3,6 +3,7 @@ package cmd
 import (
 	"fmt"
 	modrinth "github.com/nothub/mrpack-install/modrinth/api"
+	"github.com/nothub/mrpack-install/modrinth/mrpack"
 	"github.com/nothub/mrpack-install/requester"
 	"github.com/nothub/mrpack-install/update"
 	"github.com/nothub/mrpack-install/util"
@@ -14,6 +15,7 @@ import (
 )
 
 func init() {
+	// TODO flags: --start-server
 
 	rootCmd.AddCommand(updateCmd)
 }
@@ -23,6 +25,8 @@ var updateCmd = &cobra.Command{
 	Short: "Update the deployed modpack",
 	Long:  `Update the deployed modpacks config and mod files, creating backup files if necessary.`,
 	Run: func(cmd *cobra.Command, args []string) {
+		opts := GlobalOptions(cmd)
+
 		if len(args) < 1 {
 			err := cmd.Help()
 			if err != nil {
@@ -36,36 +40,7 @@ var updateCmd = &cobra.Command{
 			version = args[1]
 		}
 
-		host, err := cmd.Flags().GetString("host")
-		if err != nil {
-			log.Fatalln(err)
-		}
-		serverDir, err := cmd.Flags().GetString("server-dir")
-		if err != nil {
-			log.Fatalln(err)
-		}
-		proxy, err := cmd.Flags().GetString("proxy")
-		if err != nil {
-			log.Fatalln(err)
-		}
-		if proxy != "" {
-			err := requester.DefaultHttpClient.SetProxy(proxy)
-			if err != nil {
-				log.Fatalln(err)
-			}
-		}
-		downloadThreads, err := cmd.Flags().GetInt("download-threads")
-		if err != nil || downloadThreads > 64 {
-			downloadThreads = 8
-			fmt.Println(err)
-		}
-		retryTimes, err := cmd.Flags().GetInt("retry-times")
-		if err != nil {
-			retryTimes = 3
-			fmt.Println(err)
-		}
-
-		err = os.MkdirAll(serverDir, 0755)
+		err := os.MkdirAll(opts.ServerDir, 0755)
 		if err != nil {
 			log.Fatalln(err)
 		}
@@ -76,7 +51,7 @@ var updateCmd = &cobra.Command{
 
 		} else if util.IsValidUrl(input) {
 			fmt.Println("Downloading mrpack file from", args)
-			file, err := requester.DefaultHttpClient.DownloadFile(input, serverDir, "")
+			file, err := requester.DefaultHttpClient.DownloadFile(input, opts.ServerDir, "")
 			if err != nil {
 				log.Fatalln(err)
 			}
@@ -88,7 +63,7 @@ var updateCmd = &cobra.Command{
 				}
 			}(archivePath)
 		} else { // input is project id or slug?
-			versions, err := modrinth.NewClient(host).GetProjectVersions(input, nil)
+			versions, err := modrinth.NewClient(opts.Host).GetProjectVersions(input, nil)
 			if err != nil {
 				log.Fatalln(err)
 			}
@@ -115,7 +90,7 @@ var updateCmd = &cobra.Command{
 			for i := range files {
 				if strings.HasSuffix(files[i].Filename, ".mrpack") {
 					fmt.Println("Downloading mrpack file from", files[i].Url)
-					file, err := requester.DefaultHttpClient.DownloadFile(files[i].Url, serverDir, "")
+					file, err := requester.DefaultHttpClient.DownloadFile(files[i].Url, opts.ServerDir, "")
 					if err != nil {
 						log.Fatalln(err)
 					}
@@ -140,16 +115,18 @@ var updateCmd = &cobra.Command{
 
 		fmt.Println("Processing mrpack file", archivePath)
 
-		var downloads []*requester.Download
-		downloadPools := requester.NewDownloadPools(requester.DefaultHttpClient, downloads, downloadThreads, retryTimes)
-
-		newModPackInfo, err := update.GenerateModPackInfo(archivePath)
+		index, err := mrpack.ReadIndex(archivePath)
 		if err != nil {
 			log.Fatalln(err)
 		}
 
-		for path, _ := range newModPackInfo.File {
-			ok, err := util.PathIsSubpath(string(path), serverDir)
+		newModPackInfo, err := update.GenerateModPackInfo(index)
+		if err != nil {
+			log.Fatalln(err)
+		}
+
+		for path := range newModPackInfo.Hashes {
+			ok, err := util.PathIsSubpath(path, opts.ServerDir)
 			if err != nil {
 				log.Println(err.Error())
 			}
@@ -158,11 +135,11 @@ var updateCmd = &cobra.Command{
 			}
 		}
 
-		err = newModPackInfo.Write(path.Join(serverDir, "modpack.json.update"))
+		err = newModPackInfo.Write(path.Join(opts.ServerDir, "modpack.json.update"))
 		if err != nil {
 			log.Fatalln(err)
 		}
-		oldModPackInfo, err := update.ReadModPackInfo(path.Join(serverDir, "modpack.json"))
+		oldModPackInfo, err := update.ReadModPackInfo(path.Join(opts.ServerDir, "modpack.json"))
 		if err != nil {
 			log.Fatalln(err)
 		}
@@ -170,8 +147,8 @@ var updateCmd = &cobra.Command{
 		if err != nil {
 			return
 		}
-		deleteList := update.PreDelete(deleteFileInfo, serverDir)
-		updateList := update.PreUpdate(updateFileInfo, serverDir)
+		deletionActions := update.GetDeletionActions(deleteFileInfo, opts.ServerDir)
+		updateActions := update.GetUpdateActions(updateFileInfo, opts.ServerDir)
 
 		fmt.Printf("Would you like to update: [y/N]")
 		var userInput string
@@ -184,18 +161,22 @@ var updateCmd = &cobra.Command{
 			return
 		}
 
-		err = update.ModPackDeleteDo(deleteList, serverDir)
-		if err != nil {
-			log.Fatalln(err)
-		}
-		err = update.ModPackUpdateDo(updateList, updateFileInfo.File, serverDir, archivePath, downloadPools)
+		err = update.ModPackDeleteDo(deletionActions, opts.ServerDir)
 		if err != nil {
 			log.Fatalln(err)
 		}
 
-		util.RemoveEmptyDirs(serverDir)
+		var downloads []*requester.Download
+		downloadPools := requester.NewDownloadPools(requester.DefaultHttpClient, downloads, opts.DownloadThreads, opts.RetryTimes)
 
-		err = os.Rename(path.Join(serverDir, "modpack.json.update"), path.Join(serverDir, "modpack.json"))
+		err = update.ModPackUpdateDo(updateActions, updateFileInfo.Hashes, opts.ServerDir, archivePath, downloadPools)
+		if err != nil {
+			log.Fatalln(err)
+		}
+
+		util.RemoveEmptyDirs(opts.ServerDir)
+
+		err = os.Rename(path.Join(opts.ServerDir, "modpack.json.update"), path.Join(opts.ServerDir, "modpack.json"))
 		if err != nil {
 			log.Fatalln(err)
 		}

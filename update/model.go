@@ -4,22 +4,21 @@ import (
 	"bytes"
 	"encoding/json"
 	"github.com/nothub/mrpack-install/modrinth/mrpack"
+	"github.com/nothub/mrpack-install/util"
 	"os"
 )
 
-type Path string
-type FileMap map[Path]FileInfo
-
 type ModPackInfo struct {
-	ModPackVersion string              `json:"modPackVersion"`
-	ModPackName    string              `json:"modPackName"`
-	File           FileMap             `json:"file"`
-	Dependencies   mrpack.Dependencies `json:"dependencies"`
+	Schema       uint8               `json:"schema_version"`
+	PackVersion  string              `json:"pack_version"`
+	PackName     string              `json:"pack_name"`
+	Hashes       util.Hashes         `json:"hashes"`
+	Dependencies mrpack.Dependencies `json:"dependencies"`
 }
 
 type FileInfo struct {
-	Hash         string   `json:"Hash"`
-	DownloadLink []string `json:"DownloadLink"`
+	Hash          string   `json:"hash"`
+	DownloadLinks []string `json:"download_links"`
 }
 
 func ReadModPackInfo(modPackJsonFile string) (*ModPackInfo, error) {

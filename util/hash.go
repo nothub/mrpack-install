@@ -3,33 +3,19 @@ package util
 import (
 	"crypto/sha1"
 	"encoding/hex"
-	"errors"
 	"fmt"
 	"io"
 	"log"
 	"os"
 )
 
-func compareSha1(verifyHash string, newDataHash string) (bool, error) {
-	if newDataHash == verifyHash {
-		return true, nil
-	}
-	return false, errors.New(fmt.Sprintf("data Hash Error,the data sha1 is %s,but you give hash is %s", newDataHash, verifyHash))
-}
+// Hashes maps file paths to hashes.
+type Hashes map[string]string
 
-func getSha1(newData *[]byte) string {
+func Sha1(data *[]byte) string {
 	s := sha1.New()
-	s.Write(*newData)
-	sha1Code := hex.EncodeToString(s.Sum(nil))
-	return sha1Code
-}
-
-func CheckReadCloserSha1(verifyHash string, readCloser io.ReadCloser) (bool, error) {
-	newFileHash, err := GetReadCloserSha1(readCloser)
-	if err != nil {
-		return false, err
-	}
-	return compareSha1(verifyHash, newFileHash)
+	s.Write(*data)
+	return hex.EncodeToString(s.Sum(nil))
 }
 
 func GetReadCloserSha1(readCloser io.ReadCloser) (string, error) {
@@ -37,7 +23,7 @@ func GetReadCloserSha1(readCloser io.ReadCloser) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	return getSha1(&verifyByte), nil
+	return Sha1(&verifyByte), nil
 }
 
 func CheckFileSha1(verifyHash string, verifyFile string) (bool, error) {
@@ -60,5 +46,5 @@ func CheckFileSha1(verifyHash string, verifyFile string) (bool, error) {
 	if err != nil {
 		return false, err
 	}
-	return compareSha1(verifyHash, newFileHash)
+	return verifyHash == newFileHash, nil
 }

@@ -9,14 +9,6 @@ import (
 	"strings"
 )
 
-type DetectType int8
-
-const (
-	PathMatchHashMatch DetectType = iota
-	PathMatchHashNoMatch
-	PathNoMatch
-)
-
 func PathIsFile(path string) bool {
 	info, err := os.Stat(path)
 	if err != nil {
@@ -60,18 +52,6 @@ func PathIsSubpath(subPath string, basePath string) (bool, error) {
 	}
 
 	return strings.HasPrefix(subPath, basePath), nil
-}
-
-func FileDetection(hash string, path string) DetectType {
-	_, err := os.Stat(path)
-	if err != nil {
-		return PathNoMatch
-	}
-	if tmp, _ := CheckFileSha1(hash, path); tmp {
-		return PathMatchHashMatch
-	} else {
-		return PathMatchHashNoMatch
-	}
 }
 
 func CountFiles(dir string) int {

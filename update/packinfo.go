@@ -4,31 +4,27 @@ import (
 	"archive/zip"
 	"errors"
 	"fmt"
+	modrinth "github.com/nothub/mrpack-install/modrinth/api"
 	"github.com/nothub/mrpack-install/modrinth/mrpack"
 	"github.com/nothub/mrpack-install/util"
 	"reflect"
 	"strings"
 )
 
-func GenerateModPackInfo(modPackPatch string) (*ModPackInfo, error) {
+func GenerateModPackInfo(modrinthIndex *mrpack.Index) (*ModPackInfo, error) {
 	var modPackInfo ModPackInfo
-	modPackInfo.File = make(FileMap)
-
-	modrinthIndex, err := mrpack.ReadIndex(modPackPatch)
-	if err != nil {
-		return nil, err
-	}
+	modPackInfo.Hashes = make(util.Hashes)
 
 	modPackInfo.Dependencies = modrinthIndex.Dependencies
-	modPackInfo.ModPackVersion = modrinthIndex.VersionId
-	modPackInfo.ModPackName = modrinthIndex.Name
+	modPackInfo.PackVersion = modrinthIndex.VersionId
+	modPackInfo.PackName = modrinthIndex.Name
 
 	// Add modrinth.index file
 	for _, file := range modrinthIndex.Files {
-		if file.Env.Server == "unsupported" {
+		if file.Env.Server == modrinth.UnsupportedEnvSupport {
 			continue
 		}
-		modPackInfo.File[Path(file.Path)] = FileInfo{Hash: string(file.Hashes.Sha1), DownloadLink: file.Downloads}
+		modPackInfo.Hashes[file.Path] = string(file.Hashes.Sha1)
 	}
 
 	// Add overrides file
@@ -70,27 +66,27 @@ func GenerateModPackInfo(modPackPatch string) (*ModPackInfo, error) {
 		if err != nil {
 			return nil, err
 		}
-		modPackInfo.File[Path(filePath)] = FileInfo{Hash: fileHash}
+		modPackInfo.Hashes[filePath] = fileHash
 	}
 
 	return &modPackInfo, nil
 }
 
 func CompareModPackInfo(old ModPackInfo, new ModPackInfo) (deleteFileInfo *ModPackInfo, updateFileInfo *ModPackInfo, err error) {
-	if old.ModPackName != new.ModPackName || !reflect.DeepEqual(old.Dependencies, new.Dependencies) {
+	if old.PackName != new.PackName || !reflect.DeepEqual(old.Dependencies, new.Dependencies) {
 		return nil, nil, errors.New("for mismatched versions, please upgrade manually")
 	}
 
-	for path := range old.File {
+	for path := range old.Hashes {
 		// ignore unchanged files
-		if new.File[path].Hash == old.File[path].Hash {
-			delete(old.File, path)
-			delete(new.File, path)
+		if new.Hashes[path] == old.Hashes[path] {
+			delete(old.Hashes, path)
+			delete(new.Hashes, path)
 		}
 
 		// do not delete old files that we overwrite with new files
-		if _, found := new.File[path]; found {
-			delete(old.File, path)
+		if _, found := new.Hashes[path]; found {
+			delete(old.Hashes, path)
 		}
 	}
 

@@ -19,6 +19,10 @@ import (
 
 func init() {
 	rootCmd.Flags().BoolP("version", "V", false, "Print version and exit")
+	// TODO: --eula
+	// TODO: --op <uuid>...
+	// TODO: --whitelist <uuid>...
+	// TODO: --start-server
 
 	// TODO: rootCmd.PersistentFlags().BoolP("verbose", "v", false, "Enable verbose output")
 	rootCmd.PersistentFlags().String("host", "api.modrinth.com", "Labrinth host")
@@ -27,10 +31,85 @@ func init() {
 	rootCmd.PersistentFlags().String("proxy", "", "Use a proxy to download")
 	rootCmd.PersistentFlags().Int("download-threads", 8, "Download threads")
 	rootCmd.PersistentFlags().Int("retry-times", 3, "Number of retries when a download fails")
-	// TODO: --eula
-	// TODO: --op <uuid>...
-	// TODO: --whitelist <uuid>...
-	// TODO: --start-server
+}
+
+type GlobalOpts struct {
+	Host            string
+	ServerDir       string
+	ServerFile      string
+	Proxy           string
+	DownloadThreads int
+	RetryTimes      int
+}
+
+func GlobalOptions(cmd *cobra.Command) *GlobalOpts {
+	var opts GlobalOpts
+
+	// TODO: validate inputs
+
+	host, err := cmd.Flags().GetString("host")
+	if err != nil {
+		log.Fatalln(err)
+	}
+	opts.Host = host
+
+	serverDir, err := cmd.Flags().GetString("server-dir")
+	if err != nil {
+		log.Fatalln(err)
+	}
+	opts.ServerDir = serverDir
+
+	serverFile, err := cmd.Flags().GetString("server-file")
+	if err != nil {
+		log.Fatalln(err)
+	}
+	opts.ServerFile = serverFile
+
+	proxy, err := cmd.Flags().GetString("proxy")
+	if err != nil {
+		log.Fatalln(err)
+	}
+	if proxy != "" {
+		err := requester.DefaultHttpClient.SetProxy(proxy)
+		if err != nil {
+			log.Fatalln(err)
+		}
+	}
+	opts.Proxy = proxy
+
+	downloadThreads, err := cmd.Flags().GetInt("download-threads")
+	if err != nil || downloadThreads > 64 {
+		downloadThreads = 8
+		fmt.Println(err)
+	}
+	opts.DownloadThreads = downloadThreads
+
+	retryTimes, err := cmd.Flags().GetInt("retry-times")
+	if err != nil {
+		retryTimes = 3
+		fmt.Println(err)
+	}
+	opts.RetryTimes = retryTimes
+
+	return &opts
+}
+
+type RootOpts struct {
+	*GlobalOpts
+	Version bool
+}
+
+func GetRootOpts(cmd *cobra.Command) *RootOpts {
+	var opts RootOpts
+	opts.GlobalOpts = GlobalOptions(cmd)
+
+	version, err := cmd.Flags().GetBool("version")
+	if err != nil {
+		log.Fatalln(err)
+	}
+	opts.Version = version
+
+	return &opts
 }
 
 var rootCmd = &cobra.Command{
@@ -45,6 +124,8 @@ var rootCmd = &cobra.Command{
   mrpack-install --version`,
 	Args: cobra.RangeArgs(0, 2),
 	Run: func(cmd *cobra.Command, args []string) {
+		opts := GetRootOpts(cmd)
+
 		ver, err := cmd.Flags().GetBool("version")
 		if err != nil {
 			log.Fatalln(err)
@@ -67,40 +148,7 @@ var rootCmd = &cobra.Command{
 			version = args[1]
 		}
 
-		host, err := cmd.Flags().GetString("host")
-		if err != nil {
-			log.Fatalln(err)
-		}
-		serverDir, err := cmd.Flags().GetString("server-dir")
-		if err != nil {
-			log.Fatalln(err)
-		}
-		serverFile, err := cmd.Flags().GetString("server-file")
-		if err != nil {
-			log.Fatalln(err)
-		}
-		proxy, err := cmd.Flags().GetString("proxy")
-		if err != nil {
-			log.Fatalln(err)
-		}
-		if proxy != "" {
-			err := requester.DefaultHttpClient.SetProxy(proxy)
-			if err != nil {
-				log.Fatalln(err)
-			}
-		}
-		downloadThreads, err := cmd.Flags().GetInt("download-threads")
-		if err != nil || downloadThreads > 64 {
-			downloadThreads = 8
-			fmt.Println(err)
-		}
-		retryTimes, err := cmd.Flags().GetInt("retry-times")
-		if err != nil {
-			retryTimes = 3
-			fmt.Println(err)
-		}
-
-		err = os.MkdirAll(serverDir, 0755)
+		err = os.MkdirAll(opts.ServerDir, 0755)
 		if err != nil {
 			log.Fatalln(err)
 		}
@@ -111,7 +159,7 @@ var rootCmd = &cobra.Command{
 
 		} else if util.IsValidUrl(input) {
 			fmt.Println("Downloading mrpack file from", args)
-			file, err := requester.DefaultHttpClient.DownloadFile(input, serverDir, "")
+			file, err := requester.DefaultHttpClient.DownloadFile(input, opts.ServerDir, "")
 			if err != nil {
 				log.Fatalln(err)
 			}
@@ -124,7 +172,7 @@ var rootCmd = &cobra.Command{
 			}(archivePath)
 
 		} else { // input is project id or slug?
-			versions, err := modrinth.NewClient(host).GetProjectVersions(input, nil)
+			versions, err := modrinth.NewClient(opts.Host).GetProjectVersions(input, nil)
 			if err != nil {
 				log.Fatalln(err)
 			}
@@ -151,7 +199,7 @@ var rootCmd = &cobra.Command{
 			for i := range files {
 				if strings.HasSuffix(files[i].Filename, ".mrpack") {
 					fmt.Println("Downloading mrpack file from", files[i].Url)
-					file, err := requester.DefaultHttpClient.DownloadFile(files[i].Url, serverDir, "")
+					file, err := requester.DefaultHttpClient.DownloadFile(files[i].Url, opts.ServerDir, "")
 					if err != nil {
 						log.Fatalln(err)
 					}
@@ -182,7 +230,7 @@ var rootCmd = &cobra.Command{
 		}
 
 		for _, file := range index.Files {
-			ok, err := util.PathIsSubpath(file.Path, serverDir)
+			ok, err := util.PathIsSubpath(file.Path, opts.ServerDir)
 			if err != nil {
 				log.Println(err.Error())
 			}
@@ -195,7 +243,7 @@ var rootCmd = &cobra.Command{
 		fmt.Printf("Flavor dependencies: %+v\n", index.Dependencies)
 
 		// download server if not present
-		if !util.PathIsFile(path.Join(serverDir, serverFile)) {
+		if !util.PathIsFile(path.Join(opts.ServerDir, opts.ServerFile)) {
 			fmt.Println("Server file not present, downloading...\n(Point --server-dir and --server-file flags to an existing server file to skip this step.)")
 
 			var provider server.Provider
@@ -221,7 +269,7 @@ var rootCmd = &cobra.Command{
 				}
 			}
 
-			err = provider.Provide(serverDir, serverFile)
+			err = provider.Provide(opts.ServerDir, opts.ServerFile)
 			if err != nil {
 				log.Fatalln(err)
 			}
@@ -237,9 +285,9 @@ var rootCmd = &cobra.Command{
 			if file.Env.Server == modrinth.UnsupportedEnvSupport {
 				continue
 			}
-			downloads = append(downloads, requester.NewDownload(file.Downloads, map[string]string{"sha1": string(file.Hashes.Sha1)}, filepath.Base(file.Path), path.Join(serverDir, filepath.Dir(file.Path))))
+			downloads = append(downloads, requester.NewDownload(file.Downloads, map[string]string{"sha1": string(file.Hashes.Sha1)}, filepath.Base(file.Path), path.Join(opts.ServerDir, filepath.Dir(file.Path))))
 		}
-		downloadPools := requester.NewDownloadPools(requester.DefaultHttpClient, downloads, downloadThreads, retryTimes)
+		downloadPools := requester.NewDownloadPools(requester.DefaultHttpClient, downloads, opts.DownloadThreads, opts.RetryTimes)
 		downloadPools.Do()
 		modsUnclean := false
 		for i := range downloadPools.Downloads {
@@ -252,16 +300,16 @@ var rootCmd = &cobra.Command{
 
 		// overrides
 		fmt.Println("Extracting overrides...")
-		err = mrpack.ExtractOverrides(archivePath, serverDir)
+		err = mrpack.ExtractOverrides(archivePath, opts.ServerDir)
 		if err != nil {
 			log.Fatalln(err)
 		}
 
-		info, err := update.GenerateModPackInfo(archivePath)
+		info, err := update.GenerateModPackInfo(index)
 		if err != nil {
 			fmt.Println(err)
 		}
-		err = info.Write(path.Join(serverDir, "modpack.json"))
+		err = info.Write(path.Join(opts.ServerDir, "modpack.json"))
 		if err != nil {
 			fmt.Println(err)
 		}
