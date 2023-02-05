@@ -180,6 +180,7 @@ var updateCmd = &cobra.Command{
 			log.Fatalln(err)
 		}
 		if userInput != "y" {
+			fmt.Println("Update process canceled.")
 			return
 		}
 
