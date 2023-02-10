@@ -1,19 +1,21 @@
 package server
 
 import (
+	"crypto"
 	"errors"
+	"github.com/nothub/hashutils/chksum"
+	"github.com/nothub/hashutils/encoding"
 	"github.com/nothub/mrpack-install/mojang"
 	"github.com/nothub/mrpack-install/requester"
-	"github.com/nothub/mrpack-install/util"
 	"log"
 )
 
-type Vanilla struct {
+type VanillaInstaller struct {
 	MinecraftVersion string
 }
 
-func (provider *Vanilla) Provide(serverDir string, serverFile string) error {
-	meta, err := mojang.GetMeta(provider.MinecraftVersion)
+func (inst *VanillaInstaller) Install(serverDir string, serverFile string) error {
+	meta, err := mojang.GetMeta(inst.MinecraftVersion)
 	if err != nil {
 		return err
 	}
@@ -23,7 +25,7 @@ func (provider *Vanilla) Provide(serverDir string, serverFile string) error {
 		log.Fatalln(err)
 	}
 
-	ok, err := util.CheckFileSha1(meta.Downloads.Server.Sha1, file)
+	ok, err := chksum.VerifyFile(file, meta.Downloads.Server.Sha1, crypto.SHA1.New(), encoding.Hex)
 	if err != nil {
 		log.Fatalln(err)
 	}

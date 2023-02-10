@@ -7,15 +7,15 @@ import (
 	"net/url"
 )
 
-type Fabric struct {
+type FabricInstaller struct {
 	MinecraftVersion string
 	FabricVersion    string
 }
 
-func (provider *Fabric) Provide(serverDir string, serverFile string) error {
-	loaderVersion := provider.FabricVersion
+func (inst *FabricInstaller) Install(serverDir string, serverFile string) error {
+	loaderVersion := inst.FabricVersion
 	if loaderVersion == "" || loaderVersion == "latest" {
-		latestLoaderVersion, err := latestFabricLoaderVersion(provider.MinecraftVersion)
+		latestLoaderVersion, err := latestFabricLoaderVersion(inst.MinecraftVersion)
 		if err != nil {
 			return err
 		}
@@ -27,7 +27,7 @@ func (provider *Fabric) Provide(serverDir string, serverFile string) error {
 		return err
 	}
 
-	versionTriple := provider.MinecraftVersion + "/" + loaderVersion + "/" + installerVersion
+	versionTriple := inst.MinecraftVersion + "/" + loaderVersion + "/" + installerVersion
 	u, err := url.Parse("https://meta.fabricmc.net/v2/versions/loader/" + versionTriple + "/server/jar")
 	if err != nil {
 		return err

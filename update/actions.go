@@ -2,7 +2,10 @@ package update
 
 import (
 	"archive/zip"
+	"crypto"
 	"fmt"
+	"github.com/nothub/hashutils/chksum"
+	"github.com/nothub/hashutils/encoding"
 	"github.com/nothub/mrpack-install/requester"
 	"github.com/nothub/mrpack-install/util"
 	"io"
@@ -23,7 +26,7 @@ func GetFileStrategy(hash string, path string) Strategy {
 	if !util.PathIsFile(path) {
 		return NoOp
 	}
-	match, _ := util.CheckFileSha1(hash, path)
+	match, _ := chksum.VerifyFile(path, hash, crypto.SHA1.New(), encoding.Hex)
 	if match {
 		return Delete
 	} else {
@@ -37,7 +40,7 @@ type Actions map[string]Strategy
 // 1.File does not exist notice
 // 2.File exists but hash value does not match, change the original file name to xxx.bak
 // 3.File exists and the hash value matches
-func GetDeletionActions(deletions *ModPackInfo, serverPath string) Actions {
+func GetDeletionActions(deletions *PackState, serverPath string) Actions {
 	actions := make(Actions, 10)
 	for filePath := range deletions.Hashes {
 		t := GetFileStrategy(deletions.Hashes[filePath], filepath.Join(serverPath, string(filePath)))
@@ -57,7 +60,7 @@ func GetDeletionActions(deletions *ModPackInfo, serverPath string) Actions {
 // 1.File does not exist
 // 2.File exists but hash value does not match, change the original file name to xxx.bak
 // 3.File exists and the hash value matches, remove the item from the queue
-func GetUpdateActions(updates *ModPackInfo, serverPath string) Actions {
+func GetUpdateActions(updates *PackState, serverPath string) Actions {
 	actions := make(Actions, 10)
 	for filePath := range updates.Hashes {
 		switch GetFileStrategy(updates.Hashes[filePath], filepath.Join(serverPath, string(filePath))) {
@@ -96,13 +99,17 @@ func ModPackDeleteDo(deleteList Actions, serverPath string) error {
 	return nil
 }
 
-func ModPackUpdateDo(updateList Actions, updateFileInfo util.Hashes, serverPath string, modPackPath string, downloadPools *requester.DownloadPools) error {
+func ModPackUpdateDo(updateList Actions, updateFileInfo map[string]string, serverPath string, modPackPath string, downloadThreads int, retryTimes int) error {
+
+	var downloads []*requester.Download
+	downloadPools := requester.NewDownloadPools(requester.DefaultHttpClient, downloads, downloadThreads, retryTimes)
+
 	// backup file and download file in modrinth index
 	for filePath := range updateList {
 		switch updateList[filePath] {
 		case NoOp:
 			if updateFileInfo[filePath].DownloadLink != nil {
-				downloadPools.Downloads = append(downloadPools.Downloads, requester.NewDownload(updateFileInfo[filePath].DownloadLink, map[string]string{"sha1": updateFileInfo[filePath]}, filepath.Base(string(filePath)), filepath.Join(serverPath, filepath.Dir(string(filePath)))))
+				downloadPools.Downloads = append(downloadPools.Downloads, requester.NewDownload(updateFileInfo[filePath].DownloadLink, map[string]string{"sha1": updateFileInfo[filePath]}, filepath.Base(filePath), filepath.Join(serverPath, filepath.Dir(filePath))))
 			}
 		case Backup:
 			err := os.MkdirAll(filepath.Dir(filepath.Join(serverPath, "updateBack", string(filePath))), 0755)
@@ -114,7 +121,7 @@ func ModPackUpdateDo(updateList Actions, updateFileInfo util.Hashes, serverPath 
 				return err
 			}
 			if updateFileInfo[filePath].DownloadLink != nil {
-				downloadPools.Downloads = append(downloadPools.Downloads, requester.NewDownload(updateFileInfo[filePath].DownloadLink, map[string]string{"sha1": updateFileInfo[filePath]}, filepath.Base(string(filePath)), filepath.Join(serverPath, filepath.Dir(string(filePath)))))
+				downloadPools.Downloads = append(downloadPools.Downloads, requester.NewDownload(updateFileInfo[filePath].DownloadLink, map[string]string{"sha1": updateFileInfo[filePath]}, filepath.Base(filePath), filepath.Join(serverPath, filepath.Dir(filePath))))
 			}
 		}
 	}

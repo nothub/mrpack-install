@@ -12,18 +12,18 @@ import (
 
 const quiltInstallerUrl = "https://maven.quiltmc.org/repository/release/org/quiltmc/quilt-installer/latest/quilt-installer-latest.jar"
 
-type Quilt struct {
+type QuiltInstaller struct {
 	MinecraftVersion string
 	QuiltVersion     string
 }
 
-func (provider *Quilt) Provide(serverDir string, serverFile string) error {
+func (inst *QuiltInstaller) Install(serverDir string, serverFile string) error {
 	installer, err := requester.DefaultHttpClient.DownloadFile(quiltInstallerUrl, ".", "")
 	if err != nil {
 		return err
 	}
 
-	cmd := exec.Command("java", "-jar", installer, "install", "server", provider.MinecraftVersion, "--install-dir="+serverDir, "--create-scripts", "--download-server")
+	cmd := exec.Command("java", "-jar", installer, "install", "server", inst.MinecraftVersion, "--install-dir="+serverDir, "--create-scripts", "--download-server")
 	fmt.Println("Executing command:", cmd.String())
 	err = cmd.Run()
 	if err != nil {

@@ -2,7 +2,10 @@ package mrpack
 
 import (
 	"archive/zip"
+	"crypto"
 	"fmt"
+	"github.com/nothub/hashutils/chksum"
+	"github.com/nothub/hashutils/encoding"
 	"github.com/nothub/mrpack-install/util"
 	"io"
 	"log"
@@ -12,16 +15,23 @@ import (
 	"strings"
 )
 
-func GetOverrideHashes(zipFile string) (*util.Hashes, error) {
-	hashes := make(util.Hashes)
+func extractedPath(file *zip.File) (bool, string) {
+	if strings.HasPrefix(file.Name, "overrides/") {
+		return true, strings.TrimPrefix(file.Name, "overrides/")
+	}
+	if strings.HasPrefix(file.Name, "server-overrides/") {
+		return true, strings.TrimPrefix(file.Name, "server-overrides/")
+	}
+	return false, ""
+}
+
+func GetOverrideHashes(zipFile string) (*map[string]string, error) {
+	hashes := make(map[string]string)
 
 	err := util.IterZip(zipFile, func(file *zip.File) error {
-		var name string
-		if strings.HasPrefix(file.Name, "overrides/") {
-			name = strings.TrimPrefix(file.Name, "overrides/")
-		} else if strings.HasPrefix(file.Name, "server-overrides/") {
-			name = strings.TrimPrefix(file.Name, "server-overrides/")
-		} else {
+		ok, p := extractedPath(file)
+		if !ok {
+			// skip non-server overrides
 			return nil
 		}
 
@@ -30,17 +40,17 @@ func GetOverrideHashes(zipFile string) (*util.Hashes, error) {
 			return err
 		}
 
-		hash, err := util.GetReadCloserSha1(reader)
+		h, err := chksum.Create(reader, crypto.SHA512.New(), encoding.Hex)
 		if err != nil {
 			return err
 		}
 
 		err = reader.Close()
 		if err != nil {
-			return err
+			log.Println(err.Error())
 		}
 
-		hashes[name] = hash
+		hashes[p] = h
 
 		return nil
 	})
@@ -53,7 +63,6 @@ func GetOverrideHashes(zipFile string) (*util.Hashes, error) {
 
 func ExtractOverrides(zipFile string, target string) error {
 	err := util.IterZip(zipFile, func(file *zip.File) error {
-
 		filePath := file.Name
 		if strings.HasPrefix(filePath, "overrides/") {
 			filePath = strings.TrimPrefix(filePath, "overrides/")
@@ -86,7 +95,8 @@ func ExtractOverrides(zipFile string, target string) error {
 		if err != nil {
 			return err
 		}
-		if _, err := io.Copy(outFile, fileReader); err != nil {
+		_, err = io.Copy(outFile, fileReader)
+		if err != nil {
 			return err
 		}
 
@@ -103,7 +113,6 @@ func ExtractOverrides(zipFile string, target string) error {
 
 		return nil
 	})
-
 	if err != nil {
 		log.Fatalln(err.Error())
 	}

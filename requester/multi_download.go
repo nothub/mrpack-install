@@ -1,8 +1,10 @@
 package requester
 
 import (
+	"crypto"
 	"fmt"
-	"github.com/nothub/mrpack-install/util"
+	"github.com/nothub/hashutils/chksum"
+	"github.com/nothub/hashutils/encoding"
 	"sync"
 )
 
@@ -53,7 +55,7 @@ func (downloadPools *DownloadPools) Do() {
 
 					// check hashcode
 					if sha1code, ok := dl.hashes["sha1"]; ok {
-						_, err = util.CheckFileSha1(sha1code, f)
+						_, err = chksum.VerifyFile(f, sha1code, crypto.SHA1.New(), encoding.Hex)
 					}
 					if err != nil {
 						fmt.Println("Hash check failed for:", dl.FileName, err, "attempt:", retries+1)

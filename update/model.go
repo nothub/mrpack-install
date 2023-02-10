@@ -4,15 +4,14 @@ import (
 	"bytes"
 	"encoding/json"
 	"github.com/nothub/mrpack-install/modrinth/mrpack"
-	"github.com/nothub/mrpack-install/util"
 	"os"
 )
 
-type ModPackInfo struct {
+type PackState struct {
 	Schema       uint8               `json:"schema_version"`
 	PackVersion  string              `json:"pack_version"`
 	PackName     string              `json:"pack_name"`
-	Hashes       util.Hashes         `json:"hashes"`
+	Hashes       map[string]string   `json:"hashes"`
 	Dependencies mrpack.Dependencies `json:"dependencies"`
 }
 
@@ -21,7 +20,7 @@ type FileInfo struct {
 	DownloadLinks []string `json:"download_links"`
 }
 
-func ReadModPackInfo(modPackJsonFile string) (*ModPackInfo, error) {
+func ReadModPackInfo(modPackJsonFile string) (*PackState, error) {
 
 	var modPackJsonByte []byte
 	var err error
@@ -30,7 +29,7 @@ func ReadModPackInfo(modPackJsonFile string) (*ModPackInfo, error) {
 		return nil, err
 	}
 
-	modPackJson := ModPackInfo{}
+	modPackJson := PackState{}
 	err = json.Unmarshal(modPackJsonByte, &modPackJson)
 
 	if err != nil {
@@ -39,7 +38,7 @@ func ReadModPackInfo(modPackJsonFile string) (*ModPackInfo, error) {
 	return &modPackJson, nil
 }
 
-func (modPackInfo *ModPackInfo) Write(modPackJsonFile string) error {
+func (modPackInfo *PackState) Write(modPackJsonFile string) error {
 	if modPackInfo != nil {
 		modPackJsonByte, err := json.Marshal(modPackInfo)
 		var out bytes.Buffer

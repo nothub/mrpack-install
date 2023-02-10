@@ -2,29 +2,40 @@ package update
 
 import (
 	"archive/zip"
+	"crypto"
 	"errors"
 	"fmt"
+	"github.com/nothub/hashutils/chksum"
+	"github.com/nothub/hashutils/encoding"
 	modrinth "github.com/nothub/mrpack-install/modrinth/api"
 	"github.com/nothub/mrpack-install/modrinth/mrpack"
-	"github.com/nothub/mrpack-install/util"
 	"reflect"
 	"strings"
 )
 
-func GenerateModPackInfo(modrinthIndex *mrpack.Index) (*ModPackInfo, error) {
-	var modPackInfo ModPackInfo
-	modPackInfo.Hashes = make(util.Hashes)
+func GenerateModPackInfo(zipFile string) (*PackState, error) {
+	index, err := mrpack.ReadIndex(zipFile)
+	if err != nil {
+		return nil, err
+	}
 
-	modPackInfo.Dependencies = modrinthIndex.Dependencies
-	modPackInfo.PackVersion = modrinthIndex.VersionId
-	modPackInfo.PackName = modrinthIndex.Name
+	var state PackState
+	state.PackName = index.Name
+	state.PackVersion = index.VersionId
+	state.Dependencies = index.Dependencies
+
+	hashes, err := mrpack.GetOverrideHashes(zipFile)
+	if err != nil {
+		return nil, err
+	}
+	state.Hashes = *hashes
 
 	// Add modrinth.index file
-	for _, file := range modrinthIndex.Files {
+	for _, file := range index.Files {
 		if file.Env.Server == modrinth.UnsupportedEnvSupport {
 			continue
 		}
-		modPackInfo.Hashes[file.Path] = string(file.Hashes.Sha1)
+		state.Hashes[file.Path] = string(file.Hashes.Sha1)
 	}
 
 	// Add overrides file
@@ -58,7 +69,7 @@ func GenerateModPackInfo(modrinthIndex *mrpack.Index) (*ModPackInfo, error) {
 			return nil, err
 		}
 
-		fileHash, err := util.GetReadCloserSha1(readCloser)
+		fileHash, err := chksum.Create(readCloser, crypto.SHA512.New(), encoding.Hex)
 		if err != nil {
 			return nil, err
 		}
@@ -66,13 +77,13 @@ func GenerateModPackInfo(modrinthIndex *mrpack.Index) (*ModPackInfo, error) {
 		if err != nil {
 			return nil, err
 		}
-		modPackInfo.Hashes[filePath] = fileHash
+		state.Hashes[filePath] = fileHash
 	}
 
-	return &modPackInfo, nil
+	return &state, nil
 }
 
-func CompareModPackInfo(old ModPackInfo, new ModPackInfo) (deleteFileInfo *ModPackInfo, updateFileInfo *ModPackInfo, err error) {
+func CompareModPackInfo(old PackState, new PackState) (deleteFileInfo *PackState, updateFileInfo *PackState, err error) {
 	if old.PackName != new.PackName || !reflect.DeepEqual(old.Dependencies, new.Dependencies) {
 		return nil, nil, errors.New("for mismatched versions, please upgrade manually")
 	}

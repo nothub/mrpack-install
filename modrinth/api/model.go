@@ -1,6 +1,8 @@
 package api
 
-import "time"
+import (
+	"time"
+)
 
 type ProjectType string
 
@@ -141,8 +143,8 @@ type File struct {
 }
 
 type Hashes struct {
-	Sha512 HashAlgo `json:"sha512"`
-	Sha1   HashAlgo `json:"sha1"`
+	Sha1   string `json:"sha1"`
+	Sha512 string `json:"sha512"`
 }
 
 type Dependencies struct {
