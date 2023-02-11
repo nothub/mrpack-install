@@ -137,7 +137,7 @@ var rootCmd = &cobra.Command{
 		if len(args) > 1 {
 			version = args[1]
 		}
-		index, archivePath := handleArgs(input, version, opts.ServerDir, opts.Host)
+		index, zipPath := handleArgs(input, version, opts.ServerDir, opts.Host)
 
 		for _, file := range index.Files {
 			ok, err := util.PathIsSubpath(file.Path, opts.ServerDir)
@@ -187,16 +187,16 @@ var rootCmd = &cobra.Command{
 
 		// overrides
 		fmt.Println("Extracting overrides...")
-		err := mrpack.ExtractOverrides(archivePath, opts.ServerDir)
+		err := mrpack.ExtractOverrides(zipPath, opts.ServerDir)
 		if err != nil {
 			log.Fatalln(err)
 		}
 
-		packInfo, err := update.GenerateModPackInfo(index)
+		packInfo, err := update.BuildPackState(zipPath)
 		if err != nil {
 			fmt.Println(err)
 		}
-		err = packInfo.Write(path.Join(opts.ServerDir, "modpack.json"))
+		err = packInfo.Save(path.Join(opts.ServerDir, "modpack.json"))
 		if err != nil {
 			fmt.Println(err)
 		}

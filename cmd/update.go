@@ -29,9 +29,9 @@ var updateCmd = &cobra.Command{
 		if len(args) > 1 {
 			version = args[1]
 		}
-		index, archivePath := handleArgs(input, version, opts.ServerDir, opts.Host)
+		index, zipPath := handleArgs(input, version, opts.ServerDir, opts.Host)
 
-		newPackInfo, err := update.GenerateModPackInfo(index)
+		newPackInfo, err := update.BuildPackState(zipPath)
 		if err != nil {
 			log.Fatalln(err)
 		}
@@ -48,20 +48,20 @@ var updateCmd = &cobra.Command{
 
 		fmt.Println("Updating:", index.Name)
 
-		err = newPackInfo.Write(path.Join(opts.ServerDir, "modpack.json.update"))
+		err = newPackInfo.Save(path.Join(opts.ServerDir, "modpack.json.update"))
 		if err != nil {
 			log.Fatalln(err)
 		}
-		oldPackInfo, err := update.ReadModPackInfo(path.Join(opts.ServerDir, "modpack.json"))
+		oldPackInfo, err := update.LoadPackState(path.Join(opts.ServerDir, "modpack.json"))
 		if err != nil {
 			log.Fatalln(err)
 		}
-		deleteFileInfo, updateFileInfo, err := update.CompareModPackInfo(*oldPackInfo, *newPackInfo)
+		deletions, updates, err := update.CompareModPackInfo(*oldPackInfo, *newPackInfo)
 		if err != nil {
 			return
 		}
-		deletionActions := update.GetDeletionActions(deleteFileInfo, opts.ServerDir)
-		updateActions := update.GetUpdateActions(updateFileInfo, opts.ServerDir)
+		deletionActions := update.GetDeletionActions(deletions, opts.ServerDir)
+		updateActions := update.GetUpdateActions(updates, opts.ServerDir)
 
 		fmt.Printf("Would you like to update: [y/N]")
 		var userInput string
@@ -79,7 +79,7 @@ var updateCmd = &cobra.Command{
 			log.Fatalln(err)
 		}
 
-		err = update.ModPackUpdateDo(updateActions, updateFileInfo.Hashes, opts.ServerDir, archivePath, opts.DownloadThreads, opts.RetryTimes)
+		err = update.ModPackUpdateDo(updateActions, updates.Hashes, opts.ServerDir, zipPath, opts.DownloadThreads, opts.RetryTimes)
 		if err != nil {
 			log.Fatalln(err)
 		}

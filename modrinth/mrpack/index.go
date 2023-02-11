@@ -47,19 +47,19 @@ type Dependencies struct {
 }
 
 func ReadIndex(zipFile string) (*Index, error) {
-	zipReader, err := zip.OpenReader(zipFile)
+	r, err := zip.OpenReader(zipFile)
 	if err != nil {
 		return nil, err
 	}
-	defer func(zipReader *zip.ReadCloser) {
-		err := zipReader.Close()
+	defer func(r *zip.ReadCloser) {
+		err := r.Close()
 		if err != nil {
 			fmt.Println(err)
 		}
-	}(zipReader)
+	}(r)
 
 	var indexFile *zip.File
-	for _, file := range zipReader.File {
+	for _, file := range r.File {
 		if file.Name == "modrinth.index.json" {
 			indexFile = file
 			break
