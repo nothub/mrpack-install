@@ -56,6 +56,16 @@ func PathIsSubpath(subPath string, basePath string) (bool, error) {
 	return strings.HasPrefix(subPath, basePath), nil
 }
 
+func AssertPathSafe(subPath string, basePath string) {
+	ok, err := PathIsSubpath(subPath, basePath)
+	if err != nil {
+		log.Println(err.Error())
+	}
+	if err != nil || !ok {
+		log.Fatalln("File path is not safe: " + subPath)
+	}
+}
+
 func CountFiles(dir string) int {
 	count := 0
 	err := filepath.Walk(dir, func(path string, info os.FileInfo, err error) error {

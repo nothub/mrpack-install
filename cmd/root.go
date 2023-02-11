@@ -30,7 +30,7 @@ func init() {
 	rootCmd.PersistentFlags().String("server-file", "", "Server jar file name")
 	rootCmd.PersistentFlags().String("proxy", "", "Use a proxy to download")
 	rootCmd.PersistentFlags().Int("download-threads", 8, "Download threads")
-	rootCmd.PersistentFlags().Int("retry-times", 3, "Number of retries when a download fails")
+	rootCmd.PersistentFlags().Int("download-retries", 3, "Number of retries when dl fails")
 }
 
 type GlobalOpts struct {
@@ -57,9 +57,17 @@ func GlobalOptions(cmd *cobra.Command) *GlobalOpts {
 	if err != nil {
 		log.Fatalln(err)
 	}
+	serverDir, err = filepath.Abs(serverDir)
+	if err != nil {
+		log.Fatalln(err)
+	}
 	opts.ServerDir = serverDir
 
 	serverFile, err := cmd.Flags().GetString("server-file")
+	if err != nil {
+		log.Fatalln(err)
+	}
+	serverFile, err = filepath.Abs(serverFile)
 	if err != nil {
 		log.Fatalln(err)
 	}
@@ -85,7 +93,7 @@ func GlobalOptions(cmd *cobra.Command) *GlobalOpts {
 	}
 	opts.DownloadThreads = downloadThreads
 
-	retryTimes, err := cmd.Flags().GetInt("retry-times")
+	retryTimes, err := cmd.Flags().GetInt("download-retries")
 	if err != nil {
 		retryTimes = 3
 		fmt.Println(err)
@@ -140,13 +148,7 @@ var rootCmd = &cobra.Command{
 		index, zipPath := handleArgs(input, version, opts.ServerDir, opts.Host)
 
 		for _, file := range index.Files {
-			ok, err := util.PathIsSubpath(file.Path, opts.ServerDir)
-			if err != nil {
-				log.Println(err.Error())
-			}
-			if err != nil || !ok {
-				log.Fatalln("File path is not safe: " + file.Path)
-			}
+			util.AssertPathSafe(file.Path, opts.ServerDir)
 		}
 
 		fmt.Println("Installing:", index.Name)

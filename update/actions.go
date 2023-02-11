@@ -7,8 +7,10 @@ import (
 	"github.com/nothub/hashutils/chksum"
 	"github.com/nothub/hashutils/encoding"
 	"github.com/nothub/mrpack-install/requester"
+	"github.com/nothub/mrpack-install/update/backup"
 	"github.com/nothub/mrpack-install/util"
 	"io"
+	"log"
 	"os"
 	"path/filepath"
 	"strings"
@@ -22,11 +24,20 @@ const (
 	NoOp
 )
 
+// GetFileStrategy selects one of 3 strategies:
+//
+// 1. NoOp   - File does not exist
+//
+// 2. Delete - File exists and hash values match
+//
+// 3. Backup - File exists but hash values do not match
+//
+// Hash must be sha512 and hex encoded.
 func GetFileStrategy(hash string, path string) Strategy {
 	if !util.PathIsFile(path) {
 		return NoOp
 	}
-	match, _ := chksum.VerifyFile(path, hash, crypto.SHA1.New(), encoding.Hex)
+	match, _ := chksum.VerifyFile(path, hash, crypto.SHA512.New(), encoding.Hex)
 	if match {
 		return Delete
 	} else {
@@ -36,61 +47,46 @@ func GetFileStrategy(hash string, path string) Strategy {
 
 type Actions map[string]Strategy
 
-// GetDeletionActions Three scenarios are possible:
-// 1.File does not exist notice
-// 2.File exists but hash value does not match, change the original file name to xxx.bak
-// 3.File exists and the hash value matches
-func GetDeletionActions(deletions *PackState, serverPath string) Actions {
-	actions := make(Actions, 10)
+func GetDeletionActions(deletions *PackState, serverDir string) Actions {
+	actions := make(Actions)
 	for filePath := range deletions.Hashes {
-		t := GetFileStrategy(deletions.Hashes[filePath], filepath.Join(serverPath, string(filePath)))
-		switch t {
+		switch GetFileStrategy(deletions.Hashes[filePath], filepath.Join(serverDir, filePath)) {
 		case Delete:
-			fmt.Printf("[Delete]: %s \n", filePath)
 			actions[filePath] = Delete
 		case Backup:
-			fmt.Printf("[Delete]: %s, The original file will be moved to updateBack folder\n", filePath)
 			actions[filePath] = Backup
 		}
 	}
 	return actions
 }
 
-// GetUpdateActions Three scenarios are possible:
-// 1.File does not exist
-// 2.File exists but hash value does not match, change the original file name to xxx.bak
-// 3.File exists and the hash value matches, remove the item from the queue
-func GetUpdateActions(updates *PackState, serverPath string) Actions {
-	actions := make(Actions, 10)
+func GetUpdateActions(updates *PackState, serverDir string) Actions {
+	actions := make(Actions)
 	for filePath := range updates.Hashes {
-		switch GetFileStrategy(updates.Hashes[filePath], filepath.Join(serverPath, string(filePath))) {
+		switch GetFileStrategy(updates.Hashes[filePath], filepath.Join(serverDir, filePath)) {
 		case Delete:
 			delete(updates.Hashes, filePath)
 		case Backup:
-			fmt.Printf("[Update]: %s ,The original file will be move to updateBack folder\n", filePath)
-			actions[filePath] = Backup
-		case NoOp:
-			fmt.Printf("[Download]: %s \n", filePath)
-			actions[filePath] = NoOp
+			err := backup.Create(filePath, serverDir)
+			if err != nil {
+				log.Fatalln(err.Error())
+			}
 		}
 	}
 	return actions
 }
 
-func ModPackDeleteDo(deleteList Actions, serverPath string) error {
-	for filePath := range deleteList {
-		switch deleteList[filePath] {
+func HandleOldFiles(deletions Actions, serverDir string) error {
+	for filePath, strategy := range deletions {
+		switch strategy {
 		case Delete:
-			err := os.Remove(filepath.Join(serverPath, string(filePath)))
+			log.Println("Delete", filePath)
+			err := os.Remove(filepath.Join(serverDir, filePath))
 			if err != nil {
 				return err
 			}
 		case Backup:
-			err := os.MkdirAll(filepath.Dir(filepath.Join(serverPath, "updateBack", string(filePath))), 0755)
-			if err != nil {
-				return err
-			}
-			err = os.Rename(filepath.Join(serverPath, string(filePath)), filepath.Join(serverPath, "updateBack", string(filePath)))
+			err := backup.Create(filePath, serverDir)
 			if err != nil {
 				return err
 			}
@@ -99,36 +95,18 @@ func ModPackDeleteDo(deleteList Actions, serverPath string) error {
 	return nil
 }
 
-func ModPackUpdateDo(updateList Actions, updateFileInfo map[string]string, serverPath string, modPackPath string, downloadThreads int, retryTimes int) error {
-
+func Do(updates Actions, hashes map[string]string, serverDir string, zipPath string, threads int, retries int) error {
 	var downloads []*requester.Download
-	downloadPools := requester.NewDownloadPools(requester.DefaultHttpClient, downloads, downloadThreads, retryTimes)
+	downloadPools := requester.NewDownloadPools(requester.DefaultHttpClient, downloads, threads, retries)
 
-	// backup file and download file in modrinth index
-	for filePath := range updateList {
-		switch updateList[filePath] {
-		case NoOp:
-			if updateFileInfo[filePath].DownloadLink != nil {
-				downloadPools.Downloads = append(downloadPools.Downloads, requester.NewDownload(updateFileInfo[filePath].DownloadLink, map[string]string{"sha1": updateFileInfo[filePath]}, filepath.Base(filePath), filepath.Join(serverPath, filepath.Dir(filePath))))
-			}
-		case Backup:
-			err := os.MkdirAll(filepath.Dir(filepath.Join(serverPath, "updateBack", string(filePath))), 0755)
-			if err != nil {
-				return err
-			}
-			err = os.Rename(filepath.Join(serverPath, string(filePath)), filepath.Join(serverPath, "updateBack", string(filePath)))
-			if err != nil {
-				return err
-			}
-			if updateFileInfo[filePath].DownloadLink != nil {
-				downloadPools.Downloads = append(downloadPools.Downloads, requester.NewDownload(updateFileInfo[filePath].DownloadLink, map[string]string{"sha1": updateFileInfo[filePath]}, filepath.Base(filePath), filepath.Join(serverPath, filepath.Dir(filePath))))
-			}
-		}
+	// TODO: combine "updates Actions" and "hashes map[string]string" to a struct that also includes download links
+	for filePath := range updates {
+		downloadPools.Downloads = append(downloadPools.Downloads, requester.NewDownload(hashes[filePath].DownloadLink, map[string]string{"sha1": hashes[filePath]}, filepath.Base(filePath), filepath.Join(serverDir, filepath.Dir(filePath))))
 	}
 	downloadPools.Do()
 
 	// unzip update file
-	r, err := zip.OpenReader(modPackPath)
+	r, err := zip.OpenReader(zipPath)
 	if err != nil {
 		return err
 	}
@@ -153,9 +131,9 @@ func ModPackUpdateDo(updateList Actions, updateFileInfo map[string]string, serve
 			continue
 		}
 
-		if _, ok := updateFileInfo[filePathInZip]; ok && updateFileInfo[filePathInZip].DownloadLink == nil {
+		if _, ok := hashes[filePathInZip]; ok && hashes[filePathInZip].DownloadLink == nil {
 
-			targetPath := filepath.Join(serverPath, filePathInZip)
+			targetPath := filepath.Join(serverDir, filePathInZip)
 
 			err := os.MkdirAll(filepath.Dir(targetPath), 0755)
 			if err != nil {

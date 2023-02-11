@@ -25,24 +25,18 @@ func extPath(file *zip.File) (bool, string) {
 	return false, ""
 }
 
-func ExtractOverrides(zipFile string, target string) error {
+func ExtractOverrides(zipFile string, serverDir string) error {
 	err := util.IterZip(zipFile, func(file *zip.File) error {
-		ok, p := extPath(file)
+		ok, filePath := extPath(file)
 		if !ok {
 			// skip non-server override files
 			return nil
 		}
 
-		targetPath := path.Join(target, p)
-		ok, err := util.PathIsSubpath(targetPath, target)
-		if err != nil {
-			log.Println(err.Error())
-		}
-		if err != nil || !ok {
-			log.Fatalln("File path is not safe: " + targetPath)
-		}
+		util.AssertPathSafe(filePath, serverDir)
+		targetPath := path.Join(serverDir, filePath)
 
-		err = os.MkdirAll(filepath.Dir(targetPath), 0755)
+		err := os.MkdirAll(filepath.Dir(targetPath), 0755)
 		if err != nil {
 			return err
 		}
