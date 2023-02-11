@@ -4,7 +4,7 @@ go 1.19
 
 require (
 	github.com/google/uuid v1.3.0
-	github.com/nothub/hashutils v0.2.0
+	github.com/nothub/hashutils v0.3.0
 	github.com/spf13/cobra v1.6.1
 )
 
