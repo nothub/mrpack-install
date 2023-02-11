@@ -19,7 +19,7 @@ func SetDir(s string) {
 
 func Create(filePath string, serverDir string) error {
 	if dir == "" {
-		dir = path.Join(serverDir, "backups", time.Now().Format("2006-01-02-15-04-05"))
+		dir = path.Join(serverDir, "backups", time.Now().Format("20060102150405"))
 	}
 
 	// create backup dirs
