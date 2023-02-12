@@ -9,7 +9,7 @@ type Installer interface {
 	Install(serverDir string, serverFile string) error
 }
 
-func InstallerFromDeps(deps *mrpack.Dependencies) Installer {
+func InstallerFromDeps(deps *mrpack.Deps) Installer {
 	var flavor Flavor
 	if deps.Fabric != "" {
 		flavor = Fabric

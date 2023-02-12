@@ -7,24 +7,22 @@ import (
 	"github.com/nothub/hashutils/chksum"
 	"github.com/nothub/hashutils/encoding"
 	"github.com/nothub/mrpack-install/requester"
-	"github.com/nothub/mrpack-install/update/backup"
 	"github.com/nothub/mrpack-install/util"
 	"io"
-	"log"
 	"os"
 	"path/filepath"
 	"strings"
 )
 
-type Strategy uint8
+type strategy uint8
 
 const (
-	Delete Strategy = iota
+	Delete strategy = iota
 	Backup
 	NoOp
 )
 
-// GetFileStrategy selects one of 3 strategies:
+// GetStrategy selects one of 3 strategies for handling old files:
 //
 // 1. NoOp   - File does not exist
 //
@@ -33,7 +31,8 @@ const (
 // 3. Backup - File exists but hash values do not match
 //
 // Hash must be sha512 and hex encoded.
-func GetFileStrategy(hash string, path string) Strategy {
+func GetStrategy(hash string, path string) strategy {
+	// TODO: replace with ShouldBackup
 	if !util.PathIsFile(path) {
 		return NoOp
 	}
@@ -45,62 +44,24 @@ func GetFileStrategy(hash string, path string) Strategy {
 	}
 }
 
-type Actions map[string]Strategy
-
-func GetDeletionActions(deletions *PackState, serverDir string) Actions {
-	actions := make(Actions)
-	for filePath := range deletions.Hashes {
-		switch GetFileStrategy(deletions.Hashes[filePath], filepath.Join(serverDir, filePath)) {
-		case Delete:
-			actions[filePath] = Delete
-		case Backup:
-			actions[filePath] = Backup
-		}
+func ShouldBackup(path string, hash string) bool {
+	if !util.PathIsFile(path) {
+		return false
 	}
-	return actions
+	match, _ := chksum.VerifyFile(path, hash, crypto.SHA512.New(), encoding.Hex)
+	if match {
+		return false
+	} else {
+		return true
+	}
 }
 
-func GetUpdateActions(updates *PackState, serverDir string) Actions {
-	actions := make(Actions)
-	for filePath := range updates.Hashes {
-		switch GetFileStrategy(updates.Hashes[filePath], filepath.Join(serverDir, filePath)) {
-		case Delete:
-			delete(updates.Hashes, filePath)
-		case Backup:
-			err := backup.Create(filePath, serverDir)
-			if err != nil {
-				log.Fatalln(err.Error())
-			}
-		}
-	}
-	return actions
-}
+func Do(newFiles []File, serverDir string, zipPath string, threads int, retries int) error {
 
-func HandleOldFiles(deletions Actions, serverDir string) error {
-	for filePath, strategy := range deletions {
-		switch strategy {
-		case Delete:
-			log.Println("Delete", filePath)
-			err := os.Remove(filepath.Join(serverDir, filePath))
-			if err != nil {
-				return err
-			}
-		case Backup:
-			err := backup.Create(filePath, serverDir)
-			if err != nil {
-				return err
-			}
-		}
-	}
-	return nil
-}
-
-func Do(updates Actions, hashes map[string]string, serverDir string, zipPath string, threads int, retries int) error {
 	var downloads []*requester.Download
 	downloadPools := requester.NewDownloadPools(requester.DefaultHttpClient, downloads, threads, retries)
 
-	// TODO: combine "updates Actions" and "hashes map[string]string" to a struct that also includes download links
-	for filePath := range updates {
+	for filePath := range newFiles {
 		downloadPools.Downloads = append(downloadPools.Downloads, requester.NewDownload(hashes[filePath].DownloadLink, map[string]string{"sha1": hashes[filePath]}, filepath.Base(filePath), filepath.Join(serverDir, filepath.Dir(filePath))))
 	}
 	downloadPools.Do()

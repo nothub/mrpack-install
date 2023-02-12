@@ -157,7 +157,7 @@ var rootCmd = &cobra.Command{
 		if !util.PathIsFile(path.Join(opts.ServerDir, opts.ServerFile)) {
 			fmt.Println("Server file not present, downloading...\n(Point --server-dir and --server-file flags to an existing server file to skip this step.)")
 
-			inst := server.InstallerFromDeps(&index.Dependencies)
+			inst := server.InstallerFromDeps(&index.Deps)
 			err := inst.Install(opts.ServerDir, opts.ServerFile)
 			if err != nil {
 				log.Fatalln(err)
@@ -194,18 +194,19 @@ var rootCmd = &cobra.Command{
 			log.Fatalln(err)
 		}
 
-		packInfo, err := update.BuildPackState(zipPath)
+		packState, err := update.BuildPackState(zipPath)
 		if err != nil {
-			fmt.Println(err)
+			log.Fatalln(err)
 		}
-		err = packInfo.Save(path.Join(opts.ServerDir, "modpack.json"))
+		err = packState.Save(opts.ServerDir)
 		if err != nil {
-			fmt.Println(err)
+			log.Fatalln(err)
 		}
 
 		if modsUnclean {
 			fmt.Println("There have been problems downloading mods, you probably have to fix some dependency problems manually!")
 		}
+
 		fmt.Println("Done :) Have a nice day ✌️")
 	},
 }

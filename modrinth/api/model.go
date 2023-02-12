@@ -142,6 +142,7 @@ type File struct {
 	Size     int    `json:"size"`
 }
 
+// Hashes are hex encoded.
 type Hashes struct {
 	Sha1   string `json:"sha1"`
 	Sha512 string `json:"sha512"`

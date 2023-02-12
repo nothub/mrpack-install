@@ -11,13 +11,24 @@ import (
 import modrinth "github.com/nothub/mrpack-install/modrinth/api"
 
 type Index struct {
-	FormatVersion int          `json:"formatVersion"`
-	Game          Game         `json:"game"`
-	VersionId     string       `json:"versionId"`
-	Name          string       `json:"name"`
-	Summary       string       `json:"summary"`
-	Files         []File       `json:"files"`
-	Dependencies  Dependencies `json:"dependencies"`
+	Format  int    `json:"formatVersion"`
+	Game    Game   `json:"game"`
+	Version string `json:"versionId"`
+	Name    string `json:"name"`
+	Summary string `json:"summary"`
+	Files   []File `json:"files"`
+	Deps    Deps   `json:"dependencies"`
+}
+
+func (index *Index) ServerDls() []File {
+	var dls []File
+	for _, f := range index.Files {
+		if f.Env.Server == modrinth.UnsupportedEnvSupport {
+			continue
+		}
+		dls = append(dls, f)
+	}
+	return dls
 }
 
 type Game string
@@ -39,7 +50,7 @@ type Env struct {
 	Server modrinth.EnvSupport `json:"server"`
 }
 
-type Dependencies struct {
+type Deps struct {
 	Minecraft string `json:"minecraft"`
 	Fabric    string `json:"fabric-loader"`
 	Quilt     string `json:"quilt-loader"`
