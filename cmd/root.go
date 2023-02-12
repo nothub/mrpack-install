@@ -194,7 +194,7 @@ var rootCmd = &cobra.Command{
 			log.Fatalln(err)
 		}
 
-		packState, err := update.BuildPackState(zipPath)
+		packState, err := update.BuildPackState(index, zipPath)
 		if err != nil {
 			log.Fatalln(err)
 		}

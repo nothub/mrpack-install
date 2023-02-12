@@ -32,7 +32,6 @@ const (
 //
 // Hash must be sha512 and hex encoded.
 func GetStrategy(hash string, path string) strategy {
-	// TODO: replace with ShouldBackup
 	if !util.PathIsFile(path) {
 		return NoOp
 	}
@@ -44,16 +43,9 @@ func GetStrategy(hash string, path string) strategy {
 	}
 }
 
+// ShouldBackup indicates if the file exists but the hash value does not match.
 func ShouldBackup(path string, hash string) bool {
-	if !util.PathIsFile(path) {
-		return false
-	}
-	match, _ := chksum.VerifyFile(path, hash, crypto.SHA512.New(), encoding.Hex)
-	if match {
-		return false
-	} else {
-		return true
-	}
+	return GetStrategy(hash, path) == Backup
 }
 
 func Do(newFiles []File, serverDir string, zipPath string, threads int, retries int) error {

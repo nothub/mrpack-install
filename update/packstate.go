@@ -55,12 +55,7 @@ func LoadPackState(serverDir string) (*PackState, error) {
 	return &state, nil
 }
 
-func BuildPackState(zipPath string) (*PackState, error) {
-	index, err := mrpack.ReadIndex(zipPath)
-	if err != nil {
-		return nil, err
-	}
-
+func BuildPackState(index *mrpack.Index, zipPath string) (*PackState, error) {
 	var state PackState
 	state.Name = index.Name
 	state.Version = index.Version

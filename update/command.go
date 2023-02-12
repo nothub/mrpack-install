@@ -7,15 +7,19 @@ import (
 	"github.com/nothub/mrpack-install/update/backup"
 	"github.com/nothub/mrpack-install/util"
 	"log"
-	"os"
 	"path/filepath"
 	"reflect"
 )
 
 func Cmd(opts *cmd.UpdateOpts, index *mrpack.Index, zipPath string) {
-	fmt.Println("Updating:", index.Name)
+	fmt.Printf("Updating %s with %s", opts.ServerDir, zipPath)
 
-	newState, err := BuildPackState(zipPath)
+	oldState, err := LoadPackState(opts.ServerDir)
+	if err != nil {
+		log.Fatalln(err)
+	}
+
+	newState, err := BuildPackState(index, zipPath)
 	if err != nil {
 		log.Fatalln(err)
 	}
@@ -23,13 +27,8 @@ func Cmd(opts *cmd.UpdateOpts, index *mrpack.Index, zipPath string) {
 		util.AssertPathSafe(filePath, opts.ServerDir)
 	}
 
-	oldState, err := LoadPackState(opts.ServerDir)
-	if err != nil {
-		log.Fatalln(err)
-	}
-
 	if !reflect.DeepEqual(oldState.Deps, newState.Deps) {
-		// TODO: server update
+		// TODO: better message
 		log.Fatalln("mismatched versions, please upgrade manually")
 	}
 
@@ -45,15 +44,8 @@ func Cmd(opts *cmd.UpdateOpts, index *mrpack.Index, zipPath string) {
 		}
 	}
 
-	// handle old files
-	for path := range oldState.Files {
-		switch GetStrategy(oldState.Files[path], filepath.Join(opts.ServerDir, path)) {
-		case Delete:
-			err := os.Remove(filepath.Join(opts.ServerDir, path))
-			if err != nil {
-				log.Fatalln(err.Error())
-			}
-		case Backup:
+	for path, hashes := range oldState.Files {
+		if ShouldBackup(path, hashes.Sha512) {
 			err := backup.Create(path, opts.ServerDir)
 			if err != nil {
 				log.Fatalln(err.Error())
@@ -61,12 +53,12 @@ func Cmd(opts *cmd.UpdateOpts, index *mrpack.Index, zipPath string) {
 		}
 	}
 
-	// new files
-	var newFiles []File
-	for path := range newState.Files {
-		var f File
+	// TODO: correctly handle new files
+	var newFiles []mrpack.File
+	for path, hashes := range newState.Files {
+		var f mrpack.File
 		f.Path = path
-		switch GetStrategy(newState.Files[path], filepath.Join(opts.ServerDir, path)) {
+		switch GetStrategy(hashes.Sha512, filepath.Join(opts.ServerDir, path)) {
 		case Delete:
 			delete(newState.Files, path)
 		case Backup:
