@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"github.com/nothub/hashutils/chksum"
 	"github.com/nothub/hashutils/encoding"
+	modrinth "github.com/nothub/mrpack-install/modrinth/api"
 	"github.com/nothub/mrpack-install/util"
 	"io"
 	"log"
@@ -15,26 +16,44 @@ import (
 	"strings"
 )
 
-func extPath(file *zip.File) (bool, string) {
-	if strings.HasPrefix(file.Name, "overrides/") {
-		return true, strings.TrimPrefix(file.Name, "overrides/")
+const pathPrefixBoth = "overrides/"
+const pathPrefixServer = "server-overrides/"
+const pathPrefixClient = "client-overrides/"
+
+type override zip.File
+
+func (o *override) prefix() string {
+	if strings.HasPrefix(o.Name, pathPrefixBoth) {
+		return pathPrefixBoth
 	}
-	if strings.HasPrefix(file.Name, "server-overrides/") {
-		return true, strings.TrimPrefix(file.Name, "server-overrides/")
+	if strings.HasPrefix(o.Name, pathPrefixServer) {
+		return pathPrefixServer
 	}
-	return false, ""
+	if strings.HasPrefix(o.Name, pathPrefixClient) {
+		return pathPrefixClient
+	}
+	panic("Not an override path: " + o.Name)
+}
+
+func (o *override) realPath() string {
+	return strings.TrimPrefix(o.Name, o.prefix())
+}
+
+func (o *override) server() bool {
+	return strings.HasPrefix(o.Name, pathPrefixBoth) ||
+		strings.HasPrefix(o.Name, pathPrefixServer)
 }
 
 func ExtractOverrides(zipFile string, serverDir string) error {
 	err := util.IterZip(zipFile, func(file *zip.File) error {
-		ok, filePath := extPath(file)
-		if !ok {
+		o := override(*file)
+		if !o.server() {
 			// skip non-server override files
 			return nil
 		}
-
-		util.AssertPathSafe(filePath, serverDir)
-		targetPath := path.Join(serverDir, filePath)
+		p := o.realPath()
+		util.AssertPathSafe(p, serverDir)
+		targetPath := path.Join(serverDir, p)
 
 		err := os.MkdirAll(filepath.Dir(targetPath), 0755)
 		if err != nil {
@@ -64,7 +83,7 @@ func ExtractOverrides(zipFile string, serverDir string) error {
 			return err
 		}
 
-		fmt.Println("Override file extracted:", targetPath)
+		fmt.Printf("Override extracted: %s\n", targetPath)
 
 		return nil
 	})
@@ -75,26 +94,34 @@ func ExtractOverrides(zipFile string, serverDir string) error {
 	return nil
 }
 
-func OverrideHashes(zipFile string) map[string]string {
-	hashes := make(map[string]string)
+func OverrideHashes(zipFile string) map[string]modrinth.Hashes {
+	overrides := make(map[string]modrinth.Hashes)
 
 	err := util.IterZip(zipFile, func(file *zip.File) error {
-		ok, p := extPath(file)
-		if !ok {
+		o := override(*file)
+		if !o.server() {
 			// skip non-server override files
 			return nil
 		}
+		p := o.realPath()
 
 		r, err := file.Open()
 		if err != nil {
 			return err
 		}
 
-		h, err := chksum.Create(r, crypto.SHA512.New(), encoding.Hex)
+		var hashes modrinth.Hashes
+		h, err := chksum.Create(r, crypto.SHA1.New(), encoding.Hex)
 		if err != nil {
 			return err
 		}
-		hashes[p] = h
+		hashes.Sha1 = h
+		h, err = chksum.Create(r, crypto.SHA512.New(), encoding.Hex)
+		if err != nil {
+			return err
+		}
+		hashes.Sha512 = h
+		overrides[p] = hashes
 
 		err = r.Close()
 		if err != nil {
@@ -107,5 +134,5 @@ func OverrideHashes(zipFile string) map[string]string {
 		log.Fatalln(err.Error())
 	}
 
-	return hashes
+	return overrides
 }
