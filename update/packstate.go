@@ -3,20 +3,24 @@ package update
 import (
 	"bytes"
 	"encoding/json"
-	"errors"
-	"github.com/nothub/mrpack-install/modrinth/api"
-	"github.com/nothub/mrpack-install/modrinth/mrpack"
 	"os"
-	"reflect"
+	"path"
 	"strings"
+
+	modrinth "github.com/nothub/mrpack-install/modrinth/api"
+	"github.com/nothub/mrpack-install/modrinth/mrpack"
 )
 
+const statefile = "packstate.json"
+
 type PackState struct {
-	Dependencies mrpack.Dependencies `json:"dependencies"`
-	Hashes       map[string]string   `json:"hashes"` // Hex encoded SHA512 checksums
+	Name    string                     `json:"name"`
+	Version string                     `json:"version"`
+	Deps    mrpack.Deps                `json:"dependencies"`
+	Files   map[string]modrinth.Hashes `json:"files"`
 }
 
-func (state *PackState) Save(path string) error {
+func (state *PackState) Save(serverDir string) error {
 	if state == nil {
 		return nil
 	}
@@ -28,7 +32,7 @@ func (state *PackState) Save(path string) error {
 		return err
 	}
 
-	err = os.WriteFile(path, buf.Bytes(), 0644)
+	err = os.WriteFile(path.Join(serverDir, statefile), buf.Bytes(), 0644)
 	if err != nil {
 		return err
 	}
@@ -36,8 +40,8 @@ func (state *PackState) Save(path string) error {
 	return nil
 }
 
-func LoadPackState(path string) (*PackState, error) {
-	b, err := os.ReadFile(path)
+func LoadPackState(serverDir string) (*PackState, error) {
+	b, err := os.ReadFile(path.Join(serverDir, statefile))
 	if err != nil {
 		return nil, err
 	}
@@ -58,40 +62,23 @@ func BuildPackState(zipPath string) (*PackState, error) {
 	}
 
 	var state PackState
-	state.Dependencies = index.Dependencies
+	state.Name = index.Name
+	state.Version = index.Version
+	state.Deps = index.Deps
+	state.Files = make(map[string]modrinth.Hashes)
 
-	// mrpack index files (downloads)
-	for _, file := range index.Files {
-		if file.Env.Server == api.UnsupportedEnvSupport {
+	// downloads
+	for _, indexFile := range index.Files {
+		if indexFile.Env.Server == modrinth.UnsupportedEnvSupport {
 			continue
 		}
-		state.Hashes[file.Path] = file.Hashes.Sha512
+		state.Files[indexFile.Path] = indexFile.Hashes
 	}
 
-	// override files
-	state.Hashes = mrpack.OverrideHashes(zipPath)
+	// overrides
+	for p, hashes := range mrpack.OverrideHashes(zipPath) {
+		state.Files[p] = hashes
+	}
 
 	return &state, nil
-}
-
-func CompareModPackInfo(old PackState, new PackState) (deletions *PackState, updates *PackState, err error) {
-	if !reflect.DeepEqual(old.Dependencies, new.Dependencies) {
-		// TODO: server update
-		return nil, nil, errors.New("mismatched versions, please upgrade manually")
-	}
-
-	for path := range old.Hashes {
-		// ignore unchanged files
-		if new.Hashes[path] == old.Hashes[path] {
-			delete(old.Hashes, path)
-			delete(new.Hashes, path)
-		}
-
-		// skip deletion of old files that we overwrite with new files
-		if _, found := new.Hashes[path]; found {
-			delete(old.Hashes, path)
-		}
-	}
-
-	return &old, &new, nil
 }
