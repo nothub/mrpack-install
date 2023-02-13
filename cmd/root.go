@@ -3,9 +3,10 @@ package cmd
 import (
 	"fmt"
 	"github.com/nothub/mrpack-install/buildinfo"
+	"github.com/nothub/mrpack-install/http"
+	"github.com/nothub/mrpack-install/http/download"
 	modrinth "github.com/nothub/mrpack-install/modrinth/api"
 	"github.com/nothub/mrpack-install/modrinth/mrpack"
-	"github.com/nothub/mrpack-install/requester"
 	"github.com/nothub/mrpack-install/server"
 	"github.com/nothub/mrpack-install/update"
 	"github.com/nothub/mrpack-install/util"
@@ -34,12 +35,12 @@ func init() {
 }
 
 type GlobalOpts struct {
-	Host            string
-	ServerDir       string
-	ServerFile      string
-	Proxy           string
-	DownloadThreads int
-	RetryTimes      int
+	Host       string
+	ServerDir  string
+	ServerFile string
+	Proxy      string
+	DlThreads  int
+	DlRetries  int
 }
 
 func GlobalOptions(cmd *cobra.Command) *GlobalOpts {
@@ -78,27 +79,26 @@ func GlobalOptions(cmd *cobra.Command) *GlobalOpts {
 		log.Fatalln(err)
 	}
 	if proxy != "" {
-		// TODO: stop changing the default http client
-		err := requester.DefaultHttpClient.SetProxy(proxy)
+		err := http.DefaultClient.SetProxy(proxy)
 		if err != nil {
 			log.Fatalln(err)
 		}
 	}
 	opts.Proxy = proxy
 
-	downloadThreads, err := cmd.Flags().GetInt("download-threads")
-	if err != nil || downloadThreads > 64 {
-		downloadThreads = 8
+	dlThreads, err := cmd.Flags().GetInt("download-threads")
+	if err != nil || dlThreads > 64 {
+		dlThreads = 8
 		fmt.Println(err)
 	}
-	opts.DownloadThreads = downloadThreads
+	opts.DlThreads = dlThreads
 
 	retryTimes, err := cmd.Flags().GetInt("download-retries")
 	if err != nil {
 		retryTimes = 3
 		fmt.Println(err)
 	}
-	opts.RetryTimes = retryTimes
+	opts.DlRetries = retryTimes
 
 	return &opts
 }
@@ -147,16 +147,15 @@ var rootCmd = &cobra.Command{
 		}
 		index, zipPath := handleArgs(input, version, opts.ServerDir, opts.Host)
 
+		fmt.Printf("Installing %q from %q to %q", index.Name, zipPath, opts.ServerDir)
+
 		for _, file := range index.Files {
 			util.AssertPathSafe(file.Path, opts.ServerDir)
 		}
 
-		fmt.Println("Installing:", index.Name)
-
 		// download server if not present
 		if !util.PathIsFile(path.Join(opts.ServerDir, opts.ServerFile)) {
 			fmt.Println("Server file not present, downloading...\n(Point --server-dir and --server-file flags to an existing server file to skip this step.)")
-
 			inst := server.InstallerFromDeps(&index.Deps)
 			err := inst.Install(opts.ServerDir, opts.ServerFile)
 			if err != nil {
@@ -166,26 +165,15 @@ var rootCmd = &cobra.Command{
 			fmt.Println("Server file already present, proceeding...")
 		}
 
-		// mod downloads
-		fmt.Printf("Downloading %v dependencies...\n", len(index.Files))
-		var downloads []*requester.Download
-		for i := range index.Files {
-			file := index.Files[i]
-			if file.Env.Server == modrinth.UnsupportedEnvSupport {
-				continue
-			}
-			downloads = append(downloads, requester.NewDownload(file.Downloads, map[string]string{"sha1": file.Hashes.Sha1}, filepath.Base(file.Path), path.Join(opts.ServerDir, filepath.Dir(file.Path))))
+		// downloads
+		downloads := index.ServerDownloads()
+		fmt.Printf("Downloading %v dependencies...\n", len(downloads))
+		downloader := download.Downloader{
+			Downloads: downloads,
+			Threads:   opts.DlThreads,
+			Retries:   opts.DlRetries,
 		}
-		downloadPools := requester.NewDownloadPools(requester.DefaultHttpClient, downloads, opts.DownloadThreads, opts.RetryTimes)
-		downloadPools.Do()
-		modsUnclean := false
-		for i := range downloadPools.Downloads {
-			dl := downloadPools.Downloads[i]
-			if !dl.Success {
-				modsUnclean = true
-				fmt.Println("Dependency downloaded Fail:", dl.FileName)
-			}
-		}
+		downloader.Download(opts.ServerDir)
 
 		// overrides
 		fmt.Println("Extracting overrides...")
@@ -194,6 +182,7 @@ var rootCmd = &cobra.Command{
 			log.Fatalln(err)
 		}
 
+		// save state file
 		packState, err := update.BuildPackState(index, zipPath)
 		if err != nil {
 			log.Fatalln(err)
@@ -203,27 +192,10 @@ var rootCmd = &cobra.Command{
 			log.Fatalln(err)
 		}
 
-		if modsUnclean {
-			fmt.Println("There have been problems downloading mods, you probably have to fix some dependency problems manually!")
-		}
+		util.RemoveEmptyDirs(opts.ServerDir)
 
-		fmt.Println("Done :) Have a nice day ✌️")
+		fmt.Println("Installation done :) Have a nice day ✌️")
 	},
-}
-
-func readArgs(args []string) (string, string) {
-	var input string
-	var version string
-
-	if len(args) > 0 {
-		input = args[0]
-	}
-
-	if len(args) > 1 {
-		version = args[1]
-	}
-
-	return input, version
 }
 
 func handleArgs(input string, version string, serverDir string, host string) (*mrpack.Index, string) {
@@ -238,7 +210,7 @@ func handleArgs(input string, version string, serverDir string, host string) (*m
 
 	} else if util.IsValidUrl(input) {
 		fmt.Println("Downloading mrpack file from", input)
-		file, err := requester.DefaultHttpClient.DownloadFile(input, serverDir, "")
+		file, err := http.DefaultClient.DownloadFile(input, serverDir, "")
 		if err != nil {
 			log.Fatalln(err.Error())
 		}
@@ -280,7 +252,7 @@ func handleArgs(input string, version string, serverDir string, host string) (*m
 		for i := range files {
 			if strings.HasSuffix(files[i].Filename, ".mrpack") {
 				fmt.Println("Downloading mrpack file from", files[i].Url)
-				file, err := requester.DefaultHttpClient.DownloadFile(files[i].Url, serverDir, "")
+				file, err := http.DefaultClient.DownloadFile(files[i].Url, serverDir, "")
 				if err != nil {
 					// TODO: check next file on failure
 					log.Fatalln(err.Error())

@@ -1,4 +1,4 @@
-package requester
+package http
 
 import (
 	"encoding/json"
@@ -13,18 +13,16 @@ import (
 	"strconv"
 )
 
-var DefaultHttpClient = NewHTTPClient()
-
-func (httpClient *HTTPClient) GetJson(url string, respModel interface{}, errModel error) error {
+func (c *Client) GetJson(url string, respModel interface{}, errModel error) error {
 	req, err := http.NewRequest(http.MethodGet, url, nil)
 	if err != nil {
 		return err
 	}
-	req.Header.Set("User-Agent", httpClient.UserAgent)
+	req.Header.Set("User-Agent", c.ua)
 	req.Header.Set("Accept", "application/json")
 	req.Close = true
 
-	res, err := httpClient.sendRequest(req)
+	res, err := c.sendRequest(req)
 	if err != nil {
 		return err
 	}
@@ -51,17 +49,19 @@ func (httpClient *HTTPClient) GetJson(url string, respModel interface{}, errMode
 	return nil
 }
 
-func (httpClient *HTTPClient) DownloadFile(url string, downloadDir string, fileName string) (string, error) {
+func (c *Client) DownloadFile(url string, downloadDir string, fileName string) (string, error) {
 	// TODO: hashsum based local file cache
+
+	// TODO: this needs to (silently?) overwrite existing files!
 
 	request, err := http.NewRequest(http.MethodGet, url, nil)
 	if err != nil {
 		return "", err
 	}
-	request.Header.Set("User-Agent", httpClient.UserAgent)
+	request.Header.Set("User-Agent", c.ua)
 	request.Close = true
 
-	response, err := httpClient.sendRequest(request)
+	response, err := c.sendRequest(request)
 	if err != nil {
 		return "", err
 	}
@@ -110,9 +110,9 @@ func (httpClient *HTTPClient) DownloadFile(url string, downloadDir string, fileN
 	return file.Name(), nil
 }
 
-func (httpClient *HTTPClient) sendRequest(request *http.Request) (*http.Response, error) {
+func (c *Client) sendRequest(request *http.Request) (*http.Response, error) {
 	awaitRateLimits(request.Host)
-	response, err := httpClient.Do(request)
+	response, err := c.c.Do(request)
 	if err != nil {
 		return nil, err
 	}

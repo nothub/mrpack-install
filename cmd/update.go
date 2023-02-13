@@ -53,6 +53,6 @@ var updateCmd = &cobra.Command{
 
 		index, zipPath := handleArgs(input, version, opts.ServerDir, opts.Host)
 
-		update.Cmd(opts, index, zipPath)
+		update.Cmd(opts.ServerDir, opts.DlThreads, opts.DlRetries, index, zipPath)
 	},
 }

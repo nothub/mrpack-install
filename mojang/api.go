@@ -4,7 +4,7 @@ import (
 	"encoding/hex"
 	"errors"
 	"github.com/google/uuid"
-	"github.com/nothub/mrpack-install/requester"
+	"github.com/nothub/mrpack-install/http"
 	"time"
 )
 
@@ -112,7 +112,7 @@ type Player struct {
 
 func GetManifest() (*Manifest, error) {
 	var manifest Manifest
-	err := requester.DefaultHttpClient.GetJson(manifestUrl, &manifest, nil)
+	err := http.DefaultClient.GetJson(manifestUrl, &manifest, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -129,7 +129,7 @@ func LatestRelease() (string, error) {
 
 func GetMeta(version string) (*Meta, error) {
 	var manifest Manifest
-	err := requester.DefaultHttpClient.GetJson(manifestUrl, &manifest, nil)
+	err := http.DefaultClient.GetJson(manifestUrl, &manifest, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -148,7 +148,7 @@ func GetMeta(version string) (*Meta, error) {
 	}
 
 	var meta Meta
-	err = requester.DefaultHttpClient.GetJson(u, &meta, nil)
+	err = http.DefaultClient.GetJson(u, &meta, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -158,7 +158,7 @@ func GetMeta(version string) (*Meta, error) {
 
 func GetPlayer(name string) (*Player, error) {
 	var player Player
-	err := requester.DefaultHttpClient.GetJson(playerUrl(name), &player, nil)
+	err := http.DefaultClient.GetJson(playerUrl(name), &player, nil)
 	if err != nil {
 		return nil, err
 	}

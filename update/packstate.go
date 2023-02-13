@@ -17,7 +17,7 @@ type PackState struct {
 	Name    string                     `json:"name"`
 	Version string                     `json:"version"`
 	Deps    mrpack.Deps                `json:"dependencies"`
-	Files   map[string]modrinth.Hashes `json:"files"`
+	Hashes  map[string]modrinth.Hashes `json:"hashes"`
 }
 
 func (state *PackState) Save(serverDir string) error {
@@ -60,19 +60,19 @@ func BuildPackState(index *mrpack.Index, zipPath string) (*PackState, error) {
 	state.Name = index.Name
 	state.Version = index.Version
 	state.Deps = index.Deps
-	state.Files = make(map[string]modrinth.Hashes)
+	state.Hashes = make(map[string]modrinth.Hashes)
 
-	// downloads
+	// download hashes
 	for _, indexFile := range index.Files {
 		if indexFile.Env.Server == modrinth.UnsupportedEnvSupport {
 			continue
 		}
-		state.Files[indexFile.Path] = indexFile.Hashes
+		state.Hashes[indexFile.Path] = indexFile.Hashes
 	}
 
-	// overrides
+	// override hashes
 	for p, hashes := range mrpack.OverrideHashes(zipPath) {
-		state.Files[p] = hashes
+		state.Hashes[p] = hashes
 	}
 
 	return &state, nil

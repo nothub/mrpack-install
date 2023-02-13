@@ -2,19 +2,20 @@ package update
 
 import (
 	"fmt"
-	"github.com/nothub/mrpack-install/cmd"
+	"github.com/nothub/mrpack-install/http/download"
 	"github.com/nothub/mrpack-install/modrinth/mrpack"
 	"github.com/nothub/mrpack-install/update/backup"
 	"github.com/nothub/mrpack-install/util"
 	"log"
-	"path/filepath"
 	"reflect"
 )
 
-func Cmd(opts *cmd.UpdateOpts, index *mrpack.Index, zipPath string) {
-	fmt.Printf("Updating %s with %s", opts.ServerDir, zipPath)
+import "golang.org/x/exp/slices"
 
-	oldState, err := LoadPackState(opts.ServerDir)
+func Cmd(serverDir string, dlThreads int, dlRetries int, index *mrpack.Index, zipPath string) {
+	fmt.Printf("Updating %q in %q with %q", index.Name, serverDir, zipPath)
+
+	oldState, err := LoadPackState(serverDir)
 	if err != nil {
 		log.Fatalln(err)
 	}
@@ -23,8 +24,8 @@ func Cmd(opts *cmd.UpdateOpts, index *mrpack.Index, zipPath string) {
 	if err != nil {
 		log.Fatalln(err)
 	}
-	for filePath := range newState.Files {
-		util.AssertPathSafe(filePath, opts.ServerDir)
+	for filePath := range newState.Hashes {
+		util.AssertPathSafe(filePath, serverDir)
 	}
 
 	if !reflect.DeepEqual(oldState.Deps, newState.Deps) {
@@ -32,55 +33,66 @@ func Cmd(opts *cmd.UpdateOpts, index *mrpack.Index, zipPath string) {
 		log.Fatalln("mismatched versions, please upgrade manually")
 	}
 
-	for path := range oldState.Files {
-		// ignore unchanged files
-		if newState.Files[path] == oldState.Files[path] {
-			delete(oldState.Files, path)
-			delete(newState.Files, path)
-		}
-		// skip deletion of old files that we overwrite with new files
-		if _, found := newState.Files[path]; found {
-			delete(oldState.Files, path)
+	// ignore files that are left unchanged in the update process
+	var ignores []string
+	for path := range newState.Hashes {
+		if newState.Hashes[path] == oldState.Hashes[path] {
+			ignores = append(ignores, path)
 		}
 	}
 
-	for path, hashes := range oldState.Files {
-		if ShouldBackup(path, hashes.Sha512) {
-			err := backup.Create(path, opts.ServerDir)
-			if err != nil {
-				log.Fatalln(err.Error())
-			}
+	// backup if the file exists but the new hash value does not match
+	for path := range oldState.Hashes {
+		if slices.Contains(ignores, path) {
+			continue
+		}
+
+		if !util.PathIsFile(path) {
+			continue
+		}
+
+		// check if file will be replaced
+		_, ok := newState.Hashes[path]
+		if !ok {
+			continue
+		}
+
+		err := backup.Create(path, serverDir)
+		if err != nil {
+			log.Fatalln(err.Error())
 		}
 	}
 
-	// TODO: correctly handle new files
-	var newFiles []mrpack.File
-	for path, hashes := range newState.Files {
-		var f mrpack.File
-		f.Path = path
-		switch GetStrategy(hashes.Sha512, filepath.Join(opts.ServerDir, path)) {
-		case Delete:
-			delete(newState.Files, path)
-		case Backup:
-			err := backup.Create(path, opts.ServerDir)
-			if err != nil {
-				log.Fatalln(err.Error())
-			}
+	// downloads
+	var downloads []*download.Download
+	for _, dl := range index.ServerDownloads() {
+		if !slices.Contains(ignores, dl.Path) {
+			downloads = append(downloads, dl)
 		}
-		newFiles = append(newFiles, f)
 	}
 
-	err = Do(newFiles, opts.ServerDir, zipPath, opts.DownloadThreads, opts.RetryTimes)
+	fmt.Printf("Downloading %v dependencies...\n", len(downloads))
+	downloader := download.Downloader{
+		Downloads: downloads,
+		Threads:   dlThreads,
+		Retries:   dlRetries,
+	}
+	downloader.Download(serverDir)
+
+	// overrides
+	fmt.Println("Extracting overrides...")
+	err = mrpack.ExtractOverrides(zipPath, serverDir)
 	if err != nil {
 		log.Fatalln(err)
 	}
 
-	util.RemoveEmptyDirs(opts.ServerDir)
-
-	err = newState.Save(opts.ServerDir)
+	// save state file
+	err = newState.Save(serverDir)
 	if err != nil {
 		log.Fatalln(err)
 	}
 
-	fmt.Println("Done :) Have a nice day ✌️")
+	util.RemoveEmptyDirs(serverDir)
+
+	fmt.Println("Update finished :) Have a nice day ✌️")
 }

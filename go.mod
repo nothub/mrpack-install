@@ -6,6 +6,7 @@ require (
 	github.com/google/uuid v1.3.0
 	github.com/nothub/hashutils v0.4.0
 	github.com/spf13/cobra v1.6.1
+	golang.org/x/exp v0.0.0-20230212135524-a684f29349b6
 )
 
 require (

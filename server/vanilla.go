@@ -5,8 +5,8 @@ import (
 	"errors"
 	"github.com/nothub/hashutils/chksum"
 	"github.com/nothub/hashutils/encoding"
+	"github.com/nothub/mrpack-install/http"
 	"github.com/nothub/mrpack-install/mojang"
-	"github.com/nothub/mrpack-install/requester"
 	"log"
 )
 
@@ -20,7 +20,7 @@ func (inst *VanillaInstaller) Install(serverDir string, serverFile string) error
 		return err
 	}
 
-	file, err := requester.DefaultHttpClient.DownloadFile(meta.Downloads.Server.Url, serverDir, serverFile)
+	file, err := http.DefaultClient.DownloadFile(meta.Downloads.Server.Url, serverDir, serverFile)
 	if err != nil {
 		log.Fatalln(err)
 	}

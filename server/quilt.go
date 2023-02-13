@@ -3,7 +3,7 @@ package server
 import (
 	"errors"
 	"fmt"
-	"github.com/nothub/mrpack-install/requester"
+	"github.com/nothub/mrpack-install/http"
 	"github.com/nothub/mrpack-install/util"
 	"os"
 	"os/exec"
@@ -18,7 +18,7 @@ type QuiltInstaller struct {
 }
 
 func (inst *QuiltInstaller) Install(serverDir string, serverFile string) error {
-	installer, err := requester.DefaultHttpClient.DownloadFile(quiltInstallerUrl, ".", "")
+	installer, err := http.DefaultClient.DownloadFile(quiltInstallerUrl, ".", "")
 	if err != nil {
 		return err
 	}

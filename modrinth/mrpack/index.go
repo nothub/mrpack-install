@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/nothub/mrpack-install/http/download"
 	"io"
 )
 
@@ -100,21 +101,23 @@ func ReadIndex(zipFile string) (*Index, error) {
 	return &index, nil
 }
 
-type Downloads map[string]string
-
-func (index *Index) ServerDownloads() (*Downloads, error) {
-	downloads := make(Downloads, len(index.Files))
-
+func (index *Index) ServerDownloads() []*download.Download {
+	var downloads []*download.Download
 	for _, file := range index.Files {
 		if file.Env.Server == modrinth.UnsupportedEnvSupport {
 			continue
 		}
+
 		if len(file.Downloads) < 1 {
 			fmt.Printf("No downloads for file: %s\n", file.Path)
 			continue
 		}
-		downloads[file.Path] = file.Downloads[0]
-	}
 
-	return &downloads, nil
+		downloads = append(downloads, &download.Download{
+			Path:   file.Path,
+			Urls:   file.Downloads,
+			Hashes: file.Hashes,
+		})
+	}
+	return downloads
 }
