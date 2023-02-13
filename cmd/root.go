@@ -26,12 +26,12 @@ func init() {
 	// TODO: --start-server
 
 	// TODO: rootCmd.PersistentFlags().BoolP("verbose", "v", false, "Enable verbose output")
-	rootCmd.PersistentFlags().String("host", "api.modrinth.com", "Labrinth host")
+	rootCmd.PersistentFlags().String("host", "api.modrinth.com", "Labrinth host address")
 	rootCmd.PersistentFlags().String("server-dir", "mc", "Server directory path")
 	rootCmd.PersistentFlags().String("server-file", "", "Server jar file name")
-	rootCmd.PersistentFlags().String("proxy", "", "Use a proxy to download")
-	rootCmd.PersistentFlags().Int("download-threads", 8, "Download threads")
-	rootCmd.PersistentFlags().Int("download-retries", 3, "Number of retries when dl fails")
+	rootCmd.PersistentFlags().String("proxy", "", "Proxy url for http connections")
+	rootCmd.PersistentFlags().Int("dl-threads", 8, "Concurrent download threads")
+	rootCmd.PersistentFlags().Int("dl-retries", 3, "Retries when download fails")
 }
 
 type GlobalOpts struct {
@@ -86,14 +86,14 @@ func GlobalOptions(cmd *cobra.Command) *GlobalOpts {
 	}
 	opts.Proxy = proxy
 
-	dlThreads, err := cmd.Flags().GetInt("download-threads")
+	dlThreads, err := cmd.Flags().GetInt("dl-threads")
 	if err != nil || dlThreads > 64 {
 		dlThreads = 8
 		fmt.Println(err)
 	}
 	opts.DlThreads = dlThreads
 
-	retryTimes, err := cmd.Flags().GetInt("download-retries")
+	retryTimes, err := cmd.Flags().GetInt("dl-retries")
 	if err != nil {
 		retryTimes = 3
 		fmt.Println(err)
