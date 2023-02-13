@@ -1,4 +1,4 @@
-package util
+package files
 
 import (
 	"errors"
@@ -9,9 +9,7 @@ import (
 	"strings"
 )
 
-var ErrFileIsDir = errors.New("file is a directory")
-
-func PathIsFile(path string) bool {
+func IsFile(path string) bool {
 	info, err := os.Stat(path)
 	if err != nil {
 		if errors.Is(err, os.ErrNotExist) {
@@ -22,7 +20,7 @@ func PathIsFile(path string) bool {
 	return !info.IsDir()
 }
 
-func ResolvePath(path string) (string, error) {
+func Resolve(path string) (string, error) {
 	// resolve absolute path
 	path, err := filepath.Abs(path)
 	if err != nil {
@@ -42,13 +40,13 @@ func ResolvePath(path string) (string, error) {
 	return path, nil
 }
 
-func PathIsSubpath(subPath string, basePath string) (bool, error) {
-	subPath, err := ResolvePath(subPath)
+func IsSubpath(subPath string, basePath string) (bool, error) {
+	subPath, err := Resolve(subPath)
 	if err != nil {
 		return false, err
 	}
 
-	basePath, err = ResolvePath(basePath)
+	basePath, err = Resolve(basePath)
 	if err != nil {
 		return false, err
 	}
@@ -56,8 +54,8 @@ func PathIsSubpath(subPath string, basePath string) (bool, error) {
 	return strings.HasPrefix(subPath, basePath), nil
 }
 
-func AssertPathSafe(subPath string, basePath string) {
-	ok, err := PathIsSubpath(subPath, basePath)
+func AssertSafe(subPath string, basePath string) {
+	ok, err := IsSubpath(subPath, basePath)
 	if err != nil {
 		log.Println(err.Error())
 	}
@@ -80,7 +78,7 @@ func CountFiles(dir string) int {
 	return count
 }
 
-func RemoveEmptyDirs(dir string) {
+func RmEmptyDirs(dir string) {
 	var dirs []string
 	err := filepath.Walk(dir, func(path string, info os.FileInfo, err error) error {
 		// ignore tree root

@@ -3,8 +3,8 @@ package server
 import (
 	"errors"
 	"fmt"
+	"github.com/nothub/mrpack-install/files"
 	"github.com/nothub/mrpack-install/http"
-	"github.com/nothub/mrpack-install/util"
 	"os"
 	"os/exec"
 	"path"
@@ -30,7 +30,7 @@ func (inst *QuiltInstaller) Install(serverDir string, serverFile string) error {
 		return err
 	}
 
-	if !util.PathIsFile(path.Join(serverDir, "server.jar")) {
+	if !files.IsFile(path.Join(serverDir, "server.jar")) {
 		return errors.New("server.jar not found")
 	}
 

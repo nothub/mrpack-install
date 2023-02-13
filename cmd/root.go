@@ -3,13 +3,13 @@ package cmd
 import (
 	"fmt"
 	"github.com/nothub/mrpack-install/buildinfo"
+	"github.com/nothub/mrpack-install/files"
 	"github.com/nothub/mrpack-install/http"
 	"github.com/nothub/mrpack-install/http/download"
 	modrinth "github.com/nothub/mrpack-install/modrinth/api"
 	"github.com/nothub/mrpack-install/modrinth/mrpack"
 	"github.com/nothub/mrpack-install/server"
 	"github.com/nothub/mrpack-install/update"
-	"github.com/nothub/mrpack-install/util"
 	"github.com/spf13/cobra"
 	"log"
 	"os"
@@ -150,11 +150,11 @@ var rootCmd = &cobra.Command{
 		fmt.Printf("Installing %q from %q to %q", index.Name, zipPath, opts.ServerDir)
 
 		for _, file := range index.Files {
-			util.AssertPathSafe(file.Path, opts.ServerDir)
+			files.AssertSafe(file.Path, opts.ServerDir)
 		}
 
 		// download server if not present
-		if !util.PathIsFile(path.Join(opts.ServerDir, opts.ServerFile)) {
+		if !files.IsFile(path.Join(opts.ServerDir, opts.ServerFile)) {
 			fmt.Println("Server file not present, downloading...\n(Point --server-dir and --server-file flags to an existing server file to skip this step.)")
 			inst := server.InstallerFromDeps(&index.Deps)
 			err := inst.Install(opts.ServerDir, opts.ServerFile)
@@ -192,7 +192,7 @@ var rootCmd = &cobra.Command{
 			log.Fatalln(err)
 		}
 
-		util.RemoveEmptyDirs(opts.ServerDir)
+		files.RmEmptyDirs(opts.ServerDir)
 
 		fmt.Println("Installation done :) Have a nice day ✌️")
 	},
@@ -205,10 +205,10 @@ func handleArgs(input string, version string, serverDir string, host string) (*m
 	}
 
 	archivePath := ""
-	if util.PathIsFile(input) {
+	if files.IsFile(input) {
 		archivePath = input
 
-	} else if util.IsValidUrl(input) {
+	} else if http.IsValidHttpUrl(input) {
 		fmt.Println("Downloading mrpack file from", input)
 		file, err := http.DefaultClient.DownloadFile(input, serverDir, "")
 		if err != nil {

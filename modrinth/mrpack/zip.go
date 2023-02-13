@@ -1,4 +1,4 @@
-package util
+package mrpack
 
 import (
 	"archive/zip"

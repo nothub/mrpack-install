@@ -6,8 +6,8 @@ import (
 	"fmt"
 	"github.com/nothub/hashutils/chksum"
 	"github.com/nothub/hashutils/encoding"
+	"github.com/nothub/mrpack-install/files"
 	modrinth "github.com/nothub/mrpack-install/modrinth/api"
-	"github.com/nothub/mrpack-install/util"
 	"io"
 	"log"
 	"os"
@@ -45,14 +45,14 @@ func (o *override) server() bool {
 }
 
 func ExtractOverrides(zipFile string, serverDir string) error {
-	err := util.IterZip(zipFile, func(file *zip.File) error {
+	err := IterZip(zipFile, func(file *zip.File) error {
 		o := override(*file)
 		if !o.server() {
 			// skip non-server override files
 			return nil
 		}
 		p := o.realPath()
-		util.AssertPathSafe(p, serverDir)
+		files.AssertSafe(p, serverDir)
 		targetPath := path.Join(serverDir, p)
 
 		err := os.MkdirAll(filepath.Dir(targetPath), 0755)
@@ -97,7 +97,7 @@ func ExtractOverrides(zipFile string, serverDir string) error {
 func OverrideHashes(zipFile string) map[string]modrinth.Hashes {
 	overrides := make(map[string]modrinth.Hashes)
 
-	err := util.IterZip(zipFile, func(file *zip.File) error {
+	err := IterZip(zipFile, func(file *zip.File) error {
 		o := override(*file)
 		if !o.server() {
 			// skip non-server override files

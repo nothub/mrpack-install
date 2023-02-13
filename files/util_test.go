@@ -1,11 +1,11 @@
-package util
+package files
 
 import (
 	"testing"
 )
 
 func testPathIsSubpath(t *testing.T, path string, basePath string) bool {
-	ok, err := PathIsSubpath(path, basePath)
+	ok, err := IsSubpath(path, basePath)
 	if err != nil {
 		t.Log(err)
 	}

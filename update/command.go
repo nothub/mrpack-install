@@ -2,10 +2,10 @@ package update
 
 import (
 	"fmt"
+	"github.com/nothub/mrpack-install/files"
 	"github.com/nothub/mrpack-install/http/download"
 	"github.com/nothub/mrpack-install/modrinth/mrpack"
 	"github.com/nothub/mrpack-install/update/backup"
-	"github.com/nothub/mrpack-install/util"
 	"log"
 	"reflect"
 )
@@ -25,7 +25,7 @@ func Cmd(serverDir string, dlThreads int, dlRetries int, index *mrpack.Index, zi
 		log.Fatalln(err)
 	}
 	for filePath := range newState.Hashes {
-		util.AssertPathSafe(filePath, serverDir)
+		files.AssertSafe(filePath, serverDir)
 	}
 
 	if !reflect.DeepEqual(oldState.Deps, newState.Deps) {
@@ -47,7 +47,7 @@ func Cmd(serverDir string, dlThreads int, dlRetries int, index *mrpack.Index, zi
 			continue
 		}
 
-		if !util.PathIsFile(path) {
+		if !files.IsFile(path) {
 			continue
 		}
 
@@ -92,7 +92,7 @@ func Cmd(serverDir string, dlThreads int, dlRetries int, index *mrpack.Index, zi
 		log.Fatalln(err)
 	}
 
-	util.RemoveEmptyDirs(serverDir)
+	files.RmEmptyDirs(serverDir)
 
 	fmt.Println("Update finished :) Have a nice day ✌️")
 }
