@@ -83,7 +83,7 @@ func ExtractOverrides(zipFile string, serverDir string) error {
 			return err
 		}
 
-		fmt.Printf("Override extracted: %s\n", targetPath)
+		fmt.Printf("Override: %s\n", targetPath)
 
 		return nil
 	})

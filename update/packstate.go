@@ -14,10 +14,11 @@ import (
 const statefile = "packstate.json"
 
 type PackState struct {
-	Name    string                     `json:"name"`
-	Version string                     `json:"version"`
-	Deps    mrpack.Deps                `json:"dependencies"`
-	Hashes  map[string]modrinth.Hashes `json:"hashes"`
+	Name    string      `json:"name"`
+	Version string      `json:"version"`
+	Deps    mrpack.Deps `json:"dependencies"`
+	// Contains hashes of all downloads and override files of a state.
+	Hashes map[string]modrinth.Hashes `json:"hashes"`
 }
 
 func (state *PackState) Save(serverDir string) error {

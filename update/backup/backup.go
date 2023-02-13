@@ -1,6 +1,7 @@
 package backup
 
 import (
+	"fmt"
 	"log"
 	"os"
 	"path"
@@ -18,6 +19,8 @@ func SetDir(s string) {
 }
 
 func Create(filePath string, serverDir string) error {
+	fmt.Printf("Backup: %s\n", filePath)
+
 	if dir == "" {
 		dir = path.Join(serverDir, "backups", time.Now().Format("20060102150405"))
 	}

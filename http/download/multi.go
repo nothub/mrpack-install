@@ -2,6 +2,7 @@ package download
 
 import (
 	"crypto"
+	"fmt"
 	"github.com/nothub/hashutils/chksum"
 	"github.com/nothub/hashutils/encoding"
 	"github.com/nothub/mrpack-install/http"
@@ -49,7 +50,7 @@ func (g *Downloader) Download(baseDir string) {
 						continue
 					}
 					// success yay
-					log.Printf("Downloaded: %s\n", f)
+					fmt.Printf("Download: %s\n", f)
 					success = true
 					break
 				}

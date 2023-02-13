@@ -1,7 +1,10 @@
 package update
 
 import (
+	"crypto"
 	"fmt"
+	"github.com/nothub/hashutils/chksum"
+	"github.com/nothub/hashutils/encoding"
 	"github.com/nothub/mrpack-install/files"
 	"github.com/nothub/mrpack-install/http/download"
 	"github.com/nothub/mrpack-install/modrinth/mrpack"
@@ -41,7 +44,20 @@ func Cmd(serverDir string, dlThreads int, dlRetries int, index *mrpack.Index, zi
 	// ignore files that are left unchanged in the update process
 	var ignores []string
 	for path := range newState.Hashes {
-		if newState.Hashes[path] == oldState.Hashes[path] {
+		// check if file exists
+		if !files.IsFile(path) {
+			continue
+		}
+		// check if pack file changes in update
+		if newState.Hashes[path] != oldState.Hashes[path] {
+			continue
+		}
+		// check if local file changes in update
+		currentHash, err := chksum.FromFile(path, crypto.SHA512.New(), encoding.Hex)
+		if err != nil {
+			log.Fatalln(err)
+		}
+		if currentHash == newState.Hashes[path].Sha512 {
 			ignores = append(ignores, path)
 		}
 	}
@@ -62,6 +78,7 @@ func Cmd(serverDir string, dlThreads int, dlRetries int, index *mrpack.Index, zi
 			continue
 		}
 
+		// TODO: too many backups check hashes, combine with ignores list?
 		err := backup.Create(path, serverDir)
 		if err != nil {
 			log.Fatalln(err.Error())
