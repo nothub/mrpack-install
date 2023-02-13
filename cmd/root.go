@@ -223,13 +223,6 @@ func handleArgs(input string, version string, serverDir string, host string) (*m
 		}
 		archivePath = file
 
-		defer func(name string) {
-			err := os.Remove(name)
-			if err != nil {
-				fmt.Println(err.Error())
-			}
-		}(archivePath)
-
 	} else {
 		// input is project id or slug?
 		versions, err := modrinth.NewClient(host).GetProjectVersions(input, nil)
@@ -272,13 +265,6 @@ func handleArgs(input string, version string, serverDir string, host string) (*m
 		if archivePath == "" {
 			log.Fatalln("No mrpack file found for", input, version)
 		}
-
-		defer func(name string) {
-			err := os.Remove(name)
-			if err != nil {
-				fmt.Println(err.Error())
-			}
-		}(archivePath)
 	}
 
 	if archivePath == "" {
