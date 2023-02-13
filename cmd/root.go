@@ -68,9 +68,8 @@ func GlobalOptions(cmd *cobra.Command) *GlobalOpts {
 	if err != nil {
 		log.Fatalln(err)
 	}
-	serverFile, err = filepath.Abs(serverFile)
-	if err != nil {
-		log.Fatalln(err)
+	if serverFile != "" {
+		files.AssertSafe(serverFile, serverDir)
 	}
 	opts.ServerFile = serverFile
 
@@ -147,7 +146,15 @@ var rootCmd = &cobra.Command{
 		}
 		index, zipPath := handleArgs(input, version, opts.ServerDir, opts.Host)
 
-		fmt.Printf("Installing %q from %q to %q", index.Name, zipPath, opts.ServerDir)
+		fmt.Printf("Installing %q from %q to %q\n", index.Name, zipPath, opts.ServerDir)
+		err := os.MkdirAll(opts.ServerDir, 0755)
+		if err != nil {
+			log.Fatalln(err)
+		}
+		err = os.Chdir(opts.ServerDir)
+		if err != nil {
+			log.Fatalln(err)
+		}
 
 		for _, file := range index.Files {
 			files.AssertSafe(file.Path, opts.ServerDir)
@@ -177,7 +184,7 @@ var rootCmd = &cobra.Command{
 
 		// overrides
 		fmt.Println("Extracting overrides...")
-		err := mrpack.ExtractOverrides(zipPath, opts.ServerDir)
+		err = mrpack.ExtractOverrides(zipPath, opts.ServerDir)
 		if err != nil {
 			log.Fatalln(err)
 		}

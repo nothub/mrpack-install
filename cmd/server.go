@@ -72,6 +72,10 @@ var serverCmd = &cobra.Command{
 		if err != nil {
 			log.Fatalln(err)
 		}
+		err = os.Chdir(opts.ServerDir)
+		if err != nil {
+			log.Fatalln(err)
+		}
 
 		flavor := server.GetFlavor(args[0])
 		inst, err := server.NewInstaller(flavor, opts.MinecraftVersion, opts.FlavorVersion)
