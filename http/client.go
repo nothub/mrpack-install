@@ -3,7 +3,6 @@ package http
 import (
 	"fmt"
 	"github.com/nothub/mrpack-install/buildinfo"
-	"net"
 	"net/http"
 	"net/url"
 	"runtime/debug"
@@ -18,9 +17,7 @@ type Client struct {
 var DefaultClient = newHTTPClient()
 
 func newHTTPClient() *Client {
-	c := &Client{
-		c: http.Client{},
-	}
+	c := &Client{c: http.Client{}}
 
 	c.c.Transport = newTransport()
 
@@ -35,11 +32,7 @@ func newHTTPClient() *Client {
 
 func newTransport() *http.Transport {
 	return &http.Transport{
-		Proxy: http.ProxyFromEnvironment,
-		DialContext: net.Dialer{
-			Timeout:   30 * time.Second,
-			KeepAlive: 30 * time.Second,
-		}.DialContext,
+		Proxy:                 http.ProxyFromEnvironment,
 		ForceAttemptHTTP2:     true,
 		MaxIdleConns:          100,
 		IdleConnTimeout:       90 * time.Second,
@@ -49,8 +42,8 @@ func newTransport() *http.Transport {
 	}
 }
 
-func (c *Client) SetProxy(CustomProxy string) error {
-	proxy, err := url.Parse(CustomProxy)
+func (c *Client) SetProxy(fixedURL string) error {
+	proxy, err := url.Parse(fixedURL)
 	if err != nil {
 		return err
 	}
