@@ -20,7 +20,7 @@ type Download struct {
 
 type Downloader struct {
 	Downloads []*Download
-	Threads   int
+	Threads   int // TODO
 	Retries   int
 }
 
