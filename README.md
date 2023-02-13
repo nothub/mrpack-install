@@ -31,14 +31,14 @@ Available Commands:
   version     Print version infos
 
 Flags:
-      --download-threads int   Download threads (default 8)
-  -h, --help                   help for mrpack-install
-      --host string            Labrinth host (default "api.modrinth.com")
-      --proxy string           Use a proxy to download
-      --retry-times int        Number of retries when a download fails (default 3)
-      --server-dir string      Server directory path (default "mc")
-      --server-file string     Server jar file name
-  -V, --version                Print version and exit
+      --dl-retries int       Retries when download fails (default 3)
+      --dl-threads int       Concurrent download threads (default 8)
+  -h, --help                 help for mrpack-install
+      --host string          Labrinth host address (default "api.modrinth.com")
+      --proxy string         Proxy url for http connections
+      --server-dir string    Server directory path (default "mc")
+      --server-file string   Server jar file name
+  -V, --version              Print version and exit
 
 Use "mrpack-install [command] --help" for more information about a command.
 ```
@@ -47,21 +47,22 @@ Use "mrpack-install [command] --help" for more information about a command.
 
 #### modpack update
 ```
-Update the deployed modpacks config and mod files, creating backup files if necessary.
+Update the deployed modpacks files, creating backups if necessary.
 
 Usage:
   mrpack-install update [flags]
 
 Flags:
-  -h, --help   help for update
+      --backup-dir string   Backup directory path
+  -h, --help                help for update
 
 Global Flags:
-      --download-threads int   Download threads (default 8)
-      --host string            Labrinth host (default "api.modrinth.com")
-      --proxy string           Use a proxy to download
-      --retry-times int        Number of retries when a download fails (default 3)
-      --server-dir string      Server directory path (default "mc")
-      --server-file string     Server jar file name
+      --dl-retries int       Retries when download fails (default 3)
+      --dl-threads int       Concurrent download threads (default 8)
+      --host string          Labrinth host address (default "api.modrinth.com")
+      --proxy string         Proxy url for http connections
+      --server-dir string    Server directory path (default "mc")
+      --server-file string   Server jar file name
 ```
 
 ---
@@ -83,10 +84,10 @@ Flags:
       --minecraft-version string   Minecraft version (default "latest")
 
 Global Flags:
-      --download-threads int   Download threads (default 8)
-      --host string            Labrinth host (default "api.modrinth.com")
-      --proxy string           Use a proxy to download
-      --retry-times int        Number of retries when a download fails (default 3)
-      --server-dir string      Server directory path (default "mc")
-      --server-file string     Server jar file name
+      --dl-retries int       Retries when download fails (default 3)
+      --dl-threads int       Concurrent download threads (default 8)
+      --host string          Labrinth host address (default "api.modrinth.com")
+      --proxy string         Proxy url for http connections
+      --server-dir string    Server directory path (default "mc")
+      --server-file string   Server jar file name
 ```
