@@ -5,7 +5,7 @@ LDFLAGS  = -ldflags="-X '$(MOD_NAME)/buildinfo.Version=$(VERSION)'"
 
 build: out/$(BIN_NAME)
 
-out/$(BIN_NAME): $(shell ls **/*.go)
+out/$(BIN_NAME): $(shell ls go.mod go.sum *.go **/*.go)
 	go build $(LDFLAGS) -race -o out/$(BIN_NAME)
 
 .PHONY: release
