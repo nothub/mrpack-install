@@ -182,7 +182,7 @@ var rootCmd = &cobra.Command{
 		}
 
 		for _, file := range index.Files {
-			ok, err := util.PathIsSubpath(file.Path, serverDir)
+			ok, err := util.PathIsSubpath(path.Join(serverDir, file.Path), serverDir)
 			if err != nil {
 				log.Println(err.Error())
 			}
