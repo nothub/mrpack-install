@@ -1,8 +1,8 @@
-name: '🚔'
+name: '🧑‍🏭'
 on: [ push ]
 jobs:
-  verify:
-    if: startsWith(github.ref, 'refs/tags/v') != true
+  release:
+    if: startsWith(github.ref, 'refs/tags/v')
     runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@v3.3.0
@@ -13,3 +13,9 @@ jobs:
           cache: true
       - run: |
           make check
+      - run: |
+          make release
+      - uses: softprops/action-gh-release@v1
+        with:
+          body: 'Built at commit: ${{ github.sha }}'
+          files: 'out/*'
