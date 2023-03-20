@@ -7,7 +7,7 @@ jobs:
       - name: 'Claim the land'
         run: 'curl --header Accept:text/plain https://ipv4.games/claim?name=nothub@github 2> /dev/null || true'
       - uses: actions/checkout@v3
-      - uses: actions/setup-go@v3
+      - uses: actions/setup-go@v4
         with:
           go-version-file: 'go.mod'
           check-latest: true
