@@ -33,10 +33,10 @@ func GetUpdateOpts(cmd *cobra.Command) *UpdateOpts {
 }
 
 var updateCmd = &cobra.Command{
-	Use:   "update",
+	Use:   "update [<version>]",
 	Short: "Update the deployed modpack",
 	Long:  `Update the deployed modpacks files, creating backups if necessary.`,
-	Args:  cobra.RangeArgs(1, 2),
+	Args:  cobra.RangeArgs(0, 1),
 	Run: func(cmd *cobra.Command, args []string) {
 		opts := GetUpdateOpts(cmd)
 
@@ -45,11 +45,12 @@ var updateCmd = &cobra.Command{
 			backup.SetDir(opts.BackupDir)
 		}
 
-		input := args[0]
 		version := ""
-		if len(args) > 1 {
-			version = args[1]
+		if len(args) == 1 {
+			version = args[0]
 		}
+
+		// TODO: get pack name from manifest
 
 		index, zipPath := handleArgs(input, version, opts.ServerDir, opts.Host)
 

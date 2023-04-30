@@ -37,7 +37,7 @@ func init() {
 type GlobalOpts struct {
 	Host       string
 	ServerDir  string
-	ServerFile string
+	ServerFile string // TODO: this is broken because of subpath check
 	Proxy      string
 	DlThreads  int
 	DlRetries  int
@@ -157,7 +157,7 @@ var rootCmd = &cobra.Command{
 		}
 
 		for _, file := range index.Files {
-			files.AssertSafe(file.Path, opts.ServerDir)
+			files.AssertSafe(path.Join(opts.ServerDir, file.Path), opts.ServerDir)
 		}
 
 		// download server if not present

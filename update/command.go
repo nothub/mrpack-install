@@ -11,6 +11,7 @@ import (
 	"github.com/nothub/mrpack-install/update/backup"
 	"log"
 	"os"
+	"path"
 	"reflect"
 )
 
@@ -33,7 +34,7 @@ func Cmd(serverDir string, dlThreads int, dlRetries int, index *mrpack.Index, zi
 		log.Fatalln(err)
 	}
 	for filePath := range newState.Hashes {
-		files.AssertSafe(filePath, serverDir)
+		files.AssertSafe(path.Join(serverDir, filePath), serverDir) //
 	}
 
 	if !reflect.DeepEqual(oldState.Deps, newState.Deps) {
