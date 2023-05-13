@@ -10,7 +10,7 @@ import (
 	"path"
 )
 
-const quiltInstallerUrl = "https://maven.quiltmc.org/repository/release/org/quiltmc/quilt-installer/latest/quilt-installer-latest.jar"
+const quiltInstallerUrl = "https://maven.quiltmc.org/repository/release/org/quiltmc/quilt-installer/0.5.0/quilt-installer-0.5.0.jar"
 
 type Quilt struct {
 	MinecraftVersion string
