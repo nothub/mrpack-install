@@ -11,7 +11,7 @@ import (
 	"github.com/nothub/mrpack-install/modrinth/mrpack"
 )
 
-const statefile = "mrpack-install.json"
+const statefile = "packstate.json"
 
 type PackState struct {
 	Name    string      `json:"name"`
