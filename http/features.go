@@ -2,6 +2,7 @@ package http
 
 import (
 	"encoding/json"
+	"encoding/xml"
 	"errors"
 	"fmt"
 	"io"
@@ -13,7 +14,7 @@ import (
 	"strconv"
 )
 
-func (c *Client) GetJson(url string, respModel interface{}, errModel error) error {
+func (c *Client) GetModel(url string, respModel interface{}, errModel error, decode func(body io.Reader, model interface{}) error) error {
 	req, err := http.NewRequest(http.MethodGet, url, nil)
 	if err != nil {
 		return err
@@ -41,12 +42,24 @@ func (c *Client) GetJson(url string, respModel interface{}, errModel error) erro
 		return errors.New("http status " + strconv.Itoa(res.StatusCode) + " - " + errModel.Error())
 	}
 
-	err = json.NewDecoder(res.Body).Decode(&respModel)
+	err = decode(res.Body, &respModel)
 	if err != nil {
 		return errors.New("http status " + strconv.Itoa(res.StatusCode) + " - " + err.Error())
 	}
 
 	return nil
+}
+
+func (c *Client) GetJson(url string, resModel interface{}, errModel error) error {
+	return c.GetModel(url, resModel, errModel, func(i io.Reader, o interface{}) error {
+		return json.NewDecoder(i).Decode(o)
+	})
+}
+
+func (c *Client) GetXml(url string, resModel interface{}, errModel error) error {
+	return c.GetModel(url, resModel, errModel, func(i io.Reader, o interface{}) error {
+		return xml.NewDecoder(i).Decode(o)
+	})
 }
 
 func (c *Client) DownloadFile(url string, downloadDir string, fileName string) (string, error) {
