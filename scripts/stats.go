@@ -1,4 +1,6 @@
+// @formatter:off 2>/dev/null
 //usr/bin/env -S go run "$0" "$@" ; exit
+// @formatter:on
 package main
 
 import (
@@ -15,6 +17,7 @@ import (
   # https://docs.github.com/en/rest/releases/releases
 */
 
+type Releases []Release
 type Release struct {
 	Id          int       `json:"id"`
 	TagName     string    `json:"tag_name"`
@@ -38,7 +41,7 @@ func main() {
 		log.Fatalln(err.Error())
 	}
 
-	releases := make([]Release, 0)
+	releases := make([]Releases, 0)
 	err = json.NewDecoder(res.Body).Decode(&releases)
 	if err != nil {
 		log.Fatalln(err.Error())
