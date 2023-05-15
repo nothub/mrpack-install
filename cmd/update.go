@@ -33,6 +33,7 @@ func GetUpdateOpts(cmd *cobra.Command) *UpdateOpts {
 }
 
 /*
+TODO: verify correct update behaviour
 Behaviour:
     Deletions:
         PreDelete Three scenarios are possible:
