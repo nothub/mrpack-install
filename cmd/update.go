@@ -64,10 +64,13 @@ var updateCmd = &cobra.Command{
 			version = args[0]
 		}
 
-		// TODO: get pack name from manifest
+		state, err := update.LoadPackState(".") // TODO: path flag
+		if err != nil {
+			log.Fatalln(err.Error())
+		}
 
-		index, zipPath := handleArgs(input, version, opts.ServerDir, opts.Host)
+		index, zipPath := handleArgs(state.Name, version, opts.ServerDir, opts.Host)
 
-		update.Cmd(opts.ServerDir, opts.DlThreads, opts.DlRetries, index, zipPath)
+		update.Cmd(opts.ServerDir, opts.DlThreads, opts.DlRetries, index, zipPath, state)
 	},
 }
