@@ -17,14 +17,9 @@ import (
 
 import "golang.org/x/exp/slices"
 
-func Cmd(serverDir string, dlThreads int, dlRetries int, index *mrpack.Index, zipPath string) {
+func Cmd(serverDir string, dlThreads int, dlRetries int, index *mrpack.Index, zipPath string, oldState *PackState) {
 	fmt.Printf("Updating %q in %q with %q\n", index.Name, serverDir, zipPath)
 	err := os.Chdir(serverDir)
-	if err != nil {
-		log.Fatalln(err)
-	}
-
-	oldState, err := LoadPackState(serverDir)
 	if err != nil {
 		log.Fatalln(err)
 	}
