@@ -5,12 +5,11 @@ import (
 	"fmt"
 	"github.com/nothub/mrpack-install/files"
 	"github.com/nothub/mrpack-install/http"
+	"github.com/nothub/mrpack-install/maven"
 	"os"
 	"os/exec"
 	"path"
 )
-
-const quiltInstallerUrl = "https://maven.quiltmc.org/repository/release/org/quiltmc/quilt-installer/0.5.0/quilt-installer-0.5.0.jar"
 
 type QuiltInstaller struct {
 	MinecraftVersion string
@@ -18,6 +17,12 @@ type QuiltInstaller struct {
 }
 
 func (inst *QuiltInstaller) Install(serverDir string, serverFile string) error {
+	meta, err := maven.FetchMetadata("https://maven.quiltmc.org/repository/release/org/quiltmc/quilt-installer/maven-metadata.xml")
+	if err != nil {
+		return err
+	}
+	quiltInstallerUrl := "https://maven.quiltmc.org/repository/release/org/quiltmc/quilt-installer/" + meta.Versioning.Release + "/quilt-installer-" + meta.Versioning.Release + ".jar"
+
 	installer, err := http.DefaultClient.DownloadFile(quiltInstallerUrl, ".", "")
 	if err != nil {
 		return err
