@@ -50,7 +50,7 @@ Use "mrpack-install [command] --help" for more information about a command.
 Update the deployed modpacks files, creating backups if necessary.
 
 Usage:
-  mrpack-install update [flags]
+  mrpack-install update [<version>] [flags]
 
 Flags:
       --backup-dir string   Backup directory path
