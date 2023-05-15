@@ -47,7 +47,8 @@ func main() {
 		fmt.Printf("%v:\n", release.Tag)
 		combined := 0
 		for _, asset := range release.Assets {
-			trimmed := strings.TrimPrefix(strings.TrimSuffix(asset.Name, ".exe"), "mrpack-install-")
+			trimmed := strings.TrimPrefix(asset.Name, "mrpack-install-")
+			trimmed = strings.TrimSuffix(trimmed, ".exe")
 			fmt.Printf("  - %v: %v\n", trimmed, asset.DownloadCount)
 			combined = combined + asset.DownloadCount
 		}

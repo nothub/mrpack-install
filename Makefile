@@ -28,7 +28,8 @@ check:
 README.md: out/$(BIN_NAME)
 	@echo "# $(BIN_NAME)" > README.md
 	@echo "" >> README.md
-	@echo "[![Go Reference](https://pkg.go.dev/badge/$(MOD_NAME).svg)](https://pkg.go.dev/$(MOD_NAME))" >> README.md
+	@echo "[![downloads](https://img.shields.io/github/downloads/nothub/mrpack-install/total.svg?style=flat-square&labelColor=5c5c5c&color=007D9C)](https://github.com/nothub/mrpack-install/releases/latest)" >> README.md
+	@echo "[![go ref](https://pkg.go.dev/badge/github.com/nothub/mrpack-install.svg)](https://pkg.go.dev/github.com/nothub/mrpack-install)" >> README.md
 	@echo "" >> README.md
 	@echo "A cli application for installing Minecraft servers and [Modrinth](https://modrinth.com/) [modpacks](https://docs.modrinth.com/docs/modpacks/format_definition/)." >> README.md
 	@echo "" >> README.md
