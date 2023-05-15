@@ -44,7 +44,7 @@ func (httpClient *HTTPClient) GetModel(url string, respModel interface{}, errMod
 		return errors.New("http status " + strconv.Itoa(res.StatusCode) + " - " + errModel.Error())
 	}
 
-	err = json.NewDecoder(res.Body).Decode(&respModel)
+	err = decode(res.Body, &respModel)
 	if err != nil {
 		return errors.New("http status " + strconv.Itoa(res.StatusCode) + " - " + err.Error())
 	}
