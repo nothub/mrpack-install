@@ -12,5 +12,7 @@
 !/go.sum
 !/**/*.go
 
+!/dl-stats
+
 !/LICENSE.txt
 !/README.md
