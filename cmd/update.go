@@ -32,6 +32,20 @@ func GetUpdateOpts(cmd *cobra.Command) *UpdateOpts {
 	return &opts
 }
 
+/*
+Behaviour:
+    Deletions:
+        PreDelete Three scenarios are possible:
+        1.File does not exist notice
+        2.File exists but hash value does not match, change the original file name to xxx.bak
+        3.File exists and the hash value matches
+    Updates:
+        PreUpdate Three scenarios are possible:
+        1.File does not exist
+        2.File exists but hash value does not match, change the original file name to xxx.bak
+        3.File exists and the hash value matches, remove the item from the queue
+*/
+
 var updateCmd = &cobra.Command{
 	Use:   "update [<version>]",
 	Short: "Update the deployed modpack",
