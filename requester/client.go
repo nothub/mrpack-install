@@ -2,6 +2,7 @@ package requester
 
 import (
 	"encoding/json"
+	"encoding/xml"
 	"errors"
 	"fmt"
 	"io"
@@ -15,7 +16,7 @@ import (
 
 var DefaultHttpClient = NewHTTPClient()
 
-func (httpClient *HTTPClient) GetJson(url string, respModel interface{}, errModel error) error {
+func (httpClient *HTTPClient) GetModel(url string, respModel interface{}, errModel error, decode func(body io.Reader, model interface{}) error) error {
 	req, err := http.NewRequest(http.MethodGet, url, nil)
 	if err != nil {
 		return err
@@ -49,6 +50,18 @@ func (httpClient *HTTPClient) GetJson(url string, respModel interface{}, errMode
 	}
 
 	return nil
+}
+
+func (httpClient *HTTPClient) GetJson(url string, resModel interface{}, errModel error) error {
+	return httpClient.GetModel(url, resModel, errModel, func(i io.Reader, o interface{}) error {
+		return json.NewDecoder(i).Decode(o)
+	})
+}
+
+func (httpClient *HTTPClient) GetXml(url string, resModel interface{}, errModel error) error {
+	return httpClient.GetModel(url, resModel, errModel, func(i io.Reader, o interface{}) error {
+		return xml.NewDecoder(i).Decode(o)
+	})
 }
 
 func (httpClient *HTTPClient) DownloadFile(url string, downloadDir string, fileName string) (string, error) {
