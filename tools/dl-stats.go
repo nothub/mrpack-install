@@ -43,7 +43,8 @@ func main() {
 	}
 
 	total := 0
-	for _, release := range releases {
+	for i, _ := range releases {
+		release := releases[len(releases)-1-i]
 		fmt.Printf("%v:\n", release.Tag)
 		combined := 0
 		for _, asset := range release.Assets {

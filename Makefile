@@ -1,6 +1,6 @@
 MOD_NAME = $(shell go list -m)
 BIN_NAME = $(shell basename $(MOD_NAME))
-VERSION  = $(shell git describe --tags --abbrev=0 --match v[0-9]* 2> /dev/null || echo "indev")
+VERSION  = $(shell git describe --tags --dirty --match v[0-9]* 2> /dev/null || echo "indev")
 LDFLAGS  = -ldflags="-X '$(MOD_NAME)/buildinfo.Version=$(VERSION)'"
 
 out/$(BIN_NAME): $(shell ls go.mod go.sum *.go **/*.go)
@@ -24,6 +24,10 @@ clean:
 check:
 	go vet
 	go test -v -parallel $(shell grep -c -E "^processor.*[0-9]+" "/proc/cpuinfo") $(MOD_NAME)/...
+
+.PHONY: dl-stats
+dl-stats:
+	./tools/dl-stats.go
 
 README.md: out/$(BIN_NAME)
 	@echo "# $(BIN_NAME)" > README.md
