@@ -34,10 +34,11 @@ func init() {
 	rootCmd.PersistentFlags().Int("dl-retries", 3, "Retries when download fails")
 }
 
+// TODO: check if everything here actually needs to be stored or should just be used directly while parsing flags
 type GlobalOpts struct {
 	Host       string
 	ServerDir  string
-	ServerFile string // TODO: this is broken because of subpath check
+	ServerFile string
 	Proxy      string
 	DlThreads  int
 	DlRetries  int
@@ -68,9 +69,11 @@ func GlobalOptions(cmd *cobra.Command) *GlobalOpts {
 	if err != nil {
 		log.Fatalln(err)
 	}
-	if serverFile != "" {
-		files.AssertSafe(serverFile, serverDir)
+	serverFile, err = filepath.Abs(serverFile)
+	if err != nil {
+		log.Fatalln(err)
 	}
+	// TODO: warn user if serverfile is outside of server directory
 	opts.ServerFile = serverFile
 
 	proxy, err := cmd.Flags().GetString("proxy")
@@ -230,29 +233,29 @@ func handleArgs(input string, version string, serverDir string, host string) (*m
 			log.Fatalln(err)
 		}
 
-		var files []modrinth.File = nil
+		var fileInfos []modrinth.File = nil
 		for i := range versions {
 			if version != "" {
 				if versions[i].VersionNumber == version {
-					files = versions[i].Files
+					fileInfos = versions[i].Files
 					break
 				}
 			} else {
 				// latest stable release if version not specified
 				if versions[i].VersionType == modrinth.ReleaseVersionType {
-					files = versions[i].Files
+					fileInfos = versions[i].Files
 					break
 				}
 			}
 		}
-		if len(files) == 0 {
+		if len(fileInfos) == 0 {
 			log.Fatalln("No files found for", input, version)
 		}
 
-		for i := range files {
-			if strings.HasSuffix(files[i].Filename, ".mrpack") {
-				fmt.Println("Downloading mrpack file from", files[i].Url)
-				file, err := http.DefaultClient.DownloadFile(files[i].Url, serverDir, "")
+		for i := range fileInfos {
+			if strings.HasSuffix(fileInfos[i].Filename, ".mrpack") {
+				fmt.Println("Downloading mrpack file from", fileInfos[i].Url)
+				file, err := http.DefaultClient.DownloadFile(fileInfos[i].Url, serverDir, "")
 				if err != nil {
 					// TODO: check next file on failure
 					log.Fatalln(err.Error())
