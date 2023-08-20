@@ -5,7 +5,7 @@ import (
 	"github.com/nothub/mrpack-install/buildinfo"
 	"net/http"
 	"net/url"
-	"runtime/debug"
+	"strings"
 	"time"
 )
 
@@ -18,16 +18,20 @@ var DefaultClient = newHTTPClient()
 
 func newHTTPClient() *Client {
 	c := &Client{c: http.Client{}}
-
 	c.c.Transport = newTransport()
-
-	c.ua = fmt.Sprintf("%s/%s", "mrpack-install", buildinfo.Version)
-	info, ok := debug.ReadBuildInfo()
-	if ok && info.Main.Path != "" {
-		c.ua = fmt.Sprintf("%s (+https://%s)", c.ua, info.Main.Path)
-	}
-
+	c.ua = userAgent()
 	return c
+}
+
+func userAgent() string {
+	return fmt.Sprintf(
+		"%s/%s (%s; %s) +https://%s",
+		buildinfo.Name(),
+		strings.TrimPrefix(buildinfo.Tag, "v"),
+		buildinfo.Os,
+		buildinfo.Arch,
+		buildinfo.Module(),
+	)
 }
 
 func newTransport() *http.Transport {

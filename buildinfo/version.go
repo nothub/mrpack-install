@@ -1,3 +1,0 @@
-package buildinfo
-
-var Version = "?"

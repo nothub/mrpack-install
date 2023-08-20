@@ -138,7 +138,7 @@ var rootCmd = &cobra.Command{
 		opts := GetRootOpts(cmd)
 
 		if opts.Version {
-			fmt.Println("mrpack-install", buildinfo.Version)
+			buildinfo.PrintInfos()
 			return
 		}
 

@@ -1,7 +1,7 @@
 MOD_NAME = $(shell go list -m)
 BIN_NAME = $(shell basename $(MOD_NAME))
-VERSION  = $(shell git describe --tags --dirty --match v[0-9]* 2> /dev/null || echo "indev")
-LDFLAGS  = -ldflags="-X '$(MOD_NAME)/buildinfo.Version=$(VERSION)'"
+VERSION  = $(shell git describe --tags --abbrev=0 --match v[0-9]* 2> /dev/null || echo "v0.0.0")
+LDFLAGS  = -ldflags="-X '$(MOD_NAME)/buildinfo.Tag=$(VERSION)'"
 
 out/$(BIN_NAME): $(shell ls go.mod go.sum *.go **/*.go)
 	go build $(LDFLAGS) -race -o out/$(BIN_NAME)
