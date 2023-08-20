@@ -15,7 +15,7 @@ type rateLimitInfos struct {
 	LastUpdate time.Time
 }
 
-func (infos *rateLimitInfos) IsExpired() bool {
+func (infos *rateLimitInfos) isExpired() bool {
 	return !infos.LastUpdate.Add(infos.ResetDelay).After(time.Now())
 }
 
@@ -51,7 +51,7 @@ func awaitRateLimits(host string) {
 	if rateLimits[host] == nil {
 		return
 	}
-	if rateLimits[host].IsExpired() {
+	if rateLimits[host].isExpired() {
 		return
 	}
 	if rateLimits[host].Remaining <= 1 {
