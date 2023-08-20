@@ -25,6 +25,9 @@ check:
 	go vet
 	go test -v -parallel $(shell grep -c -E "^processor.*[0-9]+" "/proc/cpuinfo") $(MOD_NAME)/...
 
+.PHONY: test
+test: check
+
 .PHONY: dl-stats
 dl-stats:
 	./tools/dl-stats.go
