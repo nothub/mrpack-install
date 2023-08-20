@@ -80,6 +80,10 @@ func (c *Client) DownloadFile(url string, downloadDir string, fileName string) (
 		return "", err
 	}
 
+	if response.StatusCode < http.StatusOK || response.StatusCode >= http.StatusBadRequest {
+		return "", errors.New("http status " + strconv.Itoa(response.StatusCode))
+	}
+
 	if fileName == "" && response.Header.Get("content-disposition") != "" {
 		matches := regexp.
 			MustCompile("attachment; filename=\"(.*)\"").
