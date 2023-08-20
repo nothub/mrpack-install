@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"log"
 	"os"
-	"path"
 	"path/filepath"
 	"time"
 )
@@ -22,7 +21,7 @@ func Create(filePath string, serverDir string) error {
 	fmt.Printf("Backup: %s\n", filePath)
 
 	if dir == "" {
-		dir = path.Join(serverDir, "backups", time.Now().Format("20060102150405"))
+		dir = filepath.Join(serverDir, "backups", time.Now().Format("20060102150405"))
 	}
 
 	// create backup dirs

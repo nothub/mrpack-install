@@ -11,7 +11,7 @@ import (
 	"github.com/nothub/mrpack-install/web/download"
 	"log"
 	"os"
-	"path"
+	"path/filepath"
 	"reflect"
 )
 
@@ -29,7 +29,7 @@ func Cmd(serverDir string, dlThreads uint8, dlRetries uint8, index *mrpack.Index
 		log.Fatalln(err)
 	}
 	for filePath := range newState.Hashes {
-		files.AssertSafe(path.Join(serverDir, filePath), serverDir) //
+		files.AssertSafe(filepath.Join(serverDir, filePath), serverDir)
 	}
 
 	if !reflect.DeepEqual(oldState.Deps, newState.Deps) {

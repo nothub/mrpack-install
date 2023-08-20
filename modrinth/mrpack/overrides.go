@@ -11,7 +11,6 @@ import (
 	"io"
 	"log"
 	"os"
-	"path"
 	"path/filepath"
 	"strings"
 )
@@ -53,7 +52,7 @@ func ExtractOverrides(zipFile string, serverDir string) error {
 		}
 		p := o.realPath()
 		files.AssertSafe(p, serverDir)
-		targetPath := path.Join(serverDir, p)
+		targetPath := filepath.Join(serverDir, p)
 
 		err := os.MkdirAll(filepath.Dir(targetPath), 0755)
 		if err != nil {

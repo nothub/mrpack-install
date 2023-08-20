@@ -13,7 +13,6 @@ import (
 	"github.com/spf13/cobra"
 	"log"
 	"os"
-	"path"
 	"path/filepath"
 	"strings"
 )
@@ -59,18 +58,22 @@ func init() {
 
 		// TODO: validate all inputs
 
+		// --server-dir
+		serverDir = strings.TrimSpace(serverDir)
+		if serverDir == "" {
+			log.Fatalln("invalid value for flag --server-dir")
+		}
 		absServerDir, err := filepath.Abs(serverDir)
 		if err != nil {
 			log.Fatalln(err)
 		}
 		serverDir = absServerDir
 
-		absServerFile, err := filepath.Abs(serverFile)
-		if err != nil {
-			log.Fatalln(err)
+		// -- server-file
+		serverFile = strings.TrimSpace(serverFile)
+		if serverFile != "" && serverFile != filepath.Base(serverFile) {
+			log.Fatalln("invalid value for flag --server-file")
 		}
-		// TODO: warn user if serverfile is outside of server directory
-		serverFile = absServerFile
 
 		if proxy != "" {
 			err := web.DefaultClient.SetProxy(proxy)
@@ -87,7 +90,7 @@ var rootCmd = &cobra.Command{
 	Long:  `Deploys a Modrinth modpack including Minecraft server.`,
 	Example: `  mrpack-install https://example.org/data/cool-pack.mrpack
   mrpack-install downloads/cool-pack.mrpack --proxy socks5://127.0.0.1:7890
-  mrpack-install hexmc-modpack --server-file server.jar
+  mrpack-install adrenaserver --server-file mc/server.jar
   mrpack-install yK0ISmKn 1.0.0-1.18 --server-dir mcserver
   mrpack-install communitypack9000 --host api.labrinth.example.org
   mrpack-install --version`,
@@ -111,12 +114,13 @@ var rootCmd = &cobra.Command{
 		}
 
 		for _, file := range index.Files {
-			files.AssertSafe(path.Join(serverDir, file.Path), serverDir)
+			files.AssertSafe(filepath.Join(serverDir, file.Path), serverDir)
 		}
 
 		// download server if not present
-		if !files.IsFile(path.Join(serverDir, serverFile)) {
-			fmt.Println("Server file not present, downloading...\n(Point --server-dir and --server-file flags to an existing server file to skip this step.)")
+		if !files.IsFile(filepath.Join(serverDir, serverFile)) {
+			fmt.Println("Server file not present, downloading...")
+			fmt.Println("(Point --server-dir and --server-file to existing targets to skip this step)")
 			inst := server.InstallerFromDeps(&index.Deps)
 			err := inst.Install(serverDir, serverFile)
 			if err != nil {

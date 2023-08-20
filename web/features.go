@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"os"
 	"path"
+	"path/filepath"
 	"regexp"
 	"strconv"
 )
@@ -98,7 +99,7 @@ func (c *Client) DownloadFile(url string, downloadDir string, fileName string) (
 	if err != nil {
 		log.Fatalln(err)
 	}
-	joined := path.Join(downloadDir, fileName)
+	joined := filepath.Join(downloadDir, fileName)
 	file, err := os.Create(joined)
 	if err != nil {
 		return "", err

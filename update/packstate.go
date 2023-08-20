@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"os"
-	"path"
+	"path/filepath"
 	"strings"
 
 	modrinth "github.com/nothub/mrpack-install/modrinth/api"
@@ -33,7 +33,7 @@ func (state *PackState) Save(serverDir string) error {
 		return err
 	}
 
-	err = os.WriteFile(path.Join(serverDir, statefile), buf.Bytes(), 0644)
+	err = os.WriteFile(filepath.Join(serverDir, statefile), buf.Bytes(), 0644)
 	if err != nil {
 		return err
 	}
@@ -42,7 +42,7 @@ func (state *PackState) Save(serverDir string) error {
 }
 
 func LoadPackState(serverDir string) (*PackState, error) {
-	b, err := os.ReadFile(path.Join(serverDir, statefile))
+	b, err := os.ReadFile(filepath.Join(serverDir, statefile))
 	if err != nil {
 		return nil, err
 	}

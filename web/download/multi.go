@@ -8,7 +8,6 @@ import (
 	modrinth "github.com/nothub/mrpack-install/modrinth/api"
 	"github.com/nothub/mrpack-install/web"
 	"log"
-	"path"
 	"path/filepath"
 	"sync"
 )
@@ -32,13 +31,13 @@ func (g *Downloader) Download(baseDir string) {
 		dl := g.Downloads[i]
 		go func() {
 			defer wg.Done()
-			absPath, _ := filepath.Abs(path.Join(baseDir, dl.Path))
+			absPath, _ := filepath.Abs(filepath.Join(baseDir, dl.Path))
 			success := false
 			for _, link := range dl.Urls {
 				// retry when download failed
 				for retries := 0; retries < g.Retries; retries++ {
 					// try download
-					f, err := web.DefaultClient.DownloadFile(link, path.Dir(absPath), path.Base(absPath))
+					f, err := web.DefaultClient.DownloadFile(link, filepath.Dir(absPath), filepath.Base(absPath))
 					if err != nil {
 						log.Printf("Download failed for %s (attempt %v), because: %s\n", dl.Path, retries+1, err.Error())
 						continue

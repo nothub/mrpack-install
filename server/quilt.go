@@ -8,7 +8,7 @@ import (
 	"github.com/nothub/mrpack-install/web"
 	"os"
 	"os/exec"
-	"path"
+	"path/filepath"
 )
 
 type QuiltInstaller struct {
@@ -35,12 +35,12 @@ func (inst *QuiltInstaller) Install(serverDir string, serverFile string) error {
 		return err
 	}
 
-	if !files.IsFile(path.Join(serverDir, "server.jar")) {
+	if !files.IsFile(filepath.Join(serverDir, "server.jar")) {
 		return errors.New("server.jar not found")
 	}
 
 	if serverFile != "" {
-		err = os.Rename(path.Join(serverDir, "server.jar"), path.Join(serverDir, serverFile))
+		err = os.Rename(filepath.Join(serverDir, "server.jar"), filepath.Join(serverDir, serverFile))
 		if err != nil {
 			return err
 		}
