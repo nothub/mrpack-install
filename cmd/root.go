@@ -34,8 +34,9 @@ func init() {
 	rootCmd.PersistentFlags().Int("dl-retries", 3, "Retries when download fails")
 }
 
-// TODO: check if everything here actually needs to be stored or should just be used directly while parsing flags
 type GlobalOpts struct {
+	// TODO: check if everything here actually needs to be stored
+	//       or should just be used directly while parsing flags
 	Host       string
 	ServerDir  string
 	ServerFile string
@@ -89,18 +90,22 @@ func GlobalOptions(cmd *cobra.Command) *GlobalOpts {
 	opts.Proxy = proxy
 
 	dlThreads, err := cmd.Flags().GetInt("dl-threads")
-	if err != nil || dlThreads > 64 {
+	if err != nil {
 		dlThreads = 8
 		fmt.Println(err)
 	}
+	// TODO: is this a sane max value?
+	if dlThreads > 64 {
+		dlThreads = 64
+	}
 	opts.DlThreads = dlThreads
 
-	retryTimes, err := cmd.Flags().GetInt("dl-retries")
+	dlRetries, err := cmd.Flags().GetInt("dl-retries")
 	if err != nil {
-		retryTimes = 3
+		dlRetries = 3
 		fmt.Println(err)
 	}
-	opts.DlRetries = retryTimes
+	opts.DlRetries = dlRetries
 
 	return &opts
 }
