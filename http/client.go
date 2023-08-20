@@ -14,27 +14,16 @@ type Client struct {
 	ua string
 }
 
-var DefaultClient = newHTTPClient()
+var DefaultClient = NewClient()
 
-func newHTTPClient() *Client {
+func NewClient() *Client {
 	c := &Client{c: http.Client{}}
-	c.c.Transport = newTransport()
-	c.ua = userAgent()
+	c.c.Transport = NewTransport()
+	c.ua = UserAgent()
 	return c
 }
 
-func userAgent() string {
-	return fmt.Sprintf(
-		"%s/%s (%s; %s) +https://%s",
-		buildinfo.Name(),
-		strings.TrimPrefix(buildinfo.Tag, "v"),
-		buildinfo.Os,
-		buildinfo.Arch,
-		buildinfo.Module(),
-	)
-}
-
-func newTransport() *http.Transport {
+func NewTransport() *http.Transport {
 	return &http.Transport{
 		Proxy:                 http.ProxyFromEnvironment,
 		ForceAttemptHTTP2:     true,
@@ -46,13 +35,24 @@ func newTransport() *http.Transport {
 	}
 }
 
+func UserAgent() string {
+	return fmt.Sprintf(
+		"%s/%s (%s; %s) +https://%s",
+		buildinfo.Name(),
+		strings.TrimPrefix(buildinfo.Tag, "v"),
+		buildinfo.Os,
+		buildinfo.Arch,
+		buildinfo.Module(),
+	)
+}
+
 func (c *Client) SetProxy(fixedURL string) error {
 	proxy, err := url.Parse(fixedURL)
 	if err != nil {
 		return err
 	}
 
-	transport := newTransport()
+	transport := NewTransport()
 	transport.Proxy = http.ProxyURL(proxy)
 	c.c.Transport = transport
 
