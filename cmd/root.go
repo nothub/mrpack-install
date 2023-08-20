@@ -237,7 +237,7 @@ func handleArgs(input string, version string, serverDir string, host string) (*m
 }
 
 func Execute() {
-	if rootCmd.Execute() != nil {
-		os.Exit(1)
+	if err := rootCmd.Execute(); err != nil {
+		log.Fatalln(err.Error())
 	}
 }

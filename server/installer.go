@@ -49,6 +49,11 @@ func NewInstaller(flavor Flavor, minecraftVersion string, flavorVersion string) 
 			MinecraftVersion: minecraftVersion,
 			ForgeVersion:     flavorVersion,
 		}
+	case NeoForge:
+		inst = &NeoForgeInstaller{
+			MinecraftVersion: minecraftVersion,
+			NeoForgeVersion:  flavorVersion,
+		}
 	case Paper:
 		inst = &PaperInstaller{
 			MinecraftVersion: minecraftVersion,

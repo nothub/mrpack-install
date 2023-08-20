@@ -6,6 +6,7 @@ import (
 	"github.com/spf13/cobra"
 	"log"
 	"os"
+	"strings"
 )
 
 var (
@@ -39,19 +40,13 @@ func init() {
 }
 
 var serverCmd = &cobra.Command{
-	Use:   "server (vanilla | fabric | quilt | forge | paper)",
+	Use:   "server ( " + strings.Join(server.FlavorNames, " | ") + " )",
 	Short: "Prepare a plain server environment",
 	Long:  `Download and configure one of several Minecraft server flavors.`,
 	Example: `  mrpack-install server fabric --server-dir fabric-srv
   mrpack-install server paper --minecraft-version 1.18.2 --server-file srv.jar`,
-	Args: cobra.MatchAll(cobra.ExactArgs(1), cobra.OnlyValidArgs),
-	ValidArgs: []string{
-		server.Vanilla.String(),
-		server.Fabric.String(),
-		server.Quilt.String(),
-		server.Forge.String(),
-		server.Paper.String(),
-	},
+	Args:      cobra.MatchAll(cobra.ExactArgs(1), cobra.OnlyValidArgs),
+	ValidArgs: server.FlavorNames,
 	Run: func(cmd *cobra.Command, args []string) {
 		err := os.MkdirAll(serverDir, 0755)
 		if err != nil {
@@ -62,7 +57,7 @@ var serverCmd = &cobra.Command{
 			log.Fatalln(err)
 		}
 
-		flavor := server.GetFlavor(args[0])
+		flavor := server.ToFlavor(args[0])
 		inst, err := server.NewInstaller(flavor, minecraftVersion, flavorVersion)
 		if err != nil {
 			log.Fatalln(err)

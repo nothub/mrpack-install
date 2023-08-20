@@ -1,31 +1,44 @@
 package server
 
-import "strings"
+import (
+	"github.com/samber/lo"
+	"strings"
+)
 
 type Flavor string
 
 const (
-	Vanilla Flavor = "vanilla"
-	Fabric  Flavor = "fabric"
-	Quilt   Flavor = "quilt"
-	Forge   Flavor = "forge"
-	Paper   Flavor = "paper"
+	Vanilla  Flavor = "vanilla"
+	Fabric   Flavor = "fabric"
+	Quilt    Flavor = "quilt"
+	Forge    Flavor = "forge"
+	NeoForge Flavor = "neoforge"
+	Paper    Flavor = "paper"
+	Unknown  Flavor = ""
 )
 
-func GetFlavor(flavor string) Flavor {
-	switch strings.ToLower(flavor) {
-	case "vanilla":
-		return Vanilla
-	case "fabric":
-		return Fabric
-	case "quilt":
-		return Quilt
-	case "forge":
-		return Forge
-	case "paper":
-		return Paper
+var Flavors = []Flavor{
+	Vanilla,
+	Fabric,
+	Quilt,
+	Forge,
+	NeoForge,
+	Paper,
+}
+
+var FlavorNames = lo.Map(Flavors, func(f Flavor, _ int) string {
+	return f.String()
+})
+
+func ToFlavor(s string) Flavor {
+	s = strings.ToLower(s)
+	s = strings.TrimSpace(s)
+	for _, f := range Flavors {
+		if s == f.String() {
+			return f
+		}
 	}
-	return ""
+	return Unknown
 }
 
 func (f Flavor) String() string {
