@@ -60,6 +60,7 @@ func (g *Downloader) Download(baseDir string) {
 			}
 			if !success {
 				log.Printf("Downloaded failed: %s\n", dl.Path)
+				// TODO: tell user what manual actions are required?
 			}
 		}()
 	}
