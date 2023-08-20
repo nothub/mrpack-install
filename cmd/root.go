@@ -90,7 +90,7 @@ var rootCmd = &cobra.Command{
 	Long:  `Deploys a Modrinth modpack including Minecraft server.`,
 	Example: `  mrpack-install https://example.org/data/cool-pack.mrpack
   mrpack-install downloads/cool-pack.mrpack --proxy socks5://127.0.0.1:7890
-  mrpack-install adrenaserver --server-file mc/server.jar
+  mrpack-install adrenaserver --server-file srv.jar
   mrpack-install yK0ISmKn 1.0.0-1.18 --server-dir mcserver
   mrpack-install communitypack9000 --host api.labrinth.example.org
   mrpack-install --version`,

@@ -18,7 +18,7 @@ Usage:
 Examples:
   mrpack-install https://example.org/data/cool-pack.mrpack
   mrpack-install downloads/cool-pack.mrpack --proxy socks5://127.0.0.1:7890
-  mrpack-install hexmc-modpack --server-file server.jar
+  mrpack-install adrenaserver --server-file srv.jar
   mrpack-install yK0ISmKn 1.0.0-1.18 --server-dir mcserver
   mrpack-install communitypack9000 --host api.labrinth.example.org
   mrpack-install --version
@@ -32,13 +32,14 @@ Available Commands:
   version     Print version infos
 
 Flags:
-      --dl-retries int       Retries when download fails (default 3)
-      --dl-threads int       Concurrent download threads (default 8)
+      --dl-retries uint8     Retries when download fails (default 3)
+      --dl-threads uint8     Concurrent download threads (default 8)
   -h, --help                 help for mrpack-install
       --host string          Labrinth host address (default "api.modrinth.com")
       --proxy string         Proxy url for http connections
       --server-dir string    Server directory path (default "mc")
       --server-file string   Server jar file name
+  -v, --verbose              Enable verbose output
   -V, --version              Print version and exit
 
 Use "mrpack-install [command] --help" for more information about a command.
@@ -58,12 +59,13 @@ Flags:
   -h, --help                help for update
 
 Global Flags:
-      --dl-retries int       Retries when download fails (default 3)
-      --dl-threads int       Concurrent download threads (default 8)
+      --dl-retries uint8     Retries when download fails (default 3)
+      --dl-threads uint8     Concurrent download threads (default 8)
       --host string          Labrinth host address (default "api.modrinth.com")
       --proxy string         Proxy url for http connections
       --server-dir string    Server directory path (default "mc")
       --server-file string   Server jar file name
+  -v, --verbose              Enable verbose output
 ```
 
 ---
@@ -85,10 +87,11 @@ Flags:
       --minecraft-version string   Minecraft version (default "latest")
 
 Global Flags:
-      --dl-retries int       Retries when download fails (default 3)
-      --dl-threads int       Concurrent download threads (default 8)
+      --dl-retries uint8     Retries when download fails (default 3)
+      --dl-threads uint8     Concurrent download threads (default 8)
       --host string          Labrinth host address (default "api.modrinth.com")
       --proxy string         Proxy url for http connections
       --server-dir string    Server directory path (default "mc")
       --server-file string   Server jar file name
+  -v, --verbose              Enable verbose output
 ```
