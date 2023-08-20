@@ -1,19 +1,19 @@
 package api
 
 import (
-	"github.com/nothub/mrpack-install/http"
+	"github.com/nothub/mrpack-install/web"
 	"log"
 	"net/url"
 )
 
 type ModrinthClient struct {
-	Http    *http.Client
+	Http    *web.Client
 	BaseUrl string
 }
 
 func NewClient(host string) *ModrinthClient {
 	client := ModrinthClient{
-		Http: http.DefaultClient,
+		Http: web.DefaultClient,
 	}
 	u, err := url.Parse("https://" + host + "/")
 	if err != nil {

@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"github.com/nothub/hashutils/chksum"
 	"github.com/nothub/hashutils/encoding"
-	"github.com/nothub/mrpack-install/http"
 	modrinth "github.com/nothub/mrpack-install/modrinth/api"
+	"github.com/nothub/mrpack-install/web"
 	"log"
 	"path"
 	"path/filepath"
@@ -38,7 +38,7 @@ func (g *Downloader) Download(baseDir string) {
 				// retry when download failed
 				for retries := 0; retries < g.Retries; retries++ {
 					// try download
-					f, err := http.DefaultClient.DownloadFile(link, path.Dir(absPath), path.Base(absPath))
+					f, err := web.DefaultClient.DownloadFile(link, path.Dir(absPath), path.Base(absPath))
 					if err != nil {
 						log.Printf("Download failed for %s (attempt %v), because: %s\n", dl.Path, retries+1, err.Error())
 						continue

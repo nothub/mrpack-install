@@ -1,7 +1,7 @@
 package maven
 
 import (
-	"github.com/nothub/mrpack-install/http"
+	"github.com/nothub/mrpack-install/web"
 )
 
 type Metadata struct {
@@ -17,7 +17,7 @@ type Metadata struct {
 
 func FetchMetadata(url string) (*Metadata, error) {
 	m := &Metadata{}
-	err := http.DefaultClient.GetXml(url, m, nil)
+	err := web.DefaultClient.GetXml(url, m, nil)
 	if err != nil {
 		return nil, err
 	}

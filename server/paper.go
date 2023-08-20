@@ -3,7 +3,7 @@ package server
 import (
 	"errors"
 	"fmt"
-	"github.com/nothub/mrpack-install/http"
+	"github.com/nothub/mrpack-install/web"
 	"strconv"
 )
 
@@ -25,7 +25,7 @@ func (inst *PaperInstaller) Install(serverDir string, serverFile string) error {
 		} `json:"builds"`
 	}
 
-	err := http.DefaultClient.GetJson("https://api.papermc.io/v2/projects/paper/versions/"+
+	err := web.DefaultClient.GetJson("https://api.papermc.io/v2/projects/paper/versions/"+
 		inst.MinecraftVersion+"/builds", &response, nil)
 	if err != nil {
 		return err
@@ -37,7 +37,7 @@ func (inst *PaperInstaller) Install(serverDir string, serverFile string) error {
 			u := "https://api.papermc.io/v2/projects/paper/versions/" + inst.MinecraftVersion +
 				"/builds/" + strconv.Itoa(response.Builds[i].Id) +
 				"/downloads/" + response.Builds[i].Downloads.Application.Name
-			file, err := http.DefaultClient.DownloadFile(u, serverDir, serverFile)
+			file, err := web.DefaultClient.DownloadFile(u, serverDir, serverFile)
 			if err != nil {
 				return err
 			}

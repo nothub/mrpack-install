@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/nothub/mrpack-install/http/download"
+	"github.com/nothub/mrpack-install/web/download"
 	"io"
 )
 

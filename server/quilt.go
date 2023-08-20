@@ -4,8 +4,8 @@ import (
 	"errors"
 	"fmt"
 	"github.com/nothub/mrpack-install/files"
-	"github.com/nothub/mrpack-install/http"
 	"github.com/nothub/mrpack-install/maven"
+	"github.com/nothub/mrpack-install/web"
 	"os"
 	"os/exec"
 	"path"
@@ -23,7 +23,7 @@ func (inst *QuiltInstaller) Install(serverDir string, serverFile string) error {
 	}
 	quiltInstallerUrl := "https://maven.quiltmc.org/repository/release/org/quiltmc/quilt-installer/" + meta.Versioning.Release + "/quilt-installer-" + meta.Versioning.Release + ".jar"
 
-	installer, err := http.DefaultClient.DownloadFile(quiltInstallerUrl, ".", "")
+	installer, err := web.DefaultClient.DownloadFile(quiltInstallerUrl, ".", "")
 	if err != nil {
 		return err
 	}
