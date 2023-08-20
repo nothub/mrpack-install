@@ -17,6 +17,7 @@ var (
 func init() {
 	serverCmd.Flags().StringVar(&minecraftVersion, "minecraft-version", "latest", "Minecraft version")
 	serverCmd.Flags().StringVar(&flavorVersion, "flavor-version", "latest", "Flavor version")
+
 	// TODO: --eula
 	// TODO: --op <uuid>...
 	// TODO: --whitelist <uuid>...
@@ -25,6 +26,7 @@ func init() {
 	rootCmd.AddCommand(serverCmd)
 
 	cobra.OnInitialize(func() {
+		// --minecraft-version
 		if minecraftVersion == "" || minecraftVersion == "latest" {
 			latestMinecraftVersion, err := mojang.LatestRelease()
 			if err != nil {

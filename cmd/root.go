@@ -34,7 +34,7 @@ func init() {
 	var verboseLogs bool
 	rootCmd.PersistentFlags().BoolVarP(&verboseLogs, "verbose", "v", false, "Enable verbose output")
 
-	// TODO: --eula (usage: "Set this flag or MC_EULA=true to agree with Mojangs EULA:\nhttps://account.mojang.com/documents/minecraft_eula")
+	// TODO: --eula (usage: "Set this flag or MC_EULA=true to agree with Mojangs EULA: https://account.mojang.com/documents/minecraft_eula")
 	// TODO: --op <uuid>...
 	// TODO: --whitelist <uuid>...
 	// TODO: --start-server
