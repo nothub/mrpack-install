@@ -18,7 +18,8 @@ release: clean
 clean:
 	go clean
 	go mod tidy
-	rm -rf out
+	-rm -rf out
+	-rm -rf mc
 
 .PHONY: check
 check:
