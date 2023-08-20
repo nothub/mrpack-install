@@ -4,12 +4,12 @@ import (
 	"fmt"
 	"github.com/nothub/mrpack-install/buildinfo"
 	"github.com/nothub/mrpack-install/files"
-	"github.com/nothub/mrpack-install/http"
-	"github.com/nothub/mrpack-install/http/download"
 	modrinth "github.com/nothub/mrpack-install/modrinth/api"
 	"github.com/nothub/mrpack-install/modrinth/mrpack"
 	"github.com/nothub/mrpack-install/server"
 	"github.com/nothub/mrpack-install/update"
+	"github.com/nothub/mrpack-install/web"
+	"github.com/nothub/mrpack-install/web/download"
 	"github.com/spf13/cobra"
 	"log"
 	"os"
@@ -18,114 +18,67 @@ import (
 	"strings"
 )
 
+var (
+	// global options
+	host       string
+	serverDir  string
+	serverFile string
+	proxy      string
+	dlThreads  uint8
+	dlRetries  uint8
+)
+
 func init() {
-	rootCmd.Flags().BoolP("version", "V", false, "Print version and exit")
-	// TODO: --eula
+	var printVersion bool
+	rootCmd.Flags().BoolVarP(&printVersion, "version", "V", false, "Print version and exit")
+
+	var verboseLogs bool
+	rootCmd.PersistentFlags().BoolVarP(&verboseLogs, "verbose", "v", false, "Enable verbose output")
+
+	// TODO: --eula (usage: "Set this flag or MC_EULA=true to agree with Mojangs EULA:\nhttps://account.mojang.com/documents/minecraft_eula")
 	// TODO: --op <uuid>...
 	// TODO: --whitelist <uuid>...
 	// TODO: --start-server
 
-	// TODO: rootCmd.PersistentFlags().BoolP("verbose", "v", false, "Enable verbose output")
-	rootCmd.PersistentFlags().String("host", "api.modrinth.com", "Labrinth host address")
-	rootCmd.PersistentFlags().String("server-dir", "mc", "Server directory path")
-	rootCmd.PersistentFlags().String("server-file", "", "Server jar file name")
-	rootCmd.PersistentFlags().String("proxy", "", "Proxy url for http connections")
-	rootCmd.PersistentFlags().Int("dl-threads", 8, "Concurrent download threads")
-	rootCmd.PersistentFlags().Int("dl-retries", 3, "Retries when download fails")
-}
+	rootCmd.PersistentFlags().StringVar(&host, "host", "api.modrinth.com", "Labrinth host address")
+	rootCmd.PersistentFlags().StringVar(&serverDir, "server-dir", "mc", "Server directory path")
+	rootCmd.PersistentFlags().StringVar(&serverFile, "server-file", "", "Server jar file name")
+	rootCmd.PersistentFlags().StringVar(&proxy, "proxy", "", "Proxy url for http connections")
+	rootCmd.PersistentFlags().Uint8Var(&dlThreads, "dl-threads", 8, "Concurrent download threads")
+	rootCmd.PersistentFlags().Uint8Var(&dlRetries, "dl-retries", 3, "Retries when download fails")
 
-type GlobalOpts struct {
-	// TODO: check if everything here actually needs to be stored
-	//       or should just be used directly while parsing flags
-	Host       string
-	ServerDir  string
-	ServerFile string
-	Proxy      string
-	DlThreads  int
-	DlRetries  int
-}
+	cobra.OnInitialize(func() {
+		if printVersion {
+			buildinfo.PrintInfos()
+			os.Exit(0)
+		}
 
-func GlobalOptions(cmd *cobra.Command) *GlobalOpts {
-	var opts GlobalOpts
+		if verboseLogs {
+			// TODO: set log level
+		}
 
-	// TODO: validate inputs
+		// TODO: validate all inputs
 
-	host, err := cmd.Flags().GetString("host")
-	if err != nil {
-		log.Fatalln(err)
-	}
-	opts.Host = host
-
-	serverDir, err := cmd.Flags().GetString("server-dir")
-	if err != nil {
-		log.Fatalln(err)
-	}
-	serverDir, err = filepath.Abs(serverDir)
-	if err != nil {
-		log.Fatalln(err)
-	}
-	opts.ServerDir = serverDir
-
-	serverFile, err := cmd.Flags().GetString("server-file")
-	if err != nil {
-		log.Fatalln(err)
-	}
-	serverFile, err = filepath.Abs(serverFile)
-	if err != nil {
-		log.Fatalln(err)
-	}
-	// TODO: warn user if serverfile is outside of server directory
-	opts.ServerFile = serverFile
-
-	proxy, err := cmd.Flags().GetString("proxy")
-	if err != nil {
-		log.Fatalln(err)
-	}
-	if proxy != "" {
-		err := http.DefaultClient.SetProxy(proxy)
+		absServerDir, err := filepath.Abs(serverDir)
 		if err != nil {
 			log.Fatalln(err)
 		}
-	}
-	opts.Proxy = proxy
+		serverDir = absServerDir
 
-	dlThreads, err := cmd.Flags().GetInt("dl-threads")
-	if err != nil {
-		dlThreads = 8
-		fmt.Println(err)
-	}
-	// TODO: is this a sane max value?
-	if dlThreads > 64 {
-		dlThreads = 64
-	}
-	opts.DlThreads = dlThreads
+		absServerFile, err := filepath.Abs(serverFile)
+		if err != nil {
+			log.Fatalln(err)
+		}
+		// TODO: warn user if serverfile is outside of server directory
+		serverFile = absServerFile
 
-	dlRetries, err := cmd.Flags().GetInt("dl-retries")
-	if err != nil {
-		dlRetries = 3
-		fmt.Println(err)
-	}
-	opts.DlRetries = dlRetries
-
-	return &opts
-}
-
-type RootOpts struct {
-	*GlobalOpts
-	Version bool
-}
-
-func GetRootOpts(cmd *cobra.Command) *RootOpts {
-	var opts RootOpts
-	opts.GlobalOpts = GlobalOptions(cmd)
-
-	version, err := cmd.Flags().GetBool("version")
-	if err != nil {
-		log.Fatalln(err)
-	}
-	opts.Version = version
-
-	return &opts
+		if proxy != "" {
+			err := web.DefaultClient.SetProxy(proxy)
+			if err != nil {
+				log.Fatalln(err)
+			}
+		}
+	})
 }
 
 var rootCmd = &cobra.Command{
@@ -140,39 +93,32 @@ var rootCmd = &cobra.Command{
   mrpack-install --version`,
 	Args: cobra.RangeArgs(1, 2),
 	Run: func(cmd *cobra.Command, args []string) {
-		opts := GetRootOpts(cmd)
-
-		if opts.Version {
-			buildinfo.PrintInfos()
-			return
-		}
-
 		input := args[0]
 		version := ""
 		if len(args) > 1 {
 			version = args[1]
 		}
-		index, zipPath := handleArgs(input, version, opts.ServerDir, opts.Host)
+		index, zipPath := handleArgs(input, version, serverDir, host)
 
-		fmt.Printf("Installing %q from %q to %q\n", index.Name, zipPath, opts.ServerDir)
-		err := os.MkdirAll(opts.ServerDir, 0755)
+		fmt.Printf("Installing %q from %q to %q\n", index.Name, zipPath, serverDir)
+		err := os.MkdirAll(serverDir, 0755)
 		if err != nil {
 			log.Fatalln(err)
 		}
-		err = os.Chdir(opts.ServerDir)
+		err = os.Chdir(serverDir)
 		if err != nil {
 			log.Fatalln(err)
 		}
 
 		for _, file := range index.Files {
-			files.AssertSafe(path.Join(opts.ServerDir, file.Path), opts.ServerDir)
+			files.AssertSafe(path.Join(serverDir, file.Path), serverDir)
 		}
 
 		// download server if not present
-		if !files.IsFile(path.Join(opts.ServerDir, opts.ServerFile)) {
+		if !files.IsFile(path.Join(serverDir, serverFile)) {
 			fmt.Println("Server file not present, downloading...\n(Point --server-dir and --server-file flags to an existing server file to skip this step.)")
 			inst := server.InstallerFromDeps(&index.Deps)
-			err := inst.Install(opts.ServerDir, opts.ServerFile)
+			err := inst.Install(serverDir, serverFile)
 			if err != nil {
 				log.Fatalln(err)
 			}
@@ -185,14 +131,14 @@ var rootCmd = &cobra.Command{
 		fmt.Printf("Downloading %v dependencies...\n", len(downloads))
 		downloader := download.Downloader{
 			Downloads: downloads,
-			Threads:   opts.DlThreads,
-			Retries:   opts.DlRetries,
+			Threads:   int(dlThreads),
+			Retries:   int(dlRetries),
 		}
-		downloader.Download(opts.ServerDir)
+		downloader.Download(serverDir)
 
 		// overrides
 		fmt.Println("Extracting overrides...")
-		err = mrpack.ExtractOverrides(zipPath, opts.ServerDir)
+		err = mrpack.ExtractOverrides(zipPath, serverDir)
 		if err != nil {
 			log.Fatalln(err)
 		}
@@ -202,12 +148,12 @@ var rootCmd = &cobra.Command{
 		if err != nil {
 			log.Fatalln(err)
 		}
-		err = packState.Save(opts.ServerDir)
+		err = packState.Save(serverDir)
 		if err != nil {
 			log.Fatalln(err)
 		}
 
-		files.RmEmptyDirs(opts.ServerDir)
+		files.RmEmptyDirs(serverDir)
 
 		fmt.Println("Installation done :) Have a nice day ✌️")
 	},
@@ -223,16 +169,16 @@ func handleArgs(input string, version string, serverDir string, host string) (*m
 	if files.IsFile(input) {
 		archivePath = input
 
-	} else if http.IsValidHttpUrl(input) {
+	} else if web.IsValidHttpUrl(input) {
 		fmt.Println("Downloading mrpack file from", input)
-		file, err := http.DefaultClient.DownloadFile(input, serverDir, "")
+		file, err := web.DefaultClient.DownloadFile(input, serverDir, "")
 		if err != nil {
 			log.Fatalln(err.Error())
 		}
 		archivePath = file
 
 	} else {
-		// input is project id or slug?
+		// input is project id or slug
 		versions, err := modrinth.NewClient(host).GetProjectVersions(input, nil)
 		if err != nil {
 			log.Fatalln(err)
@@ -260,9 +206,8 @@ func handleArgs(input string, version string, serverDir string, host string) (*m
 		for i := range fileInfos {
 			if strings.HasSuffix(fileInfos[i].Filename, ".mrpack") {
 				fmt.Println("Downloading mrpack file from", fileInfos[i].Url)
-				file, err := http.DefaultClient.DownloadFile(fileInfos[i].Url, serverDir, "")
+				file, err := web.DefaultClient.DownloadFile(fileInfos[i].Url, serverDir, "")
 				if err != nil {
-					// TODO: check next file on failure
 					log.Fatalln(err.Error())
 				}
 				archivePath = file

@@ -7,29 +7,16 @@ import (
 	"log"
 )
 
+var (
+	// local options
+	backupDir string
+)
+
 func init() {
 	// TODO flags: --start-server
-	updateCmd.Flags().String("backup-dir", "", "Backup directory path")
+	updateCmd.Flags().StringVar(&backupDir, "backup-dir", "", "Backup directory path")
 
 	rootCmd.AddCommand(updateCmd)
-}
-
-type UpdateOpts struct {
-	*GlobalOpts
-	BackupDir string
-}
-
-func GetUpdateOpts(cmd *cobra.Command) *UpdateOpts {
-	var opts UpdateOpts
-	opts.GlobalOpts = GlobalOptions(cmd)
-
-	backupDir, err := cmd.Flags().GetString("backup-dir")
-	if err != nil {
-		log.Fatalln(err)
-	}
-	opts.BackupDir = backupDir
-
-	return &opts
 }
 
 /*
@@ -53,11 +40,9 @@ var updateCmd = &cobra.Command{
 	Long:  `Update the deployed modpacks files, creating backups if necessary.`,
 	Args:  cobra.RangeArgs(0, 1),
 	Run: func(cmd *cobra.Command, args []string) {
-		opts := GetUpdateOpts(cmd)
-
 		// user defined backup dir
-		if opts.BackupDir != "" {
-			backup.SetDir(opts.BackupDir)
+		if backupDir != "" {
+			backup.SetDir(backupDir)
 		}
 
 		version := ""
@@ -70,8 +55,8 @@ var updateCmd = &cobra.Command{
 			log.Fatalln(err.Error())
 		}
 
-		index, zipPath := handleArgs(state.Name, version, opts.ServerDir, opts.Host)
+		index, zipPath := handleArgs(state.Name, version, serverDir, host)
 
-		update.Cmd(opts.ServerDir, opts.DlThreads, opts.DlRetries, index, zipPath, state)
+		update.Cmd(serverDir, dlThreads, dlRetries, index, zipPath, state)
 	},
 }

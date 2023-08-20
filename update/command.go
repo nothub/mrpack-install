@@ -17,7 +17,7 @@ import (
 
 import "golang.org/x/exp/slices"
 
-func Cmd(serverDir string, dlThreads int, dlRetries int, index *mrpack.Index, zipPath string, oldState *PackState) {
+func Cmd(serverDir string, dlThreads uint8, dlRetries uint8, index *mrpack.Index, zipPath string, oldState *PackState) {
 	fmt.Printf("Updating %q in %q with %q\n", index.Name, serverDir, zipPath)
 	err := os.Chdir(serverDir)
 	if err != nil {
@@ -92,8 +92,8 @@ func Cmd(serverDir string, dlThreads int, dlRetries int, index *mrpack.Index, zi
 	fmt.Printf("Downloading %v dependencies...\n", len(downloads))
 	downloader := download.Downloader{
 		Downloads: downloads,
-		Threads:   dlThreads,
-		Retries:   dlRetries,
+		Threads:   int(dlThreads),
+		Retries:   int(dlRetries),
 	}
 	downloader.Download(serverDir)
 

@@ -16,10 +16,8 @@ var pingCmd = &cobra.Command{
 	Short: "Ping a Labrinth instance",
 	Long:  `Connect to a Labrinth instance and display basic information.`,
 	Run: func(cmd *cobra.Command, args []string) {
-		opts := GlobalOptions(cmd)
-
-		log.Println("Connecting to:", opts.Host)
-		client := modrinth.NewClient(opts.Host)
+		log.Println("Connecting to:", host)
+		client := modrinth.NewClient(host)
 		info, err := client.LabrinthInfo()
 		if err != nil {
 			log.Fatalln(err)
