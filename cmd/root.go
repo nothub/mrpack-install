@@ -7,7 +7,7 @@ import (
 	modrinth "github.com/nothub/mrpack-install/modrinth/api"
 	"github.com/nothub/mrpack-install/modrinth/mrpack"
 	"github.com/nothub/mrpack-install/server"
-	"github.com/nothub/mrpack-install/update"
+	"github.com/nothub/mrpack-install/update/packstate"
 	"github.com/nothub/mrpack-install/web"
 	"github.com/nothub/mrpack-install/web/download"
 	"github.com/spf13/cobra"
@@ -150,7 +150,7 @@ var rootCmd = &cobra.Command{
 		}
 
 		// save state file
-		packState, err := update.BuildPackState(index, zipPath)
+		packState, err := packstate.FromArchive(zipPath)
 		if err != nil {
 			log.Fatalln(err)
 		}

@@ -8,6 +8,7 @@ import (
 	"github.com/nothub/mrpack-install/files"
 	"github.com/nothub/mrpack-install/modrinth/mrpack"
 	"github.com/nothub/mrpack-install/update/backup"
+	"github.com/nothub/mrpack-install/update/packstate"
 	"github.com/nothub/mrpack-install/web/download"
 	"log"
 	"os"
@@ -17,14 +18,14 @@ import (
 
 import "golang.org/x/exp/slices"
 
-func Cmd(serverDir string, dlThreads uint8, dlRetries uint8, index *mrpack.Index, zipPath string, oldState *PackState) {
+func Cmd(serverDir string, dlThreads uint8, dlRetries uint8, index *mrpack.Index, zipPath string, oldState *packstate.Schema) {
 	fmt.Printf("Updating %q in %q with %q\n", index.Name, serverDir, zipPath)
 	err := os.Chdir(serverDir)
 	if err != nil {
 		log.Fatalln(err)
 	}
 
-	newState, err := BuildPackState(index, zipPath)
+	newState, err := packstate.FromArchive(zipPath)
 	if err != nil {
 		log.Fatalln(err)
 	}

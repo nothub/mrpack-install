@@ -1,4 +1,4 @@
-package update
+package packstate
 
 import (
 	"bytes"
@@ -11,19 +11,19 @@ import (
 	"github.com/nothub/mrpack-install/modrinth/mrpack"
 )
 
-const statefile = "packstate.json"
+const file = "packstate.json"
 
-type PackState struct {
-	Slug      string      `json:"project"`
-	ProjectId string      `json:"project_id"`
+type Schema struct {
+	Slug      string      `json:"slug"`
+	ProjectId string      `json:"project-id"`
 	Version   string      `json:"version"`
-	VersionId string      `json:"version_id"`
+	VersionId string      `json:"version-id"`
 	Deps      mrpack.Deps `json:"dependencies"`
 	// Contains hashes of all downloads and override files of a state.
 	Hashes map[string]modrinth.Hashes `json:"hashes"`
 }
 
-func (state *PackState) Save(serverDir string) error {
+func (state *Schema) Save(serverDir string) error {
 	if state == nil {
 		return nil
 	}
@@ -35,7 +35,7 @@ func (state *PackState) Save(serverDir string) error {
 		return err
 	}
 
-	err = os.WriteFile(filepath.Join(serverDir, statefile), buf.Bytes(), 0644)
+	err = os.WriteFile(filepath.Join(serverDir, file), buf.Bytes(), 0644)
 	if err != nil {
 		return err
 	}
@@ -43,13 +43,13 @@ func (state *PackState) Save(serverDir string) error {
 	return nil
 }
 
-func LoadPackState(serverDir string) (*PackState, error) {
-	b, err := os.ReadFile(filepath.Join(serverDir, statefile))
+func LoadPackState(serverDir string) (*Schema, error) {
+	b, err := os.ReadFile(filepath.Join(serverDir, file))
 	if err != nil {
 		return nil, err
 	}
 
-	var state PackState
+	var state Schema
 	err = json.Unmarshal(b, &state)
 	if err != nil {
 		return nil, err
@@ -58,9 +58,14 @@ func LoadPackState(serverDir string) (*PackState, error) {
 	return &state, nil
 }
 
-func BuildPackState(index *mrpack.Index, zipPath string) (*PackState, error) {
-	var state PackState
-	version, err := modrinth.Client.VersionFromMrpackFile(zipPath)
+// FromArchive generates a Schema struct from a *.mrpack file.
+func FromArchive(path string) (*Schema, error) {
+	index, err := mrpack.ReadIndex(path)
+	if err != nil {
+		return nil, err
+	}
+
+	version, err := modrinth.Client.VersionFromMrpackFile(path)
 	if err != nil {
 		return nil, err
 	}
@@ -68,6 +73,8 @@ func BuildPackState(index *mrpack.Index, zipPath string) (*PackState, error) {
 	if err != nil {
 		return nil, err
 	}
+
+	var state Schema
 	state.Slug = project.Slug
 	state.ProjectId = project.Id
 	state.Version = index.Version
@@ -84,7 +91,7 @@ func BuildPackState(index *mrpack.Index, zipPath string) (*PackState, error) {
 	}
 
 	// override hashes
-	for p, hashes := range mrpack.OverrideHashes(zipPath) {
+	for p, hashes := range mrpack.OverrideHashes(path) {
 		state.Hashes[p] = hashes
 	}
 
