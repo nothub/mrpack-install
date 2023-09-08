@@ -1,6 +1,6 @@
 /**/.idea/
 /**/.vscode/
 
-/**/*.mrpack
-
+/out/
 /mc/
+/**/*.mrpack
