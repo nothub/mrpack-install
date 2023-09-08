@@ -17,7 +17,6 @@ release: clean
 .PHONY: clean
 clean:
 	go clean
-	go mod tidy
 	-rm -rf out
 	-rm -rf mc
 
