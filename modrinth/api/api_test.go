@@ -1,6 +1,9 @@
 package api
 
 import (
+	"errors"
+	"github.com/nothub/mrpack-install/web"
+	"os"
 	"testing"
 )
 
@@ -154,6 +157,27 @@ func TestClient_VersionFromHash(t *testing.T) {
 	}
 	if version.Id != "d5nXweHE" {
 		t.Fatal("wrong id!")
+	}
+}
+
+func TestClient_VersionFromMrpackFile(t *testing.T) {
+	t.Parallel()
+	if _, err := os.Stat("adrena.mrpack"); err != nil {
+		if errors.Is(err, os.ErrNotExist) {
+			_, err := web.DefaultClient.DownloadFile("https://cdn.modrinth.com/data/H9OFWiay/versions/GUstmAjF/Adrenaserver-1.4.0%2B1.20.1.fabric.mrpack", ".", "adrena.mrpack")
+			if err != nil {
+				t.Fatal(err)
+			}
+		} else {
+			t.Fatal(err)
+		}
+	}
+	version, err := client.VersionFromMrpackFile("adrena.mrpack")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if version.Id != "GUstmAjF" {
+		t.Fatalf("wrong id! actual=%q expected=%q\n", version.Id, "GUstmAjF")
 	}
 }
 

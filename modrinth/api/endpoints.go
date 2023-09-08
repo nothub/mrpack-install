@@ -1,8 +1,11 @@
 package api
 
 import (
+	"crypto/sha512"
 	"errors"
+	"fmt"
 	"net/url"
+	"os"
 )
 
 const apiVersion = "v2"
@@ -186,6 +189,15 @@ func (client *ModrinthClient) VersionFromHash(hash string, algorithm HashAlgo) (
 	}
 
 	return version, nil
+}
+
+func (client *ModrinthClient) VersionFromMrpackFile(path string) (*Version, error) {
+	b, err := os.ReadFile(path)
+	if err != nil {
+		return nil, err
+	}
+	hash := fmt.Sprintf("%x", sha512.Sum512(b))
+	return client.VersionFromHash(hash, "sha512")
 }
 
 // GetLatestGameVersion https://docs.modrinth.com/api-spec/#tag/tags/operation/versionList
