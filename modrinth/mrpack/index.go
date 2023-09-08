@@ -7,6 +7,8 @@ import (
 	"fmt"
 	"github.com/nothub/mrpack-install/web/download"
 	"io"
+	"log"
+	"strings"
 )
 
 import modrinth "github.com/nothub/mrpack-install/modrinth/api"
@@ -96,6 +98,14 @@ func ReadIndex(zipFile string) (*Index, error) {
 	err = json.NewDecoder(fileReader).Decode(&index)
 	if err != nil {
 		return nil, err
+	}
+
+	// https://github.com/modrinth/docs/issues/85 ¯\_(ツ)_/¯
+	for i, file := range index.Files {
+		if strings.Contains(file.Path, "\\") {
+			index.Files[i].Path = strings.ReplaceAll(file.Path, "\\", "/")
+			log.Printf("fixed file path: old=%q new=%q\n", file.Path, index.Files[i].Path)
+		}
 	}
 
 	return &index, nil
