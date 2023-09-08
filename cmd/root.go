@@ -81,6 +81,8 @@ func init() {
 				log.Fatalln(err)
 			}
 		}
+
+		modrinth.Client = modrinth.NewClient(host)
 	})
 }
 
@@ -183,7 +185,7 @@ func handleArgs(input string, version string, serverDir string, host string) (*m
 
 	} else {
 		// input is project id or slug
-		versions, err := modrinth.NewClient(host).GetProjectVersions(input, nil)
+		versions, err := modrinth.Client.GetProjectVersions(input, nil)
 		if err != nil {
 			log.Fatalln(err)
 		}

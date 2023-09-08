@@ -11,6 +11,8 @@ type ModrinthClient struct {
 	BaseUrl string
 }
 
+var Client *ModrinthClient
+
 func NewClient(host string) *ModrinthClient {
 	client := ModrinthClient{
 		Http: web.DefaultClient,
