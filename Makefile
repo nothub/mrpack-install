@@ -30,7 +30,7 @@ check:
 
 .PHONY: dl-stats
 dl-stats:
-	./tools/dl-stats.go
+	./tools/dl-stats.go | tee dl-stats.yaml
 
 README.md: out/$(BIN_NAME)
 	@echo "# $(BIN_NAME)" > README.md
