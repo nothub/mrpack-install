@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"log"
 	"strings"
 )
 
@@ -88,8 +89,11 @@ func ReadIndex(zipFile string) (*Index, error) {
 	}
 
 	// https://github.com/modrinth/docs/issues/85 ¯\_(ツ)_/¯
-	for _, file := range index.Files {
-		file.Path = strings.ReplaceAll(file.Path, "\\", "/")
+	for i, file := range index.Files {
+		if strings.Contains(file.Path, "\\") {
+			index.Files[i].Path = strings.ReplaceAll(file.Path, "\\", "/")
+			log.Printf("fixed file path: old=%q new=%q\n", file.Path, index.Files[i].Path)
+		}
 	}
 
 	return &index, nil
