@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"strings"
 )
 
 import modrinth "github.com/nothub/mrpack-install/modrinth/api"
@@ -84,6 +85,11 @@ func ReadIndex(zipFile string) (*Index, error) {
 	err = json.NewDecoder(fileReader).Decode(&index)
 	if err != nil {
 		return nil, err
+	}
+
+	// https://github.com/modrinth/docs/issues/85 ¯\_(ツ)_/¯
+	for _, file := range index.Files {
+		file.Path = strings.ReplaceAll(file.Path, "\\", "/")
 	}
 
 	return &index, nil
