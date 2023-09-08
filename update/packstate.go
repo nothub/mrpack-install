@@ -14,9 +14,11 @@ import (
 const statefile = "packstate.json"
 
 type PackState struct {
-	Name    string      `json:"name"`
-	Version string      `json:"version"`
-	Deps    mrpack.Deps `json:"dependencies"`
+	Slug      string      `json:"project"`
+	ProjectId string      `json:"project_id"`
+	Version   string      `json:"version"`
+	VersionId string      `json:"version_id"`
+	Deps      mrpack.Deps `json:"dependencies"`
 	// Contains hashes of all downloads and override files of a state.
 	Hashes map[string]modrinth.Hashes `json:"hashes"`
 }
@@ -58,8 +60,18 @@ func LoadPackState(serverDir string) (*PackState, error) {
 
 func BuildPackState(index *mrpack.Index, zipPath string) (*PackState, error) {
 	var state PackState
-	state.Name = index.Name
+	version, err := modrinth.Client.VersionFromMrpackFile(zipPath)
+	if err != nil {
+		return nil, err
+	}
+	project, err := modrinth.Client.GetProject(version.ProjectId)
+	if err != nil {
+		return nil, err
+	}
+	state.Slug = project.Slug
+	state.ProjectId = project.Id
 	state.Version = index.Version
+	state.VersionId = version.Id
 	state.Deps = index.Deps
 	state.Hashes = make(map[string]modrinth.Hashes)
 
