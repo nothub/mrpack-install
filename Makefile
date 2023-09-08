@@ -1,18 +1,21 @@
 MOD_NAME = $(shell go list -m)
 BIN_NAME = $(shell basename $(MOD_NAME))
-VERSION  = $(shell git describe --tags --abbrev=0 --match v[0-9]* 2> /dev/null || echo "v0.0.0")
-LDFLAGS  = -ldflags="-X '$(MOD_NAME)/buildinfo.Tag=$(VERSION)'"
+VERSION  ?= $(shell git describe --tags --abbrev=0 --match v[0-9]* 2> /dev/null || echo "v0.0.0")
+LDFLAGS  := -X '$(MOD_NAME)/buildinfo.Tag=$(VERSION)'
+LDFLAGS  += -extldflags=-static
+GOFLAGS  := -tags netgo,timetzdata
+GOFLAGS  += -ldflags="$(LDFLAGS)"
 
 out/$(BIN_NAME): $(shell ls go.mod go.sum *.go **/*.go)
-	go build $(LDFLAGS) -race -o out/$(BIN_NAME)
+	go build $(GOFLAGS) -race -o out/$(BIN_NAME)
 
 .PHONY: release
 release: clean
-	GOOS=linux   GOARCH=amd64 go build $(LDFLAGS) -o out/$(BIN_NAME)-linux
-	GOOS=linux   GOARCH=arm64 go build $(LDFLAGS) -o out/$(BIN_NAME)-linux-arm64
-	GOOS=darwin  GOARCH=amd64 go build $(LDFLAGS) -o out/$(BIN_NAME)-darwin
-	GOOS=darwin  GOARCH=arm64 go build $(LDFLAGS) -o out/$(BIN_NAME)-darwin-arm64
-	GOOS=windows GOARCH=amd64 go build $(LDFLAGS) -o out/$(BIN_NAME)-windows.exe
+	GOOS=linux   GOARCH=amd64 go build $(GOFLAGS) -o out/$(BIN_NAME)-linux
+	GOOS=linux   GOARCH=arm64 go build $(GOFLAGS) -o out/$(BIN_NAME)-linux-arm64
+	GOOS=darwin  GOARCH=amd64 go build $(GOFLAGS) -o out/$(BIN_NAME)-darwin
+	GOOS=darwin  GOARCH=arm64 go build $(GOFLAGS) -o out/$(BIN_NAME)-darwin-arm64
+	GOOS=windows GOARCH=amd64 go build $(GOFLAGS) -o out/$(BIN_NAME)-windows.exe
 
 .PHONY: clean
 clean:
@@ -24,9 +27,6 @@ clean:
 check:
 	go vet
 	go test -v -parallel $(shell grep -c -E "^processor.*[0-9]+" "/proc/cpuinfo") $(MOD_NAME)/...
-
-.PHONY: test
-test: check
 
 .PHONY: dl-stats
 dl-stats:
