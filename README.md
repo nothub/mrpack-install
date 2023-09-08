@@ -1,7 +1,8 @@
 # mrpack-install
 
 [![downloads](https://img.shields.io/github/downloads/nothub/mrpack-install/total.svg?style=flat-square&labelColor=5c5c5c&color=007D9C)](https://github.com/nothub/mrpack-install/releases/latest)
-[![go ref](https://pkg.go.dev/badge/github.com/nothub/mrpack-install.svg)](https://pkg.go.dev/github.com/nothub/mrpack-install)
+[![discord](https://img.shields.io/discord/1149744662131777546?style=flat-square&labelColor=5c5c5c&color=007D9C)](https://discord.gg/QNbTeGHBRm)
+[![go pkg](https://pkg.go.dev/badge/github.com/nothub/mrpack-install.svg)](https://pkg.go.dev/github.com/nothub/mrpack-install)
 
 A cli application for installing Minecraft servers and [Modrinth](https://modrinth.com/) [modpacks](https://docs.modrinth.com/docs/modpacks/format_definition/).
 
@@ -75,7 +76,7 @@ Global Flags:
 Download and configure one of several Minecraft server flavors.
 
 Usage:
-  mrpack-install server (vanilla | fabric | quilt | forge | paper) [flags]
+  mrpack-install server ( vanilla | fabric | quilt | forge | neoforge | paper ) [flags]
 
 Examples:
   mrpack-install server fabric --server-dir fabric-srv
