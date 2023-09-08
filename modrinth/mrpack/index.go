@@ -55,9 +55,10 @@ type Env struct {
 
 type Deps struct {
 	Minecraft string `json:"minecraft"`
-	Fabric    string `json:"fabric-loader"`
-	Quilt     string `json:"quilt-loader"`
-	Forge     string `json:"forge"`
+	Fabric    string `json:"fabric-loader,omitempty"`
+	Quilt     string `json:"quilt-loader,omitempty"`
+	Forge     string `json:"forge,omitempty"`
+	NeoForge  string `json:"neoforge,omitempty"`
 }
 
 func ReadIndex(zipFile string) (*Index, error) {
