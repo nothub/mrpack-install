@@ -7,7 +7,7 @@ require (
 	github.com/nothub/hashutils v0.4.0
 	github.com/samber/lo v1.38.1
 	github.com/spf13/cobra v1.7.0
-	golang.org/x/exp v0.0.0-20230817173708-d852ddb80c63
+	golang.org/x/exp v0.0.0-20230905200255-921286631fa9
 )
 
 require (
