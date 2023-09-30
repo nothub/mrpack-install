@@ -11,6 +11,8 @@ type NeoForgeInstaller struct {
 	NeoForgeVersion  string
 }
 
+// TODO maven version lookup: https://maven.neoforged.net/releases/net/neoforged/forge/maven-metadata.xml
+
 func (inst *NeoForgeInstaller) Install(serverDir string, serverFile string) error {
 	// TODO: implement automatic lookup for latest version
 	if inst.NeoForgeVersion == "" || inst.NeoForgeVersion == "latest" {
