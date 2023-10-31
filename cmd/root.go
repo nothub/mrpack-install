@@ -106,10 +106,7 @@ var rootCmd = &cobra.Command{
 		}
 
 		archivePath := ""
-		if util.PathIsFile(input) {
-			archivePath = input
-
-		} else if util.IsValidUrl(input) {
+		if util.IsValidUrl(input) {
 			fmt.Println("Downloading mrpack file from", args)
 			file, err := requester.DefaultHttpClient.DownloadFile(input, serverDir, "")
 			if err != nil {
@@ -122,6 +119,9 @@ var rootCmd = &cobra.Command{
 					fmt.Println(err)
 				}
 			}(archivePath)
+
+		} else if util.PathIsFile(input) {
+			archivePath = input
 
 		} else { // input is project id or slug?
 			versions, err := modrinth.NewClient(host).GetProjectVersions(input, nil)
