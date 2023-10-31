@@ -172,16 +172,16 @@ func handleArgs(input string, version string, serverDir string, host string) (*m
 	}
 
 	archivePath := ""
-	if files.IsFile(input) {
-		archivePath = input
-
-	} else if web.IsValidHttpUrl(input) {
+	if web.IsValidHttpUrl(input) {
 		fmt.Println("Downloading mrpack file from", input)
 		file, err := web.DefaultClient.DownloadFile(input, serverDir, "")
 		if err != nil {
 			log.Fatalln(err.Error())
 		}
 		archivePath = file
+
+	} else if files.IsFile(input) {
+		archivePath = input
 
 	} else {
 		// input is project id or slug
