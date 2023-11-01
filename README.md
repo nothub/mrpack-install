@@ -1,12 +1,11 @@
 # mrpack-install
-
 [![Go Reference](https://pkg.go.dev/badge/github.com/nothub/mrpack-install.svg)](https://pkg.go.dev/github.com/nothub/mrpack-install)
 
 A cli application for installing Minecraft servers and [Modrinth](https://modrinth.com/) [modpacks](https://docs.modrinth.com/docs/modpacks/format_definition/).
 
 ---
-
-#### modpack deployment
+## Usage
+### modpack deployment
 ```
 Deploys a Modrinth modpack including Minecraft server.
 
@@ -42,10 +41,7 @@ Flags:
 
 Use "mrpack-install [command] --help" for more information about a command.
 ```
-
----
-
-#### modpack update
+### modpack update
 ```
 Update the deployed modpacks config and mod files, creating backup files if necessary.
 
@@ -63,10 +59,7 @@ Global Flags:
       --server-dir string      Server directory path (default "mc")
       --server-file string     Server jar file name
 ```
-
----
-
-#### plain server deployment
+### plain server deployment
 ```
 Download and configure one of several Minecraft server flavors.
 
@@ -89,4 +82,14 @@ Global Flags:
       --retry-times int        Number of retries when a download fails (default 3)
       --server-dir string      Server directory path (default "mc")
       --server-file string     Server jar file name
+```
+## Install
+### Linux
+```sh
+# download
+curl -sSL -o "/tmp/mrpack-install" "https://github.com/nothub/mrpack-install/releases/download/v0.16.9/mrpack-install-linux"
+# install to a place in PATH
+sudo install -t "/usr/local/bin" "/tmp/mrpack-install"
+# run
+mrpack-install --help
 ```
