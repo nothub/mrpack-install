@@ -93,7 +93,7 @@ Global Flags:
 ### Linux
 ```sh
 # download
-curl -sSL -o "/tmp/mrpack-install" "https://github.com/nothub/mrpack-install/releases/download/v0.16.4/mrpack-install-linux"
+curl -sSL -o "/tmp/mrpack-install" "https://github.com/nothub/mrpack-install/releases/download/v0.16.9/mrpack-install-linux"
 # install to a place in PATH
 sudo install -t "/usr/local/bin" "/tmp/mrpack-install"
 # run
