@@ -1,7 +1,6 @@
 package server
 
 import (
-	"github.com/samber/lo"
 	"strings"
 )
 
@@ -26,9 +25,12 @@ var Flavors = []Flavor{
 	Paper,
 }
 
-var FlavorNames = lo.Map(Flavors, func(f Flavor, _ int) string {
-	return f.String()
-})
+var FlavorNames = func() (names []string) {
+	for _, f := range Flavors {
+		names = append(names, f.String())
+	}
+	return names
+}
 
 func ToFlavor(s string) Flavor {
 	s = strings.ToLower(s)

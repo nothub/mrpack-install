@@ -40,13 +40,13 @@ func init() {
 }
 
 var serverCmd = &cobra.Command{
-	Use:   "server ( " + strings.Join(server.FlavorNames, " | ") + " )",
+	Use:   "server ( " + strings.Join(server.FlavorNames(), " | ") + " )",
 	Short: "Prepare a plain server environment",
 	Long:  `Download and configure one of several Minecraft server flavors.`,
 	Example: `  mrpack-install server fabric --server-dir fabric-srv
   mrpack-install server paper --minecraft-version 1.18.2 --server-file srv.jar`,
 	Args:      cobra.MatchAll(cobra.ExactArgs(1), cobra.OnlyValidArgs),
-	ValidArgs: server.FlavorNames,
+	ValidArgs: server.FlavorNames(),
 	Run: func(cmd *cobra.Command, args []string) {
 		err := os.MkdirAll(serverDir, 0755)
 		if err != nil {
