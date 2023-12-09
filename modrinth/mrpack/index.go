@@ -5,13 +5,13 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/nothub/mrpack-install/web/download"
+	"hub.lol/mrpack-install/web/download"
 	"io"
 	"log"
 	"strings"
 )
 
-import modrinth "github.com/nothub/mrpack-install/modrinth/api"
+import modrinth "hub.lol/mrpack-install/modrinth/api"
 
 type Index struct {
 	Format  int    `json:"formatVersion"`

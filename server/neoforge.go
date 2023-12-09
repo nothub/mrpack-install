@@ -2,7 +2,7 @@ package server
 
 import (
 	"fmt"
-	"github.com/nothub/mrpack-install/web"
+	"hub.lol/mrpack-install/web"
 	"log"
 )
 

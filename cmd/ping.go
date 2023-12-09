@@ -2,8 +2,8 @@ package cmd
 
 import (
 	"fmt"
-	modrinth "github.com/nothub/mrpack-install/modrinth/api"
 	"github.com/spf13/cobra"
+	modrinth "hub.lol/mrpack-install/modrinth/api"
 	"log"
 )
 

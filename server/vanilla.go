@@ -5,8 +5,8 @@ import (
 	"errors"
 	"github.com/nothub/hashutils/chksum"
 	"github.com/nothub/hashutils/encoding"
-	"github.com/nothub/mrpack-install/mojang"
-	"github.com/nothub/mrpack-install/web"
+	"hub.lol/mrpack-install/mojang"
+	"hub.lol/mrpack-install/web"
 	"log"
 )
 

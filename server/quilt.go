@@ -3,9 +3,9 @@ package server
 import (
 	"errors"
 	"fmt"
-	"github.com/nothub/mrpack-install/files"
-	"github.com/nothub/mrpack-install/maven"
-	"github.com/nothub/mrpack-install/web"
+	"hub.lol/mrpack-install/files"
+	"hub.lol/mrpack-install/maven"
+	"hub.lol/mrpack-install/web"
 	"os"
 	"os/exec"
 	"path/filepath"

@@ -3,7 +3,7 @@ package server
 import (
 	"errors"
 	"fmt"
-	"github.com/nothub/mrpack-install/web"
+	"hub.lol/mrpack-install/web"
 	"strconv"
 )
 

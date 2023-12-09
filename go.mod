@@ -1,4 +1,4 @@
-module github.com/nothub/mrpack-install
+module hub.lol/mrpack-install
 
 go 1.21
 

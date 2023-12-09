@@ -2,7 +2,7 @@ package api
 
 import (
 	"errors"
-	"github.com/nothub/mrpack-install/web"
+	"hub.lol/mrpack-install/web"
 	"os"
 	"testing"
 )
