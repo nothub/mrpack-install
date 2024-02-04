@@ -1,7 +1,7 @@
 name: '🚔'
 on: [ push ]
 jobs:
-  release:
+  check:
     if: startsWith(github.ref, 'refs/tags/v') == false
     runs-on: ubuntu-22.04
     steps:
