@@ -13,14 +13,21 @@ rm -rf "dist"
 mkdir -p "dist"
 
 # check for version tag on HEAD commit
-tag="$(git describe --exact-match "$(git rev-parse HEAD)" 2>/dev/null || true |
-  grep -oP 'v[0-9]+\.[0-9]+\.[0-9]+' || true)"
+tag="$(git tag --points-at HEAD |
+    grep -oP 'v[0-9]+\.[0-9]+\.[0-9]+' || true | tail -n 1)"
 
-# if HEAD has no version tag
-if test -z "${tag}"; then
-  # get last version tag in history
-  tag="$(git describe --tags --abbrev=0 --match v[0-9]* 2>/dev/null |
-    grep -oP 'v[0-9]+\.[0-9]+\.[0-9]+')-indev"
+# is there a version tag pointing to HEAD?
+if test -n "${tag}"; then
+    # yes, this is a release version
+    release="true"
+else
+    # no, not a release version...
+    release="false"
+    # get last version tag in history
+    tag="$(git describe --tags --abbrev=0 --match v[0-9]* 2>/dev/null |
+        grep -oP 'v[0-9]+\.[0-9]+\.[0-9]+')"
+    # mark as dev build
+    tag="${tag}-indev"
 fi
 
 build() (
@@ -33,7 +40,7 @@ build() (
   # build static binary
   GOOS="$1" GOARCH="$2" go build \
     -tags netgo,timetzdata \
-    -ldflags="-X 'hub.lol/mrpack-install/buildinfo.Tag=${tag}' -extldflags=-static" \
+    -ldflags="-X 'hub.lol/mrpack-install/buildinfo.Tag=${tag}' -X 'hub.lol/mrpack-install/buildinfo.Release=${release}' -extldflags=-static" \
     -o "${file}" \
     .
 

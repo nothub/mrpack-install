@@ -11,6 +11,8 @@ var name = "unknown"
 var module = "unknown"
 
 var Tag = "unknown"
+var Release = "unknown"
+
 var rev = "unknown"
 var dirty = false
 
@@ -54,19 +56,18 @@ func Module() string {
 	return module
 }
 
-func SemVer() string {
-	ver := Tag
-	if dirty {
-		ver = ver + "-dirty"
-	}
-	return ver
-}
-
 func PrintInfos() {
-	fmt.Printf("%s %s %s %s\n",
+	fmt.Printf("%s %s %s %s",
 		Name(),
-		SemVer(),
+		Tag,
 		rev,
 		fmt.Sprintf("%s-%s-%s", Arch, Os, compiler),
 	)
+	if dirty {
+		fmt.Printf(" %s", "DIRTY")
+	}
+	if Release != "true" {
+		fmt.Printf(" %s", "PRE-RELEASE")
+	}
+	fmt.Print("\n")
 }
