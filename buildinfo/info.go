@@ -55,7 +55,7 @@ func Module() string {
 }
 
 func SemVer() string {
-	ver := fmt.Sprintf("%s-%s", Tag, rev)
+	ver := Tag
 	if dirty {
 		ver = ver + "-dirty"
 	}
@@ -63,9 +63,10 @@ func SemVer() string {
 }
 
 func PrintInfos() {
-	fmt.Printf("%s %s %s\n",
+	fmt.Printf("%s %s %s %s\n",
 		Name(),
 		SemVer(),
+		rev,
 		fmt.Sprintf("%s-%s-%s", Arch, Os, compiler),
 	)
 }
