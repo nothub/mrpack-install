@@ -1,15 +1,32 @@
 name: '🚔'
 on: [ push ]
 jobs:
-  check:
+  release:
     if: startsWith(github.ref, 'refs/tags/v') == false
     runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-go@v5.0.0
+
+      - uses: cachix/install-nix-action@v22
         with:
-          go-version-file: 'go.mod'
-          check-latest: true
-          cache: true
+          nix_path: "nixpkgs=channel:nixos-23.11"
+
+      - name: 'Activate Nix store cache'
+        uses: actions/cache@v3
+        id: nix-cache
+        with:
+          path: "/tmp/nixcache"
+          key: "nix-store-${{ hashFiles(format('{0}/tools/build.sh', github.workspace)) }}"
+
+      - name: "Import Nix store cache"
+        if: "steps.nix-cache.outputs.cache-hit == 'true'"
+        run: nix-store --import < /tmp/nixcache
+
       - run: |
           make check
+
+      - name: "Export Nix store cache"
+        if: >
+          ( github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master' )
+          && steps.nix-cache.outputs.cache-hit != 'true'
+        run: nix-store --export $(find /nix/store -maxdepth 1 -name '*-*') > /tmp/nixcache
