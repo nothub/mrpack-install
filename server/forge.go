@@ -1,8 +1,11 @@
 package server
 
 import (
-	"errors"
 	"fmt"
+	"hub.lol/mrpack-install/web"
+	"os"
+	"os/exec"
+	"path/filepath"
 )
 
 type ForgeInstaller struct {
@@ -10,10 +13,47 @@ type ForgeInstaller struct {
 	ForgeVersion     string
 }
 
-// TODO maven version lookup: https://maven.minecraftforge.net/net/minecraftforge/forge/maven-metadata.xml
-
 func (inst *ForgeInstaller) Install(serverDir string, serverFile string) error {
-	u := "https://files.minecraftforge.net/net/minecraftforge/forge/index_" + inst.MinecraftVersion + ".html"
-	fmt.Println("Please acquire the required forge server file ("+inst.ForgeVersion+") manually to continue:", u)
-	return errors.New("forge provider not implemented")
+	u := fmt.Sprintf(
+		"https://maven.minecraftforge.net/net/minecraftforge/forge/%s-%s/forge-%s-%s-installer.jar",
+		inst.MinecraftVersion,
+		inst.ForgeVersion,
+		inst.MinecraftVersion,
+		inst.ForgeVersion,
+	)
+	installerFile, err := web.DefaultClient.DownloadFile(u, ".", "")
+	if err != nil {
+		return err
+	}
+
+	cmd := exec.Command("java", "-jar", installerFile, "--installServer", serverDir)
+	fmt.Println("Executing command:", cmd.String())
+	if err = cmd.Run(); err != nil {
+		return err
+	}
+
+	originalServerFile := fmt.Sprintf("forge-%s-%s-server.jar", inst.MinecraftVersion, inst.ForgeVersion)
+	originalServerPath := filepath.Join(
+		serverDir,
+		"libraries",
+		"net",
+		"minecraftforge",
+		"forge",
+		fmt.Sprintf("%s-%s", inst.MinecraftVersion, inst.ForgeVersion),
+		originalServerFile,
+	)
+
+	err = os.Rename(originalServerPath, filepath.Join(serverDir, originalServerFile))
+	if err != nil {
+		return err
+	}
+
+	if serverFile != "" {
+		err = os.Rename(filepath.Join(serverDir, originalServerFile), filepath.Join(serverDir, serverFile))
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
 }

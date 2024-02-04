@@ -10,26 +10,33 @@ type Installer interface {
 }
 
 func InstallerFromDeps(deps *mrpack.Deps) Installer {
-	var flavor Flavor
+	var flavorName Flavor
+	var flavorVersion string
 	if deps.Fabric != "" {
-		flavor = Fabric
+		flavorName = Fabric
+		flavorVersion = deps.Fabric
 	} else if deps.Quilt != "" {
-		flavor = Quilt
+		flavorName = Quilt
+		flavorVersion = deps.Quilt
 	} else if deps.Forge != "" {
-		flavor = Forge
+		flavorName = Forge
+		flavorVersion = deps.Forge
+	} else if deps.NeoForge != "" {
+		flavorName = NeoForge
+		flavorVersion = deps.NeoForge
 	} else {
-		flavor = Vanilla
+		flavorName = Vanilla
 	}
-	inst, err := NewInstaller(flavor, deps.Minecraft, "")
+	inst, err := NewInstaller(flavorName, deps.Minecraft, flavorVersion)
 	if err != nil {
 		log.Fatalln(err)
 	}
 	return inst
 }
 
-func NewInstaller(flavor Flavor, minecraftVersion string, flavorVersion string) (Installer, error) {
+func NewInstaller(flavorName Flavor, minecraftVersion string, flavorVersion string) (Installer, error) {
 	var inst Installer = nil
-	switch flavor {
+	switch flavorName {
 	case Vanilla:
 		inst = &VanillaInstaller{
 			MinecraftVersion: minecraftVersion,
@@ -59,7 +66,7 @@ func NewInstaller(flavor Flavor, minecraftVersion string, flavorVersion string) 
 			MinecraftVersion: minecraftVersion,
 		}
 	default:
-		log.Fatalln("No installer for flavor: " + flavor)
+		log.Fatalln("No installer for flavor: " + flavorName)
 	}
 	return inst, nil
 }
