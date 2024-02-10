@@ -9,6 +9,7 @@ import (
 	"github.com/nothub/mrpack-install/server"
 	"github.com/nothub/mrpack-install/update"
 	"github.com/nothub/mrpack-install/util"
+	"github.com/nothub/mrpack-install/web"
 	"github.com/spf13/cobra"
 	"log"
 	"os"
@@ -106,7 +107,7 @@ var rootCmd = &cobra.Command{
 		}
 
 		archivePath := ""
-		if util.IsValidUrl(input) {
+		if web.IsValidHttpUrl(input) {
 			fmt.Println("Downloading mrpack file from", args)
 			file, err := requester.DefaultHttpClient.DownloadFile(input, serverDir, "")
 			if err != nil {
