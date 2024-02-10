@@ -35,7 +35,6 @@ func init() {
 			}
 			minecraftVersion = latestMinecraftVersion
 		}
-		minecraftVersion = minecraftVersion
 	})
 }
 

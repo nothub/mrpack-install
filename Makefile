@@ -18,8 +18,7 @@ clean:
 
 .PHONY: check
 check:
-	go vet
-	go test -v -parallel $(shell grep -c -E "^processor.*[0-9]+" "/proc/cpuinfo") $(MOD_NAME)/...
+	./tools/check.sh
 
 .PHONY: dl-stats
 dl-stats:

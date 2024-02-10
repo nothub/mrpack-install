@@ -1,6 +1,6 @@
 #!/usr/bin/env nix-shell
-#! nix-shell -I nixpkgs=https://github.com/NixOS/nixpkgs/archive/e92b6015881907e698782c77641aa49298330223.tar.gz
-#! nix-shell -p go_1_21 git upx
+#! nix-shell -I nixpkgs=https://github.com/NixOS/nixpkgs/archive/f8e2ebd66d097614d51a56a755450d4ae1632df1.tar.gz
+#! nix-shell -p go_1_22 git upx
 #! nix-shell -i sh --pure
 # shellcheck shell=sh
 
