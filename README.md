@@ -1,5 +1,5 @@
 # mrpack-install
-[![downloads](https://img.shields.io/github/downloads/nothub/mrpack-install/total.svg?style=flat-square&labelColor=5c5c5c&color=007D9C)](https://hub.lol/mrpack-install/releases/latest)
+[![downloads](https://img.shields.io/github/downloads/nothub/mrpack-install/total.svg?style=flat-square&labelColor=5c5c5c&color=007D9C)](https://github.com/nothub/mrpack-install/releases/latest)
 [![discord](https://img.shields.io/discord/1149744662131777546?style=flat-square&labelColor=5c5c5c&color=007D9C)](https://discord.gg/QNbTeGHBRm)
 [![go pkg](https://pkg.go.dev/badge/hub.lol/mrpack-install.svg)](https://pkg.go.dev/hub.lol/mrpack-install)
 
@@ -93,7 +93,7 @@ Global Flags:
 ### Linux
 ```sh
 # download
-curl -sSL -o "/tmp/mrpack-install" "https://github.com/nothub/mrpack-install/releases/download/v0.16.9/mrpack-install-linux"
+curl -sSL -o "/tmp/mrpack-install" "https://github.com/nothub/mrpack-install/releases/latest/download/mrpack-install-linux"
 # install to a place in PATH
 sudo install -t "/usr/local/bin" "/tmp/mrpack-install"
 # run
