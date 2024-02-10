@@ -3,8 +3,8 @@ module github.com/nothub/mrpack-install
 go 1.19
 
 require (
-	github.com/google/uuid v1.4.0
-	github.com/spf13/cobra v1.7.0
+	github.com/google/uuid v1.6.0
+	github.com/spf13/cobra v1.8.0
 )
 
 require (
