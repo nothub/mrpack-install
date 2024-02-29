@@ -22,4 +22,4 @@ dl-stats:
 	./tools/dl-stats.go | tee dl-stats.yaml
 
 README.md: out/$(BIN_NAME)
-	./tools/readme.sh
+	./scripts/readme.sh

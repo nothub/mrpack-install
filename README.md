@@ -44,26 +44,6 @@ Flags:
 
 Use "mrpack-install [command] --help" for more information about a command.
 ```
-#### modpack update
-```
-Update the deployed modpacks files, creating backups if necessary.
-
-Usage:
-  mrpack-install update [<version>] [flags]
-
-Flags:
-      --backup-dir string   Backup directory path
-  -h, --help                help for update
-
-Global Flags:
-      --dl-retries uint8     Retries when download fails (default 3)
-      --dl-threads uint8     Concurrent download threads (default 8)
-      --host string          Labrinth host address (default "api.modrinth.com")
-      --proxy string         Proxy url for http connections
-      --server-dir string    Server directory path (default "mc")
-      --server-file string   Server jar file name
-  -v, --verbose              Enable verbose output
-```
 #### plain server deployment
 ```
 Download and configure one of several Minecraft server flavors.
@@ -89,8 +69,28 @@ Global Flags:
       --server-file string   Server jar file name
   -v, --verbose              Enable verbose output
 ```
+#### modpack update
+```
+Update the deployed modpacks files, creating backups if necessary.
+
+Usage:
+  mrpack-install update [<version>] [flags]
+
+Flags:
+      --backup-dir string   Backup directory path
+  -h, --help                help for update
+
+Global Flags:
+      --dl-retries uint8     Retries when download fails (default 3)
+      --dl-threads uint8     Concurrent download threads (default 8)
+      --host string          Labrinth host address (default "api.modrinth.com")
+      --proxy string         Proxy url for http connections
+      --server-dir string    Server directory path (default "mc")
+      --server-file string   Server jar file name
+  -v, --verbose              Enable verbose output
+```
 ## Install
-### Linux
+#### Linux
 ```sh
 # download
 curl -sSL -o "/tmp/mrpack-install" "https://github.com/nothub/mrpack-install/releases/latest/download/mrpack-install-linux"
@@ -98,4 +98,10 @@ curl -sSL -o "/tmp/mrpack-install" "https://github.com/nothub/mrpack-install/rel
 sudo install -t "/usr/local/bin" "/tmp/mrpack-install"
 # run
 mrpack-install --help
+```
+## Build
+To build a release, run:
+```sh
+goreleaser healthcheck
+goreleaser release --auto-snapshot --clean
 ```

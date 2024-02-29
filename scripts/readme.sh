@@ -1,8 +1,4 @@
-#!/usr/bin/env nix-shell
-#! nix-shell -I nixpkgs=https://github.com/NixOS/nixpkgs/archive/f8e2ebd66d097614d51a56a755450d4ae1632df1.tar.gz
-#! nix-shell -p go_1_22
-#! nix-shell -i sh --pure
-# shellcheck shell=sh
+#!/usr/bin/env sh
 
 set -eu
 cd "$(dirname "$(realpath "$0")")/.."
@@ -26,18 +22,18 @@ echo "\`\`\`" >>README.md
 ./out/mrpack-install --help >>README.md
 echo "\`\`\`" >>README.md
 
-echo "#### modpack update" >>README.md
-echo "\`\`\`" >>README.md
-./out/mrpack-install update --help >>README.md
-echo "\`\`\`" >>README.md
-
 echo "#### plain server deployment" >>README.md
 echo "\`\`\`" >>README.md
 ./out/mrpack-install server --help >>README.md
 echo "\`\`\`" >>README.md
 
+echo "#### modpack update" >>README.md
+echo "\`\`\`" >>README.md
+./out/mrpack-install update --help >>README.md
+echo "\`\`\`" >>README.md
+
 echo "## Install" >>README.md
-echo "### Linux" >>README.md
+echo "#### Linux" >>README.md
 echo "\`\`\`sh" >>README.md
 echo "# download" >>README.md
 echo "curl -sSL -o \"/tmp/mrpack-install\" \"https://github.com/nothub/mrpack-install/releases/latest/download/mrpack-install-linux\"" >>README.md
@@ -45,4 +41,11 @@ echo "# install to a place in PATH" >>README.md
 echo "sudo install -t \"/usr/local/bin\" \"/tmp/mrpack-install\"" >>README.md
 echo "# run" >>README.md
 echo "mrpack-install --help" >>README.md
+echo "\`\`\`" >>README.md
+
+echo "## Build" >>README.md
+echo "To build a release, run:" >>README.md
+echo "\`\`\`sh" >>README.md
+echo "goreleaser healthcheck" >>README.md
+echo "goreleaser release --auto-snapshot --clean" >>README.md
 echo "\`\`\`" >>README.md
