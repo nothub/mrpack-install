@@ -20,6 +20,6 @@ jobs:
           cache: true
       - uses: goreleaser/goreleaser-action@v5
         with:
-          args: release --clean --auto--snapshot
+          args: release --verbose --clean --auto-snapshot
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
