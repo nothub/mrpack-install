@@ -42,10 +42,3 @@ echo "sudo install -t \"/usr/local/bin\" \"/tmp/mrpack-install\"" >>README.md
 echo "# run" >>README.md
 echo "mrpack-install --help" >>README.md
 echo "\`\`\`" >>README.md
-
-echo "## Build" >>README.md
-echo "To build a release, run:" >>README.md
-echo "\`\`\`sh" >>README.md
-echo "goreleaser healthcheck" >>README.md
-echo "goreleaser release --auto-snapshot --clean" >>README.md
-echo "\`\`\`" >>README.md
