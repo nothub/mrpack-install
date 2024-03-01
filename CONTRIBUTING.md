@@ -4,8 +4,8 @@
 
 To build a development version, run:
 
-```
-go build -race -o out/mrpack-install
+```sh
+goreleaser build --clean --snapshot
 ```
 
 ## Release
@@ -13,13 +13,11 @@ go build -race -o out/mrpack-install
 To build a snapshot release, run:
 
 ```sh
-goreleaser healthcheck
 goreleaser release --clean --snapshot
 ```
 
 To build and publish a full release, run:
 
 ```sh
-goreleaser healthcheck
 goreleaser release --clean --fail-fast
 ```
