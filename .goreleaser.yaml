@@ -79,8 +79,8 @@ checksum:
 
 release:
   github:
-    owner: nats-io
-    name: nats-server
+    owner: nothub
+    name: mrpack-install
   name_template: 'v{{.Version}}'
   header: 'Release generated at commit: {{.Tag}}'
   draft: true
