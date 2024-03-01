@@ -23,9 +23,7 @@ builds:
     ldflags:
       - '-s'
       - '-w'
-      - '-X hub.lol/mrpack-install/buildinfo.version={{.Version}}'
-      - '-X hub.lol/mrpack-install/buildinfo.commit={{.Commit}}'
-      - '-X hub.lol/mrpack-install/buildinfo.date={{.Date}}'
+      - '-X hub.lol/mrpack-install/buildinfo.Version={{ .Version }}'
     goos:
       - linux
       - darwin
@@ -81,7 +79,7 @@ release:
   github:
     owner: nothub
     name: mrpack-install
-  name_template: 'v{{.Version}}'
-  header: 'Release generated at commit: {{.Tag}}'
+  name_template: 'v{{ .Version }}'
+  header: 'Release generated at commit: {{ .Tag }}'
   draft: true
   replace_existing_draft: true

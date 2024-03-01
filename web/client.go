@@ -5,7 +5,6 @@ import (
 	"hub.lol/mrpack-install/buildinfo"
 	"net/http"
 	"net/url"
-	"strings"
 	"time"
 )
 
@@ -39,7 +38,7 @@ func UserAgent() string {
 	return fmt.Sprintf(
 		"%s/%s (+https://%s)",
 		buildinfo.Name(),
-		strings.TrimPrefix(buildinfo.Tag, "v"),
+		buildinfo.Version(),
 		buildinfo.Module(),
 	)
 }

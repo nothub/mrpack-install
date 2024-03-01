@@ -7,22 +7,18 @@ import (
 	"runtime/debug"
 )
 
-var version = "unknown"
-var commit = "unknown"
-var date = "unknown"
+const unknown string = "unknown"
 
-var name = "unknown"
-var module = "unknown"
+var name = unknown
+var module = unknown
 
-var Tag = "unknown"
-var Release = "unknown"
-
-var rev = "unknown"
+var version = unknown
+var rev = unknown
 var dirty = false
 
-var Arch = "unknown"
-var Os = "unknown"
-var compiler = "unknown"
+var arch = unknown
+var os = unknown
+var compiler = unknown
 
 func init() {
 	bi, ok := debug.ReadBuildInfo()
@@ -43,12 +39,16 @@ func init() {
 				dirty = true
 			}
 		case "GOARCH":
-			Arch = kv.Value
+			arch = kv.Value
 		case "GOOS":
-			Os = kv.Value
+			os = kv.Value
 		case "-compiler":
 			compiler = kv.Value
 		}
+	}
+
+	if version == unknown {
+		version = rev
 	}
 }
 
@@ -60,18 +60,18 @@ func Module() string {
 	return module
 }
 
+func Version() string {
+	return version
+}
+
 func PrintInfos() {
-	fmt.Printf("%s %s %s %s",
+	fmt.Printf("%s %s %s",
 		Name(),
-		Tag,
-		rev,
-		fmt.Sprintf("%s-%s-%s", Arch, Os, compiler),
+		Version(),
+		fmt.Sprintf("%s-%s-%s", arch, os, compiler),
 	)
 	if dirty {
 		fmt.Printf(" %s", "DIRTY")
-	}
-	if Release != "true" {
-		fmt.Printf(" %s", "PRE-RELEASE")
 	}
 	fmt.Print("\n")
 }
