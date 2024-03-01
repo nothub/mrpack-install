@@ -9,14 +9,6 @@ out/$(BIN_NAME): $(shell ls go.mod go.sum *.go **/*.go)
 release: clean
 	./tools/build.sh
 
-.PHONY: clean
-clean:
-	./tools/clean.sh
-
-.PHONY: check
-check:
-	./tools/check.sh
-
 .PHONY: dl-stats
 dl-stats:
 	./tools/dl-stats.go | tee dl-stats.yaml
