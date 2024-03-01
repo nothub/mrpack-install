@@ -1,13 +1,26 @@
-name: '🧑‍🏭'
-on:
-  push:
-    tags:
-      - "*"
+name: '🐱‍💻'
+on: [ push ]
 permissions:
   contents: write
 jobs:
+
+  check:
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: 'go.mod'
+          check-latest: true
+          cache: true
+      - run: go vet ./...
+      - run: go test -v ./...
+
   release:
     if: startsWith(github.ref, 'refs/tags/v') == true
+    needs: check
     runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@v4
