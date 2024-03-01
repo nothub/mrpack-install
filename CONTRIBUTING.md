@@ -19,6 +19,6 @@ goreleaser release --clean --snapshot
 To build and publish a full release, run:
 
 ```sh
-git tag v0.42.0-indev
+git tag v0.1.0 && git push origin v0.1.0
 goreleaser release --clean --fail-fast
 ```
