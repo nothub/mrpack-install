@@ -32,7 +32,6 @@ func (inst *ForgeInstaller) Install(serverDir string, serverFile string) error {
 		return err
 	}
 
-	originalServerFile := fmt.Sprintf("forge-%s-%s-server.jar", inst.MinecraftVersion, inst.ForgeVersion)
 	originalServerPath := filepath.Join(
 		serverDir,
 		"libraries",
@@ -40,16 +39,11 @@ func (inst *ForgeInstaller) Install(serverDir string, serverFile string) error {
 		"minecraftforge",
 		"forge",
 		fmt.Sprintf("%s-%s", inst.MinecraftVersion, inst.ForgeVersion),
-		originalServerFile,
+		fmt.Sprintf("forge-%s-%s-server.jar", inst.MinecraftVersion, inst.ForgeVersion),
 	)
 
-	err = os.Rename(originalServerPath, filepath.Join(serverDir, originalServerFile))
-	if err != nil {
-		return err
-	}
-
 	if serverFile != "" {
-		err = os.Rename(filepath.Join(serverDir, originalServerFile), filepath.Join(serverDir, serverFile))
+		err = os.Rename(originalServerPath, filepath.Join(serverDir, serverFile))
 		if err != nil {
 			return err
 		}
