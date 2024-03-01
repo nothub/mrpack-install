@@ -1,13 +1,18 @@
 # mrpack-install
+
 [![downloads](https://img.shields.io/github/downloads/nothub/mrpack-install/total.svg?style=flat-square&labelColor=5c5c5c&color=007D9C)](https://github.com/nothub/mrpack-install/releases/latest)
 [![discord](https://img.shields.io/discord/1149744662131777546?style=flat-square&labelColor=5c5c5c&color=007D9C)](https://discord.gg/QNbTeGHBRm)
 [![go pkg](https://pkg.go.dev/badge/hub.lol/mrpack-install.svg)](https://pkg.go.dev/hub.lol/mrpack-install)
 
-A cli application for installing Minecraft servers and [Modrinth](https://modrinth.com/) [modpacks](https://docs.modrinth.com/docs/modpacks/format_definition/).
+A cli application for installing Minecraft servers
+and [Modrinth](https://modrinth.com/) [modpacks](https://docs.modrinth.com/docs/modpacks/format_definition/).
 
 ---
+
 ## Usage
+
 #### modpack deployment
+
 ```
 Deploys a Modrinth modpack including Minecraft server.
 
@@ -43,8 +48,11 @@ Flags:
   -V, --version              Print version and exit
 
 Use "mrpack-install [command] --help" for more information about a command.
+
 ```
+
 #### plain server deployment
+
 ```
 Download and configure one of several Minecraft server flavors.
 
@@ -68,8 +76,11 @@ Global Flags:
       --server-dir string    Server directory path (default "mc")
       --server-file string   Server jar file name
   -v, --verbose              Enable verbose output
+
 ```
+
 #### modpack update
+
 ```
 Update the deployed modpacks files, creating backups if necessary.
 
@@ -88,9 +99,13 @@ Global Flags:
       --server-dir string    Server directory path (default "mc")
       --server-file string   Server jar file name
   -v, --verbose              Enable verbose output
+
 ```
+
 ## Install
+
 #### Linux
+
 ```sh
 # download
 curl -sSL -o "/tmp/mrpack-install" "https://github.com/nothub/mrpack-install/releases/latest/download/mrpack-install-linux"
@@ -98,10 +113,4 @@ curl -sSL -o "/tmp/mrpack-install" "https://github.com/nothub/mrpack-install/rel
 sudo install -t "/usr/local/bin" "/tmp/mrpack-install"
 # run
 mrpack-install --help
-```
-## Build
-To build a release, run:
-```sh
-goreleaser healthcheck
-goreleaser release --auto-snapshot --clean
 ```
