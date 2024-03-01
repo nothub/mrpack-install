@@ -2,9 +2,12 @@ name: '🚔'
 on: [ push ]
 jobs:
   check:
+    if: startsWith(github.ref, 'refs/tags/v') == false
     runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
       - uses: actions/setup-go@v5
         with:
           go-version-file: 'go.mod'

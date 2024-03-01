@@ -1,0 +1,25 @@
+name: '🧑‍🏭'
+on:
+  push:
+    tags:
+      - "*"
+permissions:
+  contents: write
+jobs:
+  release:
+    if: startsWith(github.ref, 'refs/tags/v') == true
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: 'go.mod'
+          check-latest: true
+          cache: true
+      - uses: goreleaser/goreleaser-action@v5
+        with:
+          args: release --clean --auto--snapshot
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
