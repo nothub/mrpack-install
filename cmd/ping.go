@@ -8,7 +8,7 @@ import (
 )
 
 func init() {
-	rootCmd.AddCommand(pingCmd)
+	RootCmd.AddCommand(pingCmd)
 }
 
 var pingCmd = &cobra.Command{

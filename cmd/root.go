@@ -29,22 +29,22 @@ var (
 
 func init() {
 	var printVersion bool
-	rootCmd.Flags().BoolVarP(&printVersion, "version", "V", false, "Print version and exit")
+	RootCmd.Flags().BoolVarP(&printVersion, "version", "V", false, "Print version and exit")
 
 	var verboseLogs bool
-	rootCmd.PersistentFlags().BoolVarP(&verboseLogs, "verbose", "v", false, "Enable verbose output")
+	RootCmd.PersistentFlags().BoolVarP(&verboseLogs, "verbose", "v", false, "Enable verbose output")
 
 	// TODO: --eula (usage: "Set this flag or MC_EULA=true to agree with Mojangs EULA: https://account.mojang.com/documents/minecraft_eula")
 	// TODO: --op <uuid>...
 	// TODO: --whitelist <uuid>...
 	// TODO: --start-server
 
-	rootCmd.PersistentFlags().StringVar(&host, "host", "api.modrinth.com", "Labrinth host address")
-	rootCmd.PersistentFlags().StringVar(&serverDir, "server-dir", "mc", "Server directory path")
-	rootCmd.PersistentFlags().StringVar(&serverFile, "server-file", "", "Server jar file name")
-	rootCmd.PersistentFlags().StringVar(&proxy, "proxy", "", "Proxy url for http connections")
-	rootCmd.PersistentFlags().Uint8Var(&dlThreads, "dl-threads", 8, "Concurrent download threads")
-	rootCmd.PersistentFlags().Uint8Var(&dlRetries, "dl-retries", 3, "Retries when download fails")
+	RootCmd.PersistentFlags().StringVar(&host, "host", "api.modrinth.com", "Labrinth host address")
+	RootCmd.PersistentFlags().StringVar(&serverDir, "server-dir", "mc", "Server directory path")
+	RootCmd.PersistentFlags().StringVar(&serverFile, "server-file", "", "Server jar file name")
+	RootCmd.PersistentFlags().StringVar(&proxy, "proxy", "", "Proxy url for http connections")
+	RootCmd.PersistentFlags().Uint8Var(&dlThreads, "dl-threads", 8, "Concurrent download threads")
+	RootCmd.PersistentFlags().Uint8Var(&dlRetries, "dl-retries", 3, "Retries when download fails")
 
 	cobra.OnInitialize(func() {
 		if printVersion {
@@ -86,7 +86,7 @@ func init() {
 	})
 }
 
-var rootCmd = &cobra.Command{
+var RootCmd = &cobra.Command{
 	Use:   "mrpack-install (<filepath> | <url> | <slug> [<version>] | <id> [<version>])",
 	Short: "Modrinth Modpack server deployment",
 	Long:  `Deploys a Modrinth modpack including Minecraft server.`,
@@ -239,7 +239,7 @@ func handleArgs(input string, version string, serverDir string, host string) (*m
 }
 
 func Execute() {
-	if err := rootCmd.Execute(); err != nil {
+	if err := RootCmd.Execute(); err != nil {
 		log.Fatalln(err.Error())
 	}
 }

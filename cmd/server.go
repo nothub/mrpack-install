@@ -24,7 +24,7 @@ func init() {
 	// TODO: --whitelist <uuid>...
 	// TODO: --start-server
 
-	rootCmd.AddCommand(serverCmd)
+	RootCmd.AddCommand(serverCmd)
 
 	cobra.OnInitialize(func() {
 		// --minecraft-version

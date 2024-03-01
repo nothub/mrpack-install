@@ -17,7 +17,7 @@ func init() {
 	// TODO flags: --start-server
 	updateCmd.Flags().StringVar(&backupDir, "backup-dir", "", "Backup directory path")
 
-	rootCmd.AddCommand(updateCmd)
+	RootCmd.AddCommand(updateCmd)
 }
 
 /*
