@@ -157,6 +157,8 @@ func GetMeta(version string) (*Meta, error) {
 }
 
 func GetPlayer(name string) (*Player, error) {
+	// TODO: why is this here? i can not imagine
+	//  what i thought this could be useful for 🤔
 	var player Player
 	err := web.DefaultClient.GetJson(playerUrl(name), &player, nil)
 	if err != nil {
