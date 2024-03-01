@@ -2,7 +2,7 @@
 
 ## Build
 
-To build a development version, run:
+To build only binaries, run:
 
 ```sh
 goreleaser build --clean --snapshot
