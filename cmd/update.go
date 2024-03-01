@@ -41,6 +41,8 @@ var updateCmd = &cobra.Command{
 	Long:  `Update the deployed modpacks files, creating backups if necessary.`,
 	Args:  cobra.RangeArgs(0, 1),
 	Run: func(cmd *cobra.Command, args []string) {
+		log.Fatalln("The update command is not yet available in this pre-release version!")
+
 		// user defined backup dir
 		if backupDir != "" {
 			backup.SetDir(backupDir)
