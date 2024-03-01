@@ -10,6 +10,8 @@ import (
 	"log"
 	"os/exec"
 	"text/template"
+
+	"hub.lol/mrpack-install/cmd"
 )
 
 //go:embed readme.tmpl
@@ -19,6 +21,22 @@ func init() {
 	log.SetFlags(0)
 }
 
+type CmdEntry struct {
+	Name string
+	Help string
+}
+
+func NewCmdEntry(name string, cmd string) CmdEntry {
+	help, err := exec.Command("./out/mrpack-install", cmd, "--help").CombinedOutput()
+	if err != nil {
+		log.Fatalln(err.Error())
+	}
+	return CmdEntry{
+		Name: name,
+		Help: string(help),
+	}
+}
+
 func main() {
 
 	err := exec.Command("go", "build", "-o", "out/mrpack-install").Run()
@@ -26,19 +44,10 @@ func main() {
 		log.Fatalln(err.Error())
 	}
 
-	root, err := exec.Command("./out/mrpack-install", "--help").CombinedOutput()
-	if err != nil {
-		log.Fatalln(err.Error())
-	}
-
-	server, err := exec.Command("./out/mrpack-install", "server", "--help").CombinedOutput()
-	if err != nil {
-		log.Fatalln(err.Error())
-	}
-
-	update, err := exec.Command("./out/mrpack-install", "update", "--help").CombinedOutput()
-	if err != nil {
-		log.Fatalln(err.Error())
+	var data []CmdEntry
+	data = append(data, NewCmdEntry("root", ""))
+	for _, sc := range cmd.RootCmd.Commands() {
+		data = append(data, NewCmdEntry(sc.Name(), sc.Name()))
 	}
 
 	tmpl, err := template.ParseFS(fs, "readme.tmpl")
@@ -47,11 +56,7 @@ func main() {
 	}
 
 	var buf = bytes.Buffer{}
-	err = tmpl.Execute(&buf, map[string]string{
-		"root":   string(root),
-		"server": string(server),
-		"update": string(update),
-	})
+	err = tmpl.Execute(&buf, data)
 	if err != nil {
 		log.Fatalln(err.Error())
 	}

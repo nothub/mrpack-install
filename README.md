@@ -11,7 +11,7 @@ and [Modrinth](https://modrinth.com/) [modpacks](https://docs.modrinth.com/docs/
 
 ## Usage
 
-#### modpack deployment
+### root
 
 ```
 Deploys a Modrinth modpack including Minecraft server.
@@ -51,7 +51,29 @@ Use "mrpack-install [command] --help" for more information about a command.
 
 ```
 
-#### plain server deployment
+### ping
+
+```
+Connect to a Labrinth instance and display basic information.
+
+Usage:
+  mrpack-install ping [flags]
+
+Flags:
+  -h, --help   help for ping
+
+Global Flags:
+      --dl-retries uint8     Retries when download fails (default 3)
+      --dl-threads uint8     Concurrent download threads (default 8)
+      --host string          Labrinth host address (default "api.modrinth.com")
+      --proxy string         Proxy url for http connections
+      --server-dir string    Server directory path (default "mc")
+      --server-file string   Server jar file name
+  -v, --verbose              Enable verbose output
+
+```
+
+### server
 
 ```
 Download and configure one of several Minecraft server flavors.
@@ -79,7 +101,7 @@ Global Flags:
 
 ```
 
-#### modpack update
+### update
 
 ```
 Update the deployed modpacks files, creating backups if necessary.
@@ -102,9 +124,31 @@ Global Flags:
 
 ```
 
+### version
+
+```
+Extract and display the running binaries embedded version information.
+
+Usage:
+  mrpack-install version [flags]
+
+Flags:
+  -h, --help   help for version
+
+Global Flags:
+      --dl-retries uint8     Retries when download fails (default 3)
+      --dl-threads uint8     Concurrent download threads (default 8)
+      --host string          Labrinth host address (default "api.modrinth.com")
+      --proxy string         Proxy url for http connections
+      --server-dir string    Server directory path (default "mc")
+      --server-file string   Server jar file name
+  -v, --verbose              Enable verbose output
+
+```
+
 ## Install
 
-#### Linux
+### Linux
 
 ```sh
 # download
