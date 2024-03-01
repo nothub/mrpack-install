@@ -1,5 +1,5 @@
 //usr/bin/env -S go run "$0" "$@" ; exit
-////go:build exclude
+//go:build exclude
 
 package main
 
