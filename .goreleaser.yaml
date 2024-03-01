@@ -1,0 +1,87 @@
+# This is a goreleaser config file. Check the docs at https://goreleaser.com
+# yaml-language-server: $schema=https://goreleaser.com/static/schema.json
+# vim: set ts=2 sw=2 tw=0 fo=cnqoj
+
+version: 1
+
+project_name: mrpack-install
+
+before:
+  hooks:
+    - go mod tidy
+    - go vet ./...
+    - go test -v ./...
+    - go generate ./...
+
+builds:
+  - binary: '{{ .ProjectName }}'
+    env:
+      - CGO_ENABLED=0
+    tags:
+      - osusergo
+      - netgo
+    ldflags:
+      - '-s'
+      - '-w'
+      - '-X hub.lol/mrpack-install/buildinfo.version={{.Version}}'
+      - '-X hub.lol/mrpack-install/buildinfo.commit={{.Commit}}'
+      - '-X hub.lol/mrpack-install/buildinfo.date={{.Date}}'
+    goos:
+      - linux
+      - darwin
+      - windows
+    ignore:
+      - goos: linux
+        goarch: 386
+      - goos: windows
+        goarch: 386
+      - goos: windows
+        goarch: arm64
+    #no_unique_dist_dir: true
+
+upx:
+  - enabled: true
+    goos: [ linux, windows ]
+    compress: best
+    lzma: true
+
+archives:
+  - meta: false
+    name_template: '{{ .ProjectName }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}'
+    format_overrides:
+      - goos: windows
+        format: zip
+    files:
+      - LICENSE.txt
+
+nfpms:
+  - file_name_template: '{{ .ProjectName }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}'
+    maintainer: Florian Hübner <code@hub.lol>
+    description: |-
+      A cli application for installing
+      Minecraft servers and Modrinth modpacks.
+    homepage: https://github.com/nothub/mrpack-install
+    license: MIT
+    formats:
+      - apk
+      - deb
+      - rpm
+      - archlinux
+    bindir: /usr/local/bin
+    meta: false
+
+changelog:
+  sort: asc
+
+checksum:
+  name_template: "checksums.txt"
+  algorithm: sha256
+
+release:
+  github:
+    owner: nats-io
+    name: nats-server
+  name_template: 'v{{.Version}}'
+  header: 'Release generated at commit: {{.Tag}}'
+  draft: true
+  replace_existing_draft: true

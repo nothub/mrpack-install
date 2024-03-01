@@ -7,6 +7,10 @@ import (
 	"runtime/debug"
 )
 
+var version = "unknown"
+var commit = "unknown"
+var date = "unknown"
+
 var name = "unknown"
 var module = "unknown"
 
