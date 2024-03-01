@@ -23,7 +23,8 @@ jobs:
         run: nix-store --import < /tmp/nixcache
 
       - run: |
-          make check
+          go vet ./...
+          go test -v ./...
 
       - name: "Export Nix store cache"
         if: >
