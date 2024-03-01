@@ -27,7 +27,7 @@ type CmdEntry struct {
 }
 
 func NewCmdEntry(name string, cmd string) CmdEntry {
-	help, err := exec.Command("./out/mrpack-install", cmd, "--help").CombinedOutput()
+	help, err := exec.Command("/tmp/mrpack-install", cmd, "--help").CombinedOutput()
 	if err != nil {
 		log.Fatalln(err.Error())
 	}
@@ -39,7 +39,7 @@ func NewCmdEntry(name string, cmd string) CmdEntry {
 
 func main() {
 
-	err := exec.Command("go", "build", "-o", "out/mrpack-install").Run()
+	err := exec.Command("go", "build", "-o", "/tmp/mrpack-install").Run()
 	if err != nil {
 		log.Fatalln(err.Error())
 	}
