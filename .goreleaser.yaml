@@ -73,6 +73,6 @@ release:
     owner: nothub
     name: mrpack-install
   name_template: 'v{{ .Version }}'
-  header: 'Release generated at commit: {{ .Tag }}'
+  header: 'Release generated at commit: {{ .ShortCommit }}'
   draft: true
   replace_existing_draft: true
