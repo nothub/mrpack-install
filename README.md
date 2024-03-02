@@ -146,34 +146,6 @@ Global Flags:
 
 ```
 
-## Install
-
-### Linux
-
-#### Debian / Ubuntu (.deb)
-
-```sh
-sudo apt install ./downloads/mrpack-install_0.42.0_linux_amd64.deb
-```
-
-#### Fedora / Red Hat (.rpm)
-
-```sh
-sudo dnf install ./downloads/mrpack-install_0.42.0_linux_amd64.rpm
-```
-
-#### Arch Linux (.pkg.tar.zst)
-
-```sh
-sudo pacman -U ./downloads/mrpack-install_0.42.0_linux_amd64.pkg.tar.zst
-```
-
-#### Alpine Linux (.apk)
-
-```sh
-sudo apk add ./downloads/mrpack-install_0.42.0_linux_amd64.apk
-```
-
 ## Build
 
 To build only binaries, run:
