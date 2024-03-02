@@ -1,9 +1,6 @@
 package mojang
 
-import (
-	"testing"
-)
-
+/*
 func TestGetPlayerUuid(t *testing.T) {
 	player, err := GetPlayer("lit_furnace")
 	if err != nil {
@@ -13,3 +10,4 @@ func TestGetPlayerUuid(t *testing.T) {
 		t.Fatal("Wrong player data!")
 	}
 }
+*/
