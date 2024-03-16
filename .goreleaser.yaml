@@ -16,7 +16,7 @@ builds:
     ldflags:
       - '-s'
       - '-w'
-      - '-X hub.lol/mrpack-install/buildinfo.Version={{ .Version }}'
+      - '-X github.com/nothub/mrpack-install/buildinfo.Version={{ .Version }}'
     goos:
       - linux
       - darwin

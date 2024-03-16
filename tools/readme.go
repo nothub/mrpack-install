@@ -11,7 +11,7 @@ import (
 	"os/exec"
 	"text/template"
 
-	"hub.lol/mrpack-install/cmd"
+	"github.com/nothub/mrpack-install/cmd"
 )
 
 //go:embed readme.tmpl

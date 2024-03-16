@@ -3,7 +3,7 @@ package mrpack
 // It is probably not ideal to run this in ci all the time 🙈
 /*
 import (
-	"hub.lol/mrpack-install/requester"
+	"github.com/nothub/mrpack-install/requester"
 	"log"
 	"os"
 	"testing"

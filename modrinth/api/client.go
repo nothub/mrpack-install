@@ -1,7 +1,7 @@
 package api
 
 import (
-	"hub.lol/mrpack-install/web"
+	"github.com/nothub/mrpack-install/web"
 	"log"
 	"net/url"
 )

@@ -1,7 +1,7 @@
 package maven
 
 import (
-	"hub.lol/mrpack-install/web"
+	"github.com/nothub/mrpack-install/web"
 )
 
 type Metadata struct {

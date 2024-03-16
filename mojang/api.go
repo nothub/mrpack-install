@@ -4,7 +4,7 @@ import (
 	"encoding/hex"
 	"errors"
 	"github.com/google/uuid"
-	"hub.lol/mrpack-install/web"
+	"github.com/nothub/mrpack-install/web"
 	"time"
 )
 

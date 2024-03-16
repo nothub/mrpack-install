@@ -7,8 +7,8 @@ import (
 	"path/filepath"
 	"strings"
 
-	modrinth "hub.lol/mrpack-install/modrinth/api"
-	"hub.lol/mrpack-install/modrinth/mrpack"
+	modrinth "github.com/nothub/mrpack-install/modrinth/api"
+	"github.com/nothub/mrpack-install/modrinth/mrpack"
 )
 
 const file = "packstate.json"

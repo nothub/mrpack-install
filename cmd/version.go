@@ -1,8 +1,8 @@
 package cmd
 
 import (
+	"github.com/nothub/mrpack-install/buildinfo"
 	"github.com/spf13/cobra"
-	"hub.lol/mrpack-install/buildinfo"
 )
 
 func init() {

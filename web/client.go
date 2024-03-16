@@ -2,7 +2,7 @@ package web
 
 import (
 	"fmt"
-	"hub.lol/mrpack-install/buildinfo"
+	"github.com/nothub/mrpack-install/buildinfo"
 	"net/http"
 	"net/url"
 	"time"

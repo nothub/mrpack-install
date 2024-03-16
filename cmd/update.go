@@ -1,10 +1,10 @@
 package cmd
 
 import (
+	"github.com/nothub/mrpack-install/update"
+	"github.com/nothub/mrpack-install/update/backup"
+	"github.com/nothub/mrpack-install/update/packstate"
 	"github.com/spf13/cobra"
-	"hub.lol/mrpack-install/update"
-	"hub.lol/mrpack-install/update/backup"
-	"hub.lol/mrpack-install/update/packstate"
 	"log"
 )
 

@@ -1,7 +1,7 @@
 package server
 
 import (
-	"hub.lol/mrpack-install/modrinth/mrpack"
+	"github.com/nothub/mrpack-install/modrinth/mrpack"
 	"log"
 )
 

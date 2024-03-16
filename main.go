@@ -1,7 +1,7 @@
 package main
 
 import (
-	"hub.lol/mrpack-install/cmd"
+	"github.com/nothub/mrpack-install/cmd"
 	"log"
 )
 
