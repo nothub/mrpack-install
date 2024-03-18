@@ -4,7 +4,7 @@ go 1.22
 
 require (
 	github.com/google/uuid v1.6.0
-	github.com/nothub/hashutils v0.4.0
+	github.com/nothub/hashutils v0.4.1
 	github.com/spf13/cobra v1.8.0
 	golang.org/x/exp v0.0.0-20240314144324-c7f7c6466f7f
 )
