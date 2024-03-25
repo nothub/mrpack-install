@@ -148,7 +148,7 @@ Global Flags:
 
 ## Build
 
-To build only binaries, run:
+To build binaries, run:
 
 ```sh
 goreleaser build --clean --snapshot
