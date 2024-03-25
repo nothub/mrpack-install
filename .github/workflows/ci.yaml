@@ -15,8 +15,7 @@ jobs:
           go-version-file: 'go.mod'
           check-latest: true
           cache: true
-      - run: go vet ./...
-      - run: go test -v ./...
+      - run: go test -v -vet 'all' ./...
 
   release:
     if: startsWith(github.ref, 'refs/tags/v') == true
