@@ -11,7 +11,7 @@ import (
 	"github.com/nothub/mrpack-install/modrinth/mrpack"
 )
 
-const file = "packstate.json"
+const FileName = "packstate.json"
 
 type Schema struct {
 	Slug      string      `json:"slug"`
@@ -35,7 +35,7 @@ func (state *Schema) Save(serverDir string) error {
 		return err
 	}
 
-	err = os.WriteFile(filepath.Join(serverDir, file), buf.Bytes(), 0644)
+	err = os.WriteFile(filepath.Join(serverDir, FileName), buf.Bytes(), 0644)
 	if err != nil {
 		return err
 	}
@@ -44,7 +44,7 @@ func (state *Schema) Save(serverDir string) error {
 }
 
 func LoadPackState(serverDir string) (*Schema, error) {
-	b, err := os.ReadFile(filepath.Join(serverDir, file))
+	b, err := os.ReadFile(filepath.Join(serverDir, FileName))
 	if err != nil {
 		return nil, err
 	}
