@@ -6,6 +6,7 @@ import (
 	"github.com/nothub/mrpack-install/update/packstate"
 	"github.com/spf13/cobra"
 	"log"
+	"path/filepath"
 )
 
 var (
@@ -59,6 +60,11 @@ var updateCmd = &cobra.Command{
 		}
 
 		index, zipPath := handleArgs(state.Slug, version, serverDir, host)
+
+		zipPath, err = filepath.Abs(zipPath)
+		if err != nil {
+			log.Fatalln(err)
+		}
 
 		update.Cmd(serverDir, dlThreads, dlRetries, index, zipPath, state)
 	},

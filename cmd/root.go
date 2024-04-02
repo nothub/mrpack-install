@@ -105,8 +105,13 @@ var RootCmd = &cobra.Command{
 		}
 		index, zipPath := handleArgs(input, version, serverDir, host)
 
+		zipPath, err := filepath.Abs(zipPath)
+		if err != nil {
+			log.Fatalln(err)
+		}
+
 		fmt.Printf("Installing %q from %q to %q\n", index.Name, zipPath, serverDir)
-		err := os.MkdirAll(serverDir, 0755)
+		err = os.MkdirAll(serverDir, 0755)
 		if err != nil {
 			log.Fatalln(err)
 		}
