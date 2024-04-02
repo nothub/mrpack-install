@@ -43,8 +43,8 @@ func (o *override) server() bool {
 		strings.HasPrefix(o.Name, pathPrefixServer)
 }
 
-func ExtractOverrides(zipFile string, serverDir string) error {
-	err := IterZip(zipFile, func(file *zip.File) error {
+func ExtractOverrides(zipFile string, serverDir string) (err error) {
+	return IterZip(zipFile, func(file *zip.File) error {
 		o := override(*file)
 		if !o.server() {
 			// skip non-server override files
@@ -86,11 +86,6 @@ func ExtractOverrides(zipFile string, serverDir string) error {
 
 		return nil
 	})
-	if err != nil {
-		log.Fatalln(err.Error())
-	}
-
-	return nil
 }
 
 func OverrideHashes(zipFile string) map[string]modrinth.Hashes {
