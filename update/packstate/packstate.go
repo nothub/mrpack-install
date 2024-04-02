@@ -67,6 +67,7 @@ func FromArchive(path string) (*Schema, error) {
 
 	version, err := modrinth.Client.VersionFromMrpackFile(path)
 	if err != nil {
+		// TODO: check for 404 status for custom error
 		return nil, err
 	}
 	project, err := modrinth.Client.GetProject(version.ProjectId)

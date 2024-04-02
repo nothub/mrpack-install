@@ -37,6 +37,7 @@ func (c *Client) GetModel(url string, respModel interface{}, errModel error, dec
 	}(res.Body)
 
 	if res.StatusCode < http.StatusOK || res.StatusCode >= http.StatusBadRequest {
+		// TODO: error struct with more details
 		if errModel == nil || json.NewDecoder(res.Body).Decode(&errModel) != nil {
 			return errors.New("http status " + strconv.Itoa(res.StatusCode))
 		}

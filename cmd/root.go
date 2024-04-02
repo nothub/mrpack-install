@@ -157,11 +157,12 @@ var RootCmd = &cobra.Command{
 		// save state file
 		packState, err := packstate.FromArchive(zipPath)
 		if err != nil {
-			log.Fatalln(err)
-		}
-		err = packState.Save(serverDir)
-		if err != nil {
-			log.Fatalln(err)
+			log.Printf("Unable to generate %s: %s\n", packstate.FileName, err)
+		} else {
+			err = packState.Save(serverDir)
+			if err != nil {
+				log.Fatalln(err)
+			}
 		}
 
 		files.RmEmptyDirs(serverDir)
