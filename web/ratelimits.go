@@ -1,7 +1,7 @@
 package web
 
 import (
-	"fmt"
+	"log"
 	"net/http"
 	"strconv"
 	"time"
@@ -31,7 +31,7 @@ func updateRateLimits(response *http.Response) {
 	// number of requests left for the time window
 	remaining, err := strconv.ParseUint(response.Header.Get("x-ratelimit-remaining"), 10, 0)
 	if err != nil {
-		fmt.Println("Failed to parse ratelimit-remaining value", err, "sent by", response.Request.Host)
+		log.Println("Failed to parse ratelimit-remaining value", err, "sent by", response.Request.Host)
 		return
 	}
 	limits.Remaining = remaining
@@ -39,7 +39,7 @@ func updateRateLimits(response *http.Response) {
 	// number of seconds before the rate limit resets
 	reset, err := strconv.ParseUint(response.Header.Get("x-ratelimit-reset"), 10, 0)
 	if err != nil {
-		fmt.Println("Failed to parse ratelimit-reset value", err, "sent by", response.Request.Host)
+		log.Println("Failed to parse ratelimit-reset value", err, "sent by", response.Request.Host)
 		return
 	}
 	limits.ResetDelay = time.Duration(reset) * time.Second
@@ -55,7 +55,7 @@ func awaitRateLimits(host string) {
 		return
 	}
 	if rateLimits[host].Remaining <= 1 {
-		fmt.Println("Awaiting rate limits for:", host, "Sleeping for", rateLimits[host].ResetDelay, "seconds...")
+		log.Println("Awaiting rate limits for:", host, "Sleeping for", rateLimits[host].ResetDelay, "seconds...")
 		time.Sleep(rateLimits[host].ResetDelay)
 	}
 }

@@ -1,7 +1,6 @@
 package server
 
 import (
-	"fmt"
 	"github.com/nothub/mrpack-install/web"
 	"log"
 )
@@ -23,6 +22,6 @@ func (inst *NeoForgeInstaller) Install(serverDir string, serverFile string) erro
 	if err != nil {
 		return err
 	}
-	fmt.Println("Server jar downloaded to:", file)
+	log.Println("Server jar downloaded to:", file)
 	return nil
 }

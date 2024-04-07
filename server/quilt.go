@@ -2,10 +2,10 @@ package server
 
 import (
 	"errors"
-	"fmt"
 	"github.com/nothub/mrpack-install/files"
 	"github.com/nothub/mrpack-install/maven"
 	"github.com/nothub/mrpack-install/web"
+	"log"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -29,7 +29,7 @@ func (inst *QuiltInstaller) Install(serverDir string, serverFile string) error {
 	}
 
 	cmd := exec.Command("java", "-jar", installer, "install", "server", inst.MinecraftVersion, "--install-dir="+serverDir, "--create-scripts", "--download-server")
-	fmt.Println("Executing command:", cmd.String())
+	log.Println("Executing command:", cmd.String())
 	err = cmd.Run()
 	if err != nil {
 		return err

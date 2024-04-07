@@ -2,7 +2,7 @@ package mrpack
 
 import (
 	"archive/zip"
-	"fmt"
+	"log"
 )
 
 func IterZip(zipPath string, callback func(file *zip.File) error) error {
@@ -14,7 +14,7 @@ func IterZip(zipPath string, callback func(file *zip.File) error) error {
 	defer func(r *zip.ReadCloser) {
 		err := r.Close()
 		if err != nil {
-			fmt.Println(err)
+			log.Println(err)
 		}
 	}(r)
 

@@ -2,7 +2,6 @@ package update
 
 import (
 	"crypto"
-	"fmt"
 	"github.com/nothub/hashutils/chksum"
 	"github.com/nothub/hashutils/encoding"
 	"github.com/nothub/mrpack-install/files"
@@ -19,7 +18,7 @@ import (
 import "golang.org/x/exp/slices"
 
 func Cmd(serverDir string, dlThreads uint8, dlRetries uint8, index *mrpack.Index, zipPath string, oldState *packstate.Schema) {
-	fmt.Printf("Updating %q in %q with %q\n", index.Name, serverDir, zipPath)
+	log.Printf("Updating %q in %q with %q\n", index.Name, serverDir, zipPath)
 	err := os.Chdir(serverDir)
 	if err != nil {
 		log.Fatalln(err)
@@ -90,7 +89,7 @@ func Cmd(serverDir string, dlThreads uint8, dlRetries uint8, index *mrpack.Index
 		}
 	}
 
-	fmt.Printf("Downloading %v dependencies...\n", len(downloads))
+	log.Printf("Downloading %v dependencies...\n", len(downloads))
 	downloader := download.Downloader{
 		Downloads: downloads,
 		Threads:   int(dlThreads),
@@ -99,7 +98,7 @@ func Cmd(serverDir string, dlThreads uint8, dlRetries uint8, index *mrpack.Index
 	downloader.Download(serverDir)
 
 	// overrides
-	fmt.Println("Extracting overrides...")
+	log.Println("Extracting overrides...")
 	err = mrpack.ExtractOverrides(zipPath, serverDir)
 	if err != nil {
 		log.Fatalln(err)
@@ -113,5 +112,5 @@ func Cmd(serverDir string, dlThreads uint8, dlRetries uint8, index *mrpack.Index
 
 	files.RmEmptyDirs(serverDir)
 
-	fmt.Println("Update finished :) Have a nice day ✌️")
+	log.Println("Update finished :) Have a nice day ✌️")
 }

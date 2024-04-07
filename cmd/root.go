@@ -1,7 +1,6 @@
 package cmd
 
 import (
-	"fmt"
 	"github.com/nothub/mrpack-install/buildinfo"
 	"github.com/nothub/mrpack-install/files"
 	modrinth "github.com/nothub/mrpack-install/modrinth/api"
@@ -110,7 +109,7 @@ var RootCmd = &cobra.Command{
 			log.Fatalln(err)
 		}
 
-		fmt.Printf("Installing %q from %q to %q\n", index.Name, zipPath, serverDir)
+		log.Printf("Installing %q from %q to %q\n", index.Name, zipPath, serverDir)
 		err = os.MkdirAll(serverDir, 0755)
 		if err != nil {
 			log.Fatalln(err)
@@ -126,20 +125,20 @@ var RootCmd = &cobra.Command{
 
 		// download server if not present
 		if !files.IsFile(filepath.Join(serverDir, serverFile)) {
-			fmt.Println("Server file not present, downloading...")
-			fmt.Println("(Point --server-dir and --server-file to existing targets to skip this step)")
+			log.Println("Server file not present, downloading...")
+			log.Println("(Point --server-dir and --server-file to existing targets to skip this step)")
 			inst := server.InstallerFromDeps(&index.Deps)
 			err := inst.Install(serverDir, serverFile)
 			if err != nil {
 				log.Fatalln(err)
 			}
 		} else {
-			fmt.Println("Server file already present, proceeding...")
+			log.Println("Server file already present, proceeding...")
 		}
 
 		// downloads
 		downloads := index.ServerDownloads()
-		fmt.Printf("Downloading %v dependencies...\n", len(downloads))
+		log.Printf("Downloading %v dependencies...\n", len(downloads))
 		downloader := download.Downloader{
 			Downloads: downloads,
 			Threads:   int(dlThreads),
@@ -148,7 +147,7 @@ var RootCmd = &cobra.Command{
 		downloader.Download(serverDir)
 
 		// overrides
-		fmt.Println("Extracting overrides...")
+		log.Println("Extracting overrides...")
 		err = mrpack.ExtractOverrides(zipPath, serverDir)
 		if err != nil {
 			log.Fatalln(err)
@@ -167,7 +166,7 @@ var RootCmd = &cobra.Command{
 
 		files.RmEmptyDirs(serverDir)
 
-		fmt.Println("Installation done :) Have a nice day ✌️")
+		log.Println("Installation done :) Have a nice day ✌️")
 	},
 }
 
@@ -179,7 +178,7 @@ func handleArgs(input string, version string, serverDir string, host string) (*m
 
 	archivePath := ""
 	if web.IsValidHttpUrl(input) {
-		fmt.Println("Downloading mrpack file from", input)
+		log.Println("Downloading mrpack file from", input)
 		file, err := web.DefaultClient.DownloadFile(input, serverDir, "")
 		if err != nil {
 			log.Fatalln(err.Error())
@@ -217,7 +216,7 @@ func handleArgs(input string, version string, serverDir string, host string) (*m
 
 		for i := range fileInfos {
 			if strings.HasSuffix(fileInfos[i].Filename, ".mrpack") {
-				fmt.Println("Downloading mrpack file from", fileInfos[i].Url)
+				log.Println("Downloading mrpack file from", fileInfos[i].Url)
 				file, err := web.DefaultClient.DownloadFile(fileInfos[i].Url, serverDir, "")
 				if err != nil {
 					log.Fatalln(err.Error())

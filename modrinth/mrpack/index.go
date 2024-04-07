@@ -4,7 +4,6 @@ import (
 	"archive/zip"
 	"encoding/json"
 	"errors"
-	"fmt"
 	"github.com/nothub/mrpack-install/web/download"
 	"io"
 	"log"
@@ -69,7 +68,7 @@ func ReadIndex(zipFile string) (*Index, error) {
 	defer func(r *zip.ReadCloser) {
 		err := r.Close()
 		if err != nil {
-			fmt.Println(err)
+			log.Println(err)
 		}
 	}(r)
 
@@ -91,7 +90,7 @@ func ReadIndex(zipFile string) (*Index, error) {
 	defer func(fileReader io.ReadCloser) {
 		err := fileReader.Close()
 		if err != nil {
-			fmt.Println(err)
+			log.Println(err)
 		}
 	}(fileReader)
 
@@ -120,7 +119,7 @@ func (index *Index) ServerDownloads() []*download.Download {
 		}
 
 		if len(file.Downloads) < 1 {
-			fmt.Printf("No downloads for file: %s\n", file.Path)
+			log.Printf("No downloads for file: %s\n", file.Path)
 			continue
 		}
 

@@ -3,7 +3,6 @@ package mrpack
 import (
 	"archive/zip"
 	"crypto"
-	"fmt"
 	"github.com/nothub/hashutils/chksum"
 	"github.com/nothub/hashutils/encoding"
 	"github.com/nothub/mrpack-install/files"
@@ -82,7 +81,7 @@ func ExtractOverrides(zipFile string, serverDir string) (err error) {
 			return err
 		}
 
-		fmt.Printf("Override: %s\n", targetPath)
+		log.Printf("Override: %s\n", targetPath)
 
 		return nil
 	})

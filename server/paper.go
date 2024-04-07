@@ -2,8 +2,8 @@ package server
 
 import (
 	"errors"
-	"fmt"
 	"github.com/nothub/mrpack-install/web"
+	"log"
 	"strconv"
 )
 
@@ -42,7 +42,7 @@ func (inst *PaperInstaller) Install(serverDir string, serverFile string) error {
 				return err
 			}
 
-			fmt.Println("Server jar downloaded to:", file)
+			log.Println("Server jar downloaded to:", file)
 			return nil
 		}
 	}

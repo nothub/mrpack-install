@@ -3,6 +3,7 @@ package server
 import (
 	"fmt"
 	"github.com/nothub/mrpack-install/web"
+	"log"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -27,7 +28,7 @@ func (inst *ForgeInstaller) Install(serverDir string, serverFile string) error {
 	}
 
 	cmd := exec.Command("java", "-jar", installerFile, "--installServer", serverDir)
-	fmt.Println("Executing command:", cmd.String())
+	log.Println("Executing command:", cmd.String())
 	if err = cmd.Run(); err != nil {
 		return err
 	}

@@ -2,7 +2,6 @@ package files
 
 import (
 	"errors"
-	"fmt"
 	"log"
 	"os"
 	"path/filepath"
@@ -98,7 +97,7 @@ func RmEmptyDirs(dir string) {
 	for _, path := range dirs {
 		err := os.Remove(path)
 		if err != nil {
-			fmt.Printf("Unable to delete empty directory %s. %s\n", path, err.Error())
+			log.Printf("Unable to delete empty directory %s. %s\n", path, err.Error())
 		}
 	}
 }

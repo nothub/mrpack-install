@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"encoding/xml"
 	"errors"
-	"fmt"
 	"io"
 	"log"
 	"net/http"
@@ -32,7 +31,7 @@ func (c *Client) GetModel(url string, respModel interface{}, errModel error, dec
 	defer func(Body io.Closer) {
 		err := Body.Close()
 		if err != nil {
-			fmt.Println(err)
+			log.Println(err)
 		}
 	}(res.Body)
 
