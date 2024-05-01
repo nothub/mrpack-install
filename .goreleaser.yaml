@@ -47,7 +47,7 @@ archives:
 
 nfpms:
   - file_name_template: '{{ .ProjectName }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}'
-    maintainer: Florian Hübner <code@hub.lol>
+    maintainer: Florian Hübner <fhuebner@posteo.de>
     description: |-
       A cli application for installing
       Minecraft servers and Modrinth modpacks.
