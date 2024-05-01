@@ -64,9 +64,9 @@ func Module() string {
 }
 
 func Print() {
-	fmt.Printf("version:    %s\n", version)
-	fmt.Printf("target:     %s-%s-%s\n", arch, os, compiler)
-	fmt.Printf("built at:   %s\n", date)
+	fmt.Printf("%s\n", version)
 	fmt.Printf("built from: %s\n", commit)
 	fmt.Printf("built with: %s\n", tool)
+	fmt.Printf("built for:  %s-%s-%s\n", arch, os, compiler)
+	fmt.Printf("built at:   %s\n", date)
 }
