@@ -64,9 +64,8 @@ func Module() string {
 }
 
 func Print() {
-	fmt.Printf("module:     %s\n", module)
 	fmt.Printf("version:    %s\n", version)
-	fmt.Printf("triplet:    %s-%s-%s\n", arch, os, compiler)
+	fmt.Printf("target:     %s-%s-%s\n", arch, os, compiler)
 	fmt.Printf("built at:   %s\n", date)
 	fmt.Printf("built from: %s\n", commit)
 	fmt.Printf("built with: %s\n", tool)
