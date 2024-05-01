@@ -14,6 +14,6 @@ var versionCmd = &cobra.Command{
 	Short: "Print version infos",
 	Long:  `Extract and display the running binaries embedded version information.`,
 	Run: func(cmd *cobra.Command, args []string) {
-		buildinfo.PrintInfos()
+		buildinfo.Print()
 	},
 }

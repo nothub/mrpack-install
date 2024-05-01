@@ -47,7 +47,7 @@ func init() {
 
 	cobra.OnInitialize(func() {
 		if printVersion {
-			buildinfo.PrintInfos()
+			buildinfo.Print()
 			os.Exit(0)
 		}
 
