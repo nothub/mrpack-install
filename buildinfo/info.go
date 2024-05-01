@@ -5,21 +5,23 @@ import (
 	"log"
 	"path"
 	"runtime/debug"
-	"strings"
 )
 
 const unknown string = "unknown"
 
-var name = unknown
-var module = unknown
+var (
+	name   = unknown
+	module = unknown
 
-var version = unknown
-var revision = unknown
-var dirty = false
+	version = unknown
+	commit  = unknown
+	date    = unknown
+	tool    = unknown
 
-var arch = unknown
-var os = unknown
-var compiler = unknown
+	arch     = unknown
+	os       = unknown
+	compiler = unknown
+)
 
 func init() {
 	bi, ok := debug.ReadBuildInfo()
@@ -30,12 +32,11 @@ func init() {
 
 	name = path.Base(bi.Main.Path)
 	module = bi.Main.Path
-	version = bi.Main.Version
+
+	var dirty = false
 
 	for _, kv := range bi.Settings {
 		switch kv.Key {
-		case "vcs.revision":
-			revision = kv.Value[:8]
 		case "vcs.modified":
 			if kv.Value == "true" {
 				dirty = true
@@ -49,8 +50,8 @@ func init() {
 		}
 	}
 
-	if version == unknown {
-		version = revision
+	if dirty {
+		version = version + "+DIRTY"
 	}
 }
 
@@ -62,23 +63,11 @@ func Module() string {
 	return module
 }
 
-func Version() string {
-	return version
-}
-
-func Revision() string {
-	return revision
-}
-
-func PrintInfos() {
-	sb := strings.Builder{}
-	sb.WriteString(fmt.Sprintf("%s %s", Name(), Version()))
-	if Version() != Revision() {
-		sb.WriteString(fmt.Sprintf(" %s", Revision()))
-	}
-	sb.WriteString(fmt.Sprintf(" %s-%s-%s", arch, os, compiler))
-	if dirty {
-		sb.WriteString(" DIRTY")
-	}
-	fmt.Println(sb.String())
+func Print() {
+	fmt.Printf("module:     %s\n", module)
+	fmt.Printf("version:    %s\n", version)
+	fmt.Printf("triplet:    %s-%s-%s\n", arch, os, compiler)
+	fmt.Printf("built at:   %s\n", date)
+	fmt.Printf("built from: %s\n", commit)
+	fmt.Printf("built with: %s\n", tool)
 }

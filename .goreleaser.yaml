@@ -16,7 +16,10 @@ builds:
     ldflags:
       - '-s'
       - '-w'
-      - '-X github.com/nothub/mrpack-install/buildinfo.Version={{ .Version }}'
+      - '-X github.com/nothub/mrpack-install/buildinfo.version={{ .Version }}'
+      - '-X github.com/nothub/mrpack-install/buildinfo.commit={{ .Commit }}'
+      - '-X github.com/nothub/mrpack-install/buildinfo.date={{ .Date }}'
+      - '-X github.com/nothub/mrpack-install/buildinfo.tool=goreleaser'
     goos:
       - linux
       - darwin

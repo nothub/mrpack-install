@@ -36,9 +36,8 @@ func NewTransport() *http.Transport {
 
 func UserAgent() string {
 	return fmt.Sprintf(
-		"%s/%s (+https://%s)",
+		"%s (+https://%s)",
 		buildinfo.Name(),
-		buildinfo.Version(),
 		buildinfo.Module(),
 	)
 }
