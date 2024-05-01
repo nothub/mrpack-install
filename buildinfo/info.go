@@ -5,6 +5,7 @@ import (
 	"log"
 	"path"
 	"runtime/debug"
+	"strings"
 )
 
 const unknown string = "unknown"
@@ -13,7 +14,7 @@ var name = unknown
 var module = unknown
 
 var version = unknown
-var rev = unknown
+var revision = unknown
 var dirty = false
 
 var arch = unknown
@@ -29,11 +30,12 @@ func init() {
 
 	name = path.Base(bi.Main.Path)
 	module = bi.Main.Path
+	version = bi.Main.Version
 
 	for _, kv := range bi.Settings {
 		switch kv.Key {
 		case "vcs.revision":
-			rev = kv.Value[:8]
+			revision = kv.Value[:8]
 		case "vcs.modified":
 			if kv.Value == "true" {
 				dirty = true
@@ -48,7 +50,7 @@ func init() {
 	}
 
 	if version == unknown {
-		version = rev
+		version = revision
 	}
 }
 
@@ -64,14 +66,19 @@ func Version() string {
 	return version
 }
 
+func Revision() string {
+	return revision
+}
+
 func PrintInfos() {
-	fmt.Printf("%s %s %s",
-		Name(),
-		Version(),
-		fmt.Sprintf("%s-%s-%s", arch, os, compiler),
-	)
-	if dirty {
-		fmt.Printf(" %s", "DIRTY")
+	sb := strings.Builder{}
+	sb.WriteString(fmt.Sprintf("%s %s", Name(), Version()))
+	if Version() != Revision() {
+		sb.WriteString(fmt.Sprintf(" %s", Revision()))
 	}
-	fmt.Print("\n")
+	sb.WriteString(fmt.Sprintf(" %s-%s-%s", arch, os, compiler))
+	if dirty {
+		sb.WriteString(" DIRTY")
+	}
+	fmt.Println(sb.String())
 }
