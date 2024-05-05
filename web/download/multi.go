@@ -2,13 +2,14 @@ package download
 
 import (
 	"crypto"
+	"log"
+	"path/filepath"
+	"sync"
+
 	"github.com/nothub/hashutils/chksum"
 	"github.com/nothub/hashutils/encoding"
 	modrinth "github.com/nothub/mrpack-install/modrinth/api"
 	"github.com/nothub/mrpack-install/web"
-	"log"
-	"path/filepath"
-	"sync"
 )
 
 type Download struct {
@@ -19,17 +20,25 @@ type Download struct {
 
 type Downloader struct {
 	Downloads []*Download
-	Threads   int // TODO
+	Threads   int // Maximum number of concurrent downloads
 	Retries   int
 }
 
 func (g *Downloader) Download(baseDir string) {
+	semaphore := make(chan struct{}, g.Threads) // Create a semaphore to limit concurrency
 	var wg sync.WaitGroup
+
 	for i := range g.Downloads {
 		wg.Add(1)
 		dl := g.Downloads[i]
+
+		semaphore <- struct{}{} // Acquire a slot in the semaphore
 		go func() {
-			defer wg.Done()
+			defer func() {
+				<-semaphore // Release the slot in the semaphore
+				wg.Done()
+			}()
+
 			absPath, _ := filepath.Abs(filepath.Join(baseDir, dl.Path))
 			success := false
 			for _, link := range dl.Urls {
@@ -62,5 +71,6 @@ func (g *Downloader) Download(baseDir string) {
 			}
 		}()
 	}
+
 	wg.Wait()
 }
