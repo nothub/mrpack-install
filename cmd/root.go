@@ -178,7 +178,7 @@ func handleArgs(input string, version string, serverDir string, host string) (*m
 
 	archivePath := ""
 	if web.IsValidHttpUrl(input) {
-		log.Println("Downloading mrpack file from", input)
+		log.Printf("Downloading mrpack file from: %s", input)
 		file, err := web.DefaultClient.DownloadFile(input, serverDir, "")
 		if err != nil {
 			log.Fatalln(err.Error())
@@ -186,10 +186,12 @@ func handleArgs(input string, version string, serverDir string, host string) (*m
 		archivePath = file
 
 	} else if files.IsFile(input) {
+		log.Printf("Installing from mrpack file: %s", input)
 		archivePath = input
 
 	} else {
-		// input is project id or slug
+		log.Printf("Trying to resolve project id or slug: %s", input)
+
 		versions, err := modrinth.Client.GetProjectVersions(input, nil)
 		if err != nil {
 			log.Fatalln(err)
