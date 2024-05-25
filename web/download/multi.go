@@ -24,15 +24,17 @@ type Downloader struct {
 	Retries   int
 }
 
+type empty struct{}
+
 func (g *Downloader) Download(baseDir string) {
-	semaphore := make(chan struct{}, g.Threads) // Create a semaphore to limit concurrency
+	semaphore := make(chan empty, g.Threads) // Create a semaphore to limit concurrency
 	var wg sync.WaitGroup
 
 	for i := range g.Downloads {
 		wg.Add(1)
 		dl := g.Downloads[i]
 
-		semaphore <- struct{}{} // Acquire a slot in the semaphore
+		semaphore <- empty{} // Acquire a slot in the semaphore
 		go func() {
 			defer func() {
 				<-semaphore // Release the slot in the semaphore
