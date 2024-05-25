@@ -13,6 +13,7 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 )
 
@@ -67,6 +68,12 @@ func init() {
 			log.Fatalln(err)
 		}
 		serverDir = absServerDir
+
+		if runtime.GOOS == "windows" {
+			// normalize lower case windows path
+			// e.g. c:\MCServers to C:\MCServers
+			serverDir = strings.ToUpper(serverDir[0:1]) + serverDir[1:]
+		}
 
 		// -- server-file
 		serverFile = strings.TrimSpace(serverFile)
@@ -186,8 +193,11 @@ func handleArgs(input string, version string, serverDir string, host string) (*m
 		archivePath = file
 
 	} else if files.IsFile(input) {
-		log.Printf("Installing from mrpack file: %s", input)
 		archivePath = input
+		if runtime.GOOS == "windows" {
+			archivePath = strings.ToUpper(archivePath[0:1]) + archivePath[1:]
+		}
+		log.Printf("Installing from mrpack file: %s\n", archivePath)
 
 	} else {
 		log.Printf("Trying to resolve project id or slug: %s\n", input)
