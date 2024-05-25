@@ -59,7 +59,7 @@ func (g *Downloader) Download(baseDir string) {
 						continue
 					}
 					// success yay
-					log.Printf("Download: %s\n", f)
+					log.Printf("Downloaded: %s\n", f)
 					success = true
 					break
 				}
@@ -68,7 +68,7 @@ func (g *Downloader) Download(baseDir string) {
 				}
 			}
 			if !success {
-				log.Printf("Downloaded failed: %s\n", dl.Path)
+				log.Printf("Download failed: %s\n", dl.Path)
 				// TODO: tell user what manual actions are required?
 			}
 		}()
