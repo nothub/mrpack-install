@@ -24,6 +24,9 @@ func init() {
 /*
 TODO: verify correct update behaviour
 Behaviour:
+    Initially:
+        1. Delete mods directory
+        2. Delete plugins directory
     Deletions:
         PreDelete Three scenarios are possible:
         1.File does not exist notice
