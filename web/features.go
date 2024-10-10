@@ -68,7 +68,7 @@ func (c *Client) DownloadFile(url string, downloadDir string, fileName string) (
 
 	// TODO: this needs to (silently?) overwrite existing files!
 
-	log.Printf("downloading: %s", url)
+	log.Printf("Downloading file from: %s", url)
 
 	request, err := http.NewRequest(http.MethodGet, url, nil)
 	if err != nil {
