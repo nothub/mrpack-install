@@ -1,6 +1,7 @@
 package server
 
 import (
+	"fmt"
 	"github.com/nothub/mrpack-install/web"
 	"log"
 )
@@ -17,7 +18,7 @@ func (inst *NeoForgeInstaller) Install(serverDir string, serverFile string) erro
 	if inst.NeoForgeVersion == "" || inst.NeoForgeVersion == "latest" {
 		log.Fatalln("automatic NeoForge version lookup not implemented\nplease set server version with --flavor-version flag")
 	}
-	u := "https://maven.neoforged.net/net/neoforged/forge/" + inst.MinecraftVersion + "-" + inst.NeoForgeVersion + "/forge-" + inst.MinecraftVersion + "-" + inst.NeoForgeVersion + "-installer.jar"
+	u := fmt.Sprintf("https://maven.neoforged.net/releases/net/neoforged/neoforge/%s/neoforge-%s-installer.jar", inst.NeoForgeVersion, inst.NeoForgeVersion)
 	file, err := web.DefaultClient.DownloadFile(u, serverDir, serverFile)
 	if err != nil {
 		return err
