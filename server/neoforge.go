@@ -25,7 +25,6 @@ func (inst *NeoForgeInstaller) Install(serverDir string, serverFile string) erro
 		}
 
 		mcPrefix := strings.Join(strings.Split(inst.MinecraftVersion, ".")[1:3], ".")
-		log.Println(mcPrefix)
 		var versions []string
 		for _, ver := range meta.Versioning.Versions {
 			if !strings.HasPrefix(ver, mcPrefix) {
