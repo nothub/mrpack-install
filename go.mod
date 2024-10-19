@@ -1,15 +1,14 @@
 module github.com/nothub/mrpack-install
 
-go 1.22.0
-
-toolchain go1.23.0
+go 1.23.2
 
 require (
 	github.com/google/uuid v1.6.0
 	github.com/nothub/hashutils v0.4.1
+	github.com/nothub/semver v0.11.1
 	github.com/spf13/cobra v1.8.1
 	github.com/spf13/viper v1.19.0
-	golang.org/x/exp v0.0.0-20240909161429-701f63a606c0
+	golang.org/x/exp v0.0.0-20241009180824-f66d83c29e7c
 )
 
 require (
