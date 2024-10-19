@@ -2,9 +2,12 @@ package server
 
 import (
 	"fmt"
+	"github.com/nothub/mrpack-install/maven"
 	"github.com/nothub/mrpack-install/web"
+	"github.com/nothub/semver"
 	"log"
 	"os/exec"
+	"strings"
 )
 
 type ForgeInstaller struct {
@@ -13,12 +16,43 @@ type ForgeInstaller struct {
 }
 
 func (inst *ForgeInstaller) Install(serverDir string, serverFile string) error {
+
+	version := inst.ForgeVersion
+
+	if version == "" || version == "latest" {
+
+		meta, err := maven.FetchMetadata("https://maven.minecraftforge.net/net/minecraftforge/forge/maven-metadata.xml")
+		if err != nil {
+			return err
+		}
+
+		var versions []string
+		for _, ver := range meta.Versioning.Versions {
+			if !strings.HasPrefix(ver, inst.MinecraftVersion) {
+				// does not match mc version
+				continue
+			}
+			versions = append(versions, ver)
+		}
+
+		parsed, err := semver.ParseAll(versions)
+		if err != nil {
+			return err
+		}
+
+		sorted := semver.SortDesc(parsed)
+
+		if len(sorted) <= 0 {
+			return fmt.Errorf("no forge release version found for mc version %s", inst.MinecraftVersion)
+		}
+
+		version = sorted[0].String()
+	}
+
 	u := fmt.Sprintf(
-		"https://maven.minecraftforge.net/net/minecraftforge/forge/%s-%s/forge-%s-%s-installer.jar",
-		inst.MinecraftVersion,
-		inst.ForgeVersion,
-		inst.MinecraftVersion,
-		inst.ForgeVersion,
+		"https://maven.minecraftforge.net/net/minecraftforge/forge/%s/forge-%s-installer.jar",
+		version,
+		version,
 	)
 	installerFile, err := web.DefaultClient.DownloadFile(u, ".", "")
 	if err != nil {
