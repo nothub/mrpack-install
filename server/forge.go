@@ -4,9 +4,7 @@ import (
 	"fmt"
 	"github.com/nothub/mrpack-install/web"
 	"log"
-	"os"
 	"os/exec"
-	"path/filepath"
 )
 
 type ForgeInstaller struct {
@@ -33,21 +31,8 @@ func (inst *ForgeInstaller) Install(serverDir string, serverFile string) error {
 		return err
 	}
 
-	originalServerPath := filepath.Join(
-		serverDir,
-		"libraries",
-		"net",
-		"minecraftforge",
-		"forge",
-		fmt.Sprintf("%s-%s", inst.MinecraftVersion, inst.ForgeVersion),
-		fmt.Sprintf("forge-%s-%s-server.jar", inst.MinecraftVersion, inst.ForgeVersion),
-	)
-
 	if serverFile != "" {
-		err = os.Rename(originalServerPath, filepath.Join(serverDir, serverFile))
-		if err != nil {
-			return err
-		}
+		log.Println("ignoring --server-file option for forge server installation!")
 	}
 
 	return nil
