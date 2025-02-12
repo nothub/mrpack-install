@@ -36,15 +36,17 @@ Available Commands:
   version     Print version infos
 
 Flags:
-      --dl-retries uint8     Retries when download fails (default 3)
-      --dl-threads uint8     Concurrent download threads (default 8)
-  -h, --help                 help for mrpack-install
-      --host string          Labrinth host address (default "api.modrinth.com")
-      --proxy string         Proxy url for http connections
-      --server-dir string    Server directory path (default "mc")
-      --server-file string   Server jar file name
-  -v, --verbose              Enable verbose output
-  -V, --version              Print version and exit
+      --dl-retries uint8              Retries when download fails (default 3)
+      --dl-threads uint8              Concurrent download threads (default 8)
+  -h, --help                          help for mrpack-install
+      --host string                   Labrinth host address (default "api.modrinth.com")
+      --optional-disable-all          Disable all optional mods
+      --optional-select stringArray   Select optional mods by id
+      --proxy string                  Proxy url for http connections
+      --server-dir string             Server directory path (default "mc")
+      --server-file string            Server jar file name
+  -v, --verbose                       Enable verbose output
+  -V, --version                       Print version and exit
 
 Use "mrpack-install [command] --help" for more information about a command.
 

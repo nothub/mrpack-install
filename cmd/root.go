@@ -27,6 +27,12 @@ var (
 	dlRetries  uint8
 )
 
+var (
+	// local options
+	optionalSelected   []string
+	optionalDisableAll bool
+)
+
 func init() {
 	var printVersion bool
 	RootCmd.Flags().BoolVarP(&printVersion, "version", "V", false, "Print version and exit")
@@ -45,6 +51,9 @@ func init() {
 	RootCmd.PersistentFlags().StringVar(&proxy, "proxy", "", "Proxy url for http connections")
 	RootCmd.PersistentFlags().Uint8Var(&dlThreads, "dl-threads", 8, "Concurrent download threads")
 	RootCmd.PersistentFlags().Uint8Var(&dlRetries, "dl-retries", 3, "Retries when download fails")
+
+	RootCmd.Flags().StringArray("optional-select", optionalSelected, "Select optional mods by id")
+	RootCmd.Flags().BoolVar(&optionalDisableAll, "optional-disable-all", false, "Disable all optional mods")
 
 	cobra.OnInitialize(func() {
 		if printVersion {
