@@ -111,10 +111,14 @@ func ReadIndex(zipFile string) (*Index, error) {
 	return &index, nil
 }
 
-func (index *Index) ServerDownloads() []*download.Download {
+func (index *Index) ServerDownloads(filter func(f File) bool) []*download.Download {
 	var downloads []*download.Download
 	for _, file := range index.Files {
 		if file.Env.Server == modrinth.UnsupportedEnvSupport {
+			continue
+		}
+
+		if !filter(file) {
 			continue
 		}
 
