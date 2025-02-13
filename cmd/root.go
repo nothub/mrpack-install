@@ -13,6 +13,7 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"regexp"
 	"runtime"
 	"strings"
 )
@@ -25,6 +26,12 @@ var (
 	proxy      string
 	dlThreads  uint8
 	dlRetries  uint8
+)
+
+var (
+	// local options
+	optionalSelected   []string
+	optionalDisableAll bool
 )
 
 func init() {
@@ -45,6 +52,9 @@ func init() {
 	RootCmd.PersistentFlags().StringVar(&proxy, "proxy", "", "Proxy url for http connections")
 	RootCmd.PersistentFlags().Uint8Var(&dlThreads, "dl-threads", 8, "Concurrent download threads")
 	RootCmd.PersistentFlags().Uint8Var(&dlRetries, "dl-retries", 3, "Retries when download fails")
+
+	RootCmd.Flags().StringArrayVar(&optionalSelected, "optional-select", nil, "Select optional mods by file path (regex)")
+	RootCmd.Flags().BoolVar(&optionalDisableAll, "optional-disable-all", false, "Disable all optional mods")
 
 	cobra.OnInitialize(func() {
 		if printVersion {
@@ -101,7 +111,8 @@ var RootCmd = &cobra.Command{
   mrpack-install adrenaserver --server-file srv.jar
   mrpack-install yK0ISmKn 1.0.0-1.18 --server-dir mcserver
   mrpack-install communitypack9000 --host api.labrinth.example.org
-  mrpack-install --version`,
+  mrpack-install example.mrpack --optional-select 'foo\.jar' \
+                                --optional-select 'bar-[\d+\.]+\.jar'`,
 	Args: cobra.RangeArgs(1, 2),
 	Run: func(cmd *cobra.Command, args []string) {
 		input := args[0]
@@ -144,7 +155,30 @@ var RootCmd = &cobra.Command{
 		}
 
 		// downloads
-		downloads := index.ServerDownloads()
+		downloads := index.ServerDownloads(func(f mrpack.File) bool {
+			switch f.Env.Server {
+			case modrinth.RequiredEnvSupport:
+				return true
+			case modrinth.OptionalEnvSupport:
+				if optionalDisableAll {
+					return false
+				}
+				if len(optionalSelected) < 1 {
+					return true
+				}
+				for _, p := range optionalSelected {
+					if regexp.MustCompile(p).Match([]byte(filepath.Base(f.Path))) {
+						return true
+					}
+				}
+				return false
+			case modrinth.UnsupportedEnvSupport:
+				return false
+			default:
+				log.Fatalf("Unexpected environment configuration %q for mod %q\n", f.Env.Server, f.Path)
+				return false
+			}
+		})
 		log.Printf("Downloading %v dependencies...\n", len(downloads))
 		downloader := download.Downloader{
 			Downloads: downloads,

@@ -5,6 +5,7 @@ import (
 	"github.com/nothub/hashutils/chksum"
 	"github.com/nothub/hashutils/encoding"
 	"github.com/nothub/mrpack-install/files"
+	modrinth "github.com/nothub/mrpack-install/modrinth/api"
 	"github.com/nothub/mrpack-install/modrinth/mrpack"
 	"github.com/nothub/mrpack-install/update/backup"
 	"github.com/nothub/mrpack-install/update/packstate"
@@ -13,10 +14,11 @@ import (
 	"os"
 	"path/filepath"
 	"reflect"
+	"regexp"
 	"slices"
 )
 
-func Cmd(serverDir string, dlThreads uint8, dlRetries uint8, index *mrpack.Index, zipPath string, oldState *packstate.Schema) {
+func Cmd(serverDir string, dlThreads uint8, dlRetries uint8, index *mrpack.Index, zipPath string, oldState *packstate.Schema, optionalSelected []string, optionalDisableAll bool) {
 	log.Printf("Updating %q in %q with %q\n", index.Name, serverDir, zipPath)
 	err := os.Chdir(serverDir)
 	if err != nil {
@@ -81,13 +83,33 @@ func Cmd(serverDir string, dlThreads uint8, dlRetries uint8, index *mrpack.Index
 	}
 
 	// downloads
-	var downloads []*download.Download
-	for _, dl := range index.ServerDownloads() {
-		if !slices.Contains(ignores, dl.Path) {
-			downloads = append(downloads, dl)
+	downloads := index.ServerDownloads(func(f mrpack.File) bool {
+		if slices.Contains(ignores, f.Path) {
+			return false
 		}
-	}
-
+		switch f.Env.Server {
+		case modrinth.RequiredEnvSupport:
+			return true
+		case modrinth.OptionalEnvSupport:
+			if optionalDisableAll {
+				return false
+			}
+			if len(optionalSelected) < 1 {
+				return true
+			}
+			for _, p := range optionalSelected {
+				if regexp.MustCompile(p).Match([]byte(filepath.Base(f.Path))) {
+					return true
+				}
+			}
+			return false
+		case modrinth.UnsupportedEnvSupport:
+			return false
+		default:
+			log.Fatalf("Unexpected environment configuration %q for mod %q\n", f.Env.Server, f.Path)
+			return false
+		}
+	})
 	log.Printf("Downloading %v dependencies...\n", len(downloads))
 	downloader := download.Downloader{
 		Downloads: downloads,
