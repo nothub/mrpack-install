@@ -25,7 +25,8 @@ Examples:
   mrpack-install adrenaserver --server-file srv.jar
   mrpack-install yK0ISmKn 1.0.0-1.18 --server-dir mcserver
   mrpack-install communitypack9000 --host api.labrinth.example.org
-  mrpack-install --version
+  mrpack-install example.mrpack --optional-select 'foo\.jar' \
+                                --optional-select 'bar-[\d+\.]+\.jar'
 
 Available Commands:
   completion  Generate the autocompletion script for the specified shell
@@ -41,7 +42,7 @@ Flags:
   -h, --help                          help for mrpack-install
       --host string                   Labrinth host address (default "api.modrinth.com")
       --optional-disable-all          Disable all optional mods
-      --optional-select stringArray   Select optional mods by id
+      --optional-select stringArray   Select optional mods by file path (regex)
       --proxy string                  Proxy url for http connections
       --server-dir string             Server directory path (default "mc")
       --server-file string            Server jar file name
@@ -111,8 +112,10 @@ Usage:
   mrpack-install update [<version>] [flags]
 
 Flags:
-      --backup-dir string   Backup directory path
-  -h, --help                help for update
+      --backup-dir string             Backup directory path
+  -h, --help                          help for update
+      --optional-disable-all          Disable all optional mods
+      --optional-select stringArray   Select optional mods by file path (regex)
 
 Global Flags:
       --dl-retries uint8     Retries when download fails (default 3)
@@ -149,10 +152,10 @@ Global Flags:
 
 ## Build
 
-To build binaries, run:
+To build an executable, run:
 
 ```sh
-goreleaser build --clean --snapshot
+go tool goreleaser build --clean --snapshot --single-target
 ```
 
 ## Release
@@ -160,7 +163,7 @@ goreleaser build --clean --snapshot
 To build a local snapshot release, run:
 
 ```sh
-goreleaser release --clean --snapshot
+go tool goreleaser release --clean --snapshot
 ```
 
 To build and publish a full release, push a semver tag (with 'v' prefix) to any branch.

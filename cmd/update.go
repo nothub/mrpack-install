@@ -18,6 +18,9 @@ func init() {
 	// TODO flags: --start-server
 	updateCmd.Flags().StringVar(&backupDir, "backup-dir", "", "Backup directory path")
 
+	updateCmd.Flags().StringArrayVar(&optionalSelected, "optional-select", nil, "Select optional mods by file path (regex)")
+	updateCmd.Flags().BoolVar(&optionalDisableAll, "optional-disable-all", false, "Disable all optional mods")
+
 	RootCmd.AddCommand(updateCmd)
 }
 
@@ -69,6 +72,6 @@ var updateCmd = &cobra.Command{
 			log.Fatalln(err)
 		}
 
-		update.Cmd(serverDir, dlThreads, dlRetries, index, zipPath, state)
+		update.Cmd(serverDir, dlThreads, dlRetries, index, zipPath, state, optionalSelected, optionalDisableAll)
 	},
 }
