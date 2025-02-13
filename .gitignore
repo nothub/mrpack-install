@@ -6,5 +6,6 @@
 
 /mc/
 /**/*.mrpack
+!/testdata/*.mrpack
 
 /dl-stats.yaml

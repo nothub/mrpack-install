@@ -147,10 +147,10 @@ Global Flags:
 
 ## Build
 
-To build binaries, run:
+To build an executable, run:
 
 ```sh
-goreleaser build --clean --snapshot
+go tool goreleaser build --clean --snapshot --single-target
 ```
 
 ## Release
@@ -158,7 +158,7 @@ goreleaser build --clean --snapshot
 To build a local snapshot release, run:
 
 ```sh
-goreleaser release --clean --snapshot
+go tool goreleaser release --clean --snapshot
 ```
 
 To build and publish a full release, push a semver tag (with 'v' prefix) to any branch.
