@@ -30,6 +30,10 @@ jobs:
           go-version-file: 'go.mod'
           check-latest: true
           cache: true
-      - run: go tool goreleaser release --clean
+      - uses: goreleaser/goreleaser-action@v6
+        with:
+          distribution: goreleaser
+          version: "~> v2"
+          args: release --clean
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

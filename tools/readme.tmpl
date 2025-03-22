@@ -21,7 +21,7 @@ A cli application for installing Minecraft servers and [Modrinth](https://modrin
 To build an executable, run:
 
 ```sh
-go tool goreleaser build --clean --snapshot --single-target
+goreleaser build --clean --snapshot --single-target
 ```
 
 ## Release
@@ -29,7 +29,7 @@ go tool goreleaser build --clean --snapshot --single-target
 To build a local snapshot release, run:
 
 ```sh
-go tool goreleaser release --clean --snapshot
+goreleaser release --clean --snapshot
 ```
 
 To build and publish a full release, push a semver tag (with 'v' prefix) to any branch.
