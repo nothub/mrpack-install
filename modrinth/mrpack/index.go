@@ -7,6 +7,7 @@ import (
 	"github.com/nothub/mrpack-install/web/download"
 	"io"
 	"log"
+	"net/url"
 	"strings"
 )
 
@@ -113,7 +114,26 @@ func ReadIndex(zipFile string) (*Index, error) {
 
 func (index *Index) ServerDownloads(filter func(f File) bool) []*download.Download {
 	var downloads []*download.Download
+	projectIds := getProjectIds(index.Files)
+	projects, projErr := modrinth.Client.GetProjects(projectIds)
+	if projErr != nil {
+		projects = nil
+		log.Println("Error getting projects! You may see client mods appear.")
+	}
 	for _, file := range index.Files {
+		if projects != nil {
+			fid := getFileProjectId(file)
+			project := findProjectById(projects, fid)
+			if project != nil {
+				if project.ServerSide == modrinth.UnsupportedEnvSupport {
+					log.Printf("Skipped project %v\n", project.Title)
+					continue
+				}
+			} else {
+				log.Printf("Project at %v was not found online! Please verify this is not a client mod.\n", file.Path)
+			}
+		}
+
 		if file.Env.Server == modrinth.UnsupportedEnvSupport {
 			continue
 		}
@@ -134,4 +154,39 @@ func (index *Index) ServerDownloads(filter func(f File) bool) []*download.Downlo
 		})
 	}
 	return downloads
+}
+
+func getFileProjectId(file File) string {
+	if len(file.Downloads) <= 0 {
+		log.Printf("No downloads for file: %s\n", file.Path)
+		return ""
+	}
+	u, urlerr := url.Parse(file.Downloads[0])
+	if urlerr != nil {
+		log.Printf("Could not parse URL for file: %s\n", file.Path)
+		return ""
+	}
+	// Extract the ID
+	urlPath := u.Path
+	urlSplit := strings.Split(urlPath, "/")
+	// Assume data/{id}/...
+	projectId := urlSplit[2]
+	return projectId
+}
+
+func getProjectIds(files []File) []string {
+	ids := make([]string, len(files))
+	for i, file := range files {
+		ids[i] = getFileProjectId(file)
+	}
+	return ids
+}
+
+func findProjectById(projects []*modrinth.Project, projectId string) *modrinth.Project {
+	for _, project := range projects {
+		if project.Id == projectId {
+			return project
+		}
+	}
+	return nil
 }
