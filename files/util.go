@@ -29,9 +29,13 @@ func Resolve(path string) (string, error) {
 
 	if _, err := os.Stat(path); err == nil {
 		// resolve symlinks
+		preResolve := path
 		path, err = filepath.EvalSymlinks(path)
 		if err != nil {
 			return "", err
+		}
+		if preResolve != path {
+			log.Printf("Resolved symlink %q to %q\n", preResolve, path)
 		}
 	} else if !errors.Is(err, os.ErrNotExist) {
 		return "", err
