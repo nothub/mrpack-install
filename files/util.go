@@ -20,24 +20,27 @@ func IsFile(path string) bool {
 	return !info.IsDir()
 }
 
-func Resolve(path string) (string, error) {
+func Resolve(path string) (resolvedPath string, err error) {
 	// resolve absolute path
-	path, err := filepath.Abs(path)
+	absPath, err := filepath.Abs(path)
 	if err != nil {
 		return "", err
 	}
 
-	if _, err := os.Stat(path); err == nil {
+	if _, err := os.Stat(absPath); err == nil {
 		// resolve symlinks
-		path, err = filepath.EvalSymlinks(path)
+		resolvedPath, err = filepath.EvalSymlinks(absPath)
 		if err != nil {
 			return "", err
+		}
+		if resolvedPath != absPath {
+			log.Printf("Resolved symlink %q to %q\n", absPath, resolvedPath)
 		}
 	} else if !errors.Is(err, os.ErrNotExist) {
 		return "", err
 	}
 
-	return path, nil
+	return resolvedPath, nil
 }
 
 func IsSubpath(subPath string, basePath string) (bool, error) {
