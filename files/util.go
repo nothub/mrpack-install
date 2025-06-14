@@ -3,6 +3,7 @@ package files
 import (
 	"errors"
 	"log"
+	"math/rand"
 	"os"
 	"path/filepath"
 	"strings"
@@ -100,4 +101,13 @@ func RmEmptyDirs(dir string) {
 			log.Printf("Unable to delete empty directory %s. %s\n", path, err.Error())
 		}
 	}
+}
+
+func RandString(n int) string {
+	const chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
+	b := make([]byte, n)
+	for i := range b {
+		b[i] = chars[rand.Int63()%int64(len(chars))]
+	}
+	return string(b)
 }
