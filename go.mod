@@ -1,6 +1,7 @@
 module github.com/nothub/mrpack-install
 
-go 1.24.0
+go 1.24.5
+
 require (
 	github.com/google/uuid v1.6.0
 	github.com/nothub/hashutils v0.4.1

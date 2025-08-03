@@ -1,7 +1,7 @@
 package cmd
 
 import (
-	"github.com/nothub/mrpack-install/buildinfo"
+	"github.com/nothub/mrpack-install/internal/buildinfo"
 	"github.com/spf13/cobra"
 )
 

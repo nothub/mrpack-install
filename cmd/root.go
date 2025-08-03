@@ -1,8 +1,8 @@
 package cmd
 
 import (
-	"github.com/nothub/mrpack-install/buildinfo"
 	"github.com/nothub/mrpack-install/files"
+	"github.com/nothub/mrpack-install/internal/buildinfo"
 	modrinth "github.com/nothub/mrpack-install/modrinth/api"
 	"github.com/nothub/mrpack-install/modrinth/mrpack"
 	"github.com/nothub/mrpack-install/server"

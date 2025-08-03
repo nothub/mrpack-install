@@ -2,7 +2,7 @@ package web
 
 import (
 	"fmt"
-	"github.com/nothub/mrpack-install/buildinfo"
+	"github.com/nothub/mrpack-install/internal/buildinfo"
 	"net/http"
 	"net/url"
 	"time"
