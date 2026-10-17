@@ -1,6 +1,7 @@
 package mrpack
 
 import (
+	"archive/zip"
 	"os"
 	"path/filepath"
 	"testing"
@@ -105,5 +106,79 @@ func TestOverrideHashes(t *testing.T) {
 		if h.Sha512 != newlineSha512 {
 			t.Errorf("%s sha512 = %q, want %q", name, h.Sha512, newlineSha512)
 		}
+	}
+}
+
+// hashes of the bytes "server"
+const serverSha1 = "3de4f901fffb30ac720b0e7eb654b4faa2dd03fa"
+const serverSha512 = "fb7daafb37d21221f75d0451fa35dfaacfca509150cecad0e40217b593c5b47566e80c1dd1f74556b3c46a357b699c860976372361a99332934e720a586b7786"
+
+// writeZip stores entries in the given order and returns the archive path.
+func writeZip(t *testing.T, entries [][2]string) string {
+	t.Helper()
+	path := filepath.Join(t.TempDir(), "pack.mrpack")
+	f, err := os.Create(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	w := zip.NewWriter(f)
+	for _, e := range entries {
+		fw, err := w.Create(e[0])
+		if err != nil {
+			t.Fatal(err)
+		}
+		_, err = fw.Write([]byte(e[1]))
+		if err != nil {
+			t.Fatal(err)
+		}
+	}
+	err = w.Close()
+	if err != nil {
+		t.Fatal(err)
+	}
+	err = f.Close()
+	if err != nil {
+		t.Fatal(err)
+	}
+	return path
+}
+
+// Not parallel: ExtractOverrides needs the CWD set to the server dir.
+func TestServerOverridesWin(t *testing.T) {
+	server := [2]string{"server-overrides/x", "server"}
+	common := [2]string{"overrides/x", "common"}
+	orders := []struct {
+		name    string
+		entries [][2]string
+	}{
+		{"server first", [][2]string{server, common}},
+		{"common first", [][2]string{common, server}},
+	}
+	for _, order := range orders {
+		t.Run(order.name, func(t *testing.T) {
+			pack := writeZip(t, order.entries)
+			serverDir := t.TempDir()
+			t.Chdir(serverDir)
+
+			err := ExtractOverrides(pack, serverDir)
+			if err != nil {
+				t.Fatal(err)
+			}
+			data, err := os.ReadFile(filepath.Join(serverDir, "x"))
+			if err != nil {
+				t.Fatal(err)
+			}
+			if string(data) != "server" {
+				t.Errorf("x = %q, want %q", data, "server")
+			}
+
+			h := OverrideHashes(pack)["x"]
+			if h.Sha1 != serverSha1 {
+				t.Errorf("x sha1 = %q, want %q", h.Sha1, serverSha1)
+			}
+			if h.Sha512 != serverSha512 {
+				t.Errorf("x sha512 = %q, want %q", h.Sha512, serverSha512)
+			}
+		})
 	}
 }

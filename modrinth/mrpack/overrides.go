@@ -38,18 +38,27 @@ func (o *override) realPath() string {
 	return strings.TrimPrefix(o.Name, o.prefix())
 }
 
-func (o *override) server() bool {
-	return strings.HasPrefix(o.Name, pathPrefixBoth) ||
-		strings.HasPrefix(o.Name, pathPrefixServer)
+// iterServerOverrides visits every overrides/ entry before any
+// server-overrides/ entry, whatever the zip order, so a path present in both
+// ends up with the server-overrides copy.
+func iterServerOverrides(zipFile string, callback func(file *zip.File) error) error {
+	for _, prefix := range []string{pathPrefixBoth, pathPrefixServer} {
+		err := IterZip(zipFile, func(file *zip.File) error {
+			if !strings.HasPrefix(file.Name, prefix) {
+				return nil
+			}
+			return callback(file)
+		})
+		if err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 func ExtractOverrides(zipFile string, serverDir string) (err error) {
-	return IterZip(zipFile, func(file *zip.File) error {
+	return iterServerOverrides(zipFile, func(file *zip.File) error {
 		o := override(*file)
-		if !o.server() {
-			// skip non-server override files
-			return nil
-		}
 		p := o.realPath()
 		files.AssertSafe(p, serverDir)
 		targetPath := filepath.Join(serverDir, p)
@@ -91,12 +100,8 @@ func ExtractOverrides(zipFile string, serverDir string) (err error) {
 func OverrideHashes(zipFile string) map[string]modrinth.Hashes {
 	overrides := make(map[string]modrinth.Hashes)
 
-	err := IterZip(zipFile, func(file *zip.File) error {
+	err := iterServerOverrides(zipFile, func(file *zip.File) error {
 		o := override(*file)
-		if !o.server() {
-			// skip non-server override files
-			return nil
-		}
 		p := o.realPath()
 
 		r, err := file.Open()
