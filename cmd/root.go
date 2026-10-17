@@ -46,7 +46,7 @@ func init() {
 	// TODO: --whitelist <uuid>...
 	// TODO: --start-server
 
-	RootCmd.PersistentFlags().StringVar(&host, "host", "api.modrinth.com", "Labrinth host address")
+	RootCmd.PersistentFlags().StringVar(&host, "host", "api.modrinth.com", "Labrinth host address or full URL, e.g. http://labrinth.lan:8000")
 	RootCmd.PersistentFlags().StringVar(&serverDir, "server-dir", "mc", "Server directory path")
 	RootCmd.PersistentFlags().StringVar(&serverFile, "server-file", "", "Server jar file name")
 	RootCmd.PersistentFlags().StringVar(&proxy, "proxy", "", "Proxy url for http connections")
