@@ -4,10 +4,14 @@ import (
 	"log"
 	"net/http"
 	"strconv"
+	"sync"
 	"time"
 )
 
-var rateLimits = make(map[string]*rateLimitInfos)
+var (
+	rateLimitsMu sync.Mutex
+	rateLimits   = make(map[string]*rateLimitInfos)
+)
 
 type rateLimitInfos struct {
 	Remaining  uint64        // requests remaining
@@ -44,18 +48,26 @@ func updateRateLimits(response *http.Response) {
 	}
 	limits.ResetDelay = time.Duration(reset) * time.Second
 
+	rateLimitsMu.Lock()
 	rateLimits[response.Request.Host] = &limits
+	rateLimitsMu.Unlock()
 }
 
 func awaitRateLimits(host string) {
-	if rateLimits[host] == nil {
+	// Entries are replaced, never mutated, so the pointer is safe to read
+	// after unlocking, and the sleep below does not block other hosts.
+	rateLimitsMu.Lock()
+	limits := rateLimits[host]
+	rateLimitsMu.Unlock()
+
+	if limits == nil {
 		return
 	}
-	if rateLimits[host].isExpired() {
+	if limits.isExpired() {
 		return
 	}
-	if rateLimits[host].Remaining <= 1 {
-		log.Println("Awaiting rate limits for:", host, "Sleeping for", rateLimits[host].ResetDelay, "seconds...")
-		time.Sleep(rateLimits[host].ResetDelay)
+	if limits.Remaining <= 1 {
+		log.Println("Awaiting rate limits for:", host, "Sleeping for", limits.ResetDelay, "seconds...")
+		time.Sleep(limits.ResetDelay)
 	}
 }
