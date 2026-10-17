@@ -136,7 +136,7 @@ func filterBots(list []ghUser) []ghUser {
 	result := make([]ghUser, 0, len(list))
 
 	for _, usr := range list {
-		if usr.Login != "dependabot[bot]" {
+		if usr.Login != "dependabot[bot]" && usr.Login != "renovate[bot]" {
 			result = append(result, usr)
 		}
 	}
