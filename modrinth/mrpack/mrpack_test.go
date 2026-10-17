@@ -10,8 +10,9 @@ import (
 
 const examplePack = "testdata/example.mrpack"
 
-// sha1 of the single newline byte every override file in the example pack holds
+// hashes of the single newline byte every override file in the example pack holds
 const newlineSha1 = "adc83b19e793491b1c6ea0fd8b46cd9f32e592fc"
+const newlineSha512 = "be688838ca8686e5c90689bf2ab585cef1137c999b48c70b92f67a5c34dc15697b5d11c982ed6d71be1e1e7f7b4e0733884aa97c3f7a339a8ed03577cf74be09"
 
 func TestReadIndex(t *testing.T) {
 	t.Parallel()
@@ -100,6 +101,9 @@ func TestOverrideHashes(t *testing.T) {
 		}
 		if h.Sha1 != newlineSha1 {
 			t.Errorf("%s sha1 = %q, want %q", name, h.Sha1, newlineSha1)
+		}
+		if h.Sha512 != newlineSha512 {
+			t.Errorf("%s sha512 = %q, want %q", name, h.Sha512, newlineSha512)
 		}
 	}
 }

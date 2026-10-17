@@ -2,6 +2,7 @@ package mrpack
 
 import (
 	"archive/zip"
+	"bytes"
 	"crypto"
 	"github.com/nothub/hashutils/chksum"
 	"github.com/nothub/hashutils/encoding"
@@ -102,24 +103,26 @@ func OverrideHashes(zipFile string) map[string]modrinth.Hashes {
 		if err != nil {
 			return err
 		}
+		data, err := io.ReadAll(r)
+		if cerr := r.Close(); cerr != nil {
+			log.Println(cerr.Error())
+		}
+		if err != nil {
+			return err
+		}
 
 		var hashes modrinth.Hashes
-		h, err := chksum.Create(r, crypto.SHA1.New(), encoding.Hex)
+		h, err := chksum.Create(bytes.NewReader(data), crypto.SHA1.New(), encoding.Hex)
 		if err != nil {
 			return err
 		}
 		hashes.Sha1 = h
-		h, err = chksum.Create(r, crypto.SHA512.New(), encoding.Hex)
+		h, err = chksum.Create(bytes.NewReader(data), crypto.SHA512.New(), encoding.Hex)
 		if err != nil {
 			return err
 		}
 		hashes.Sha512 = h
 		overrides[p] = hashes
-
-		err = r.Close()
-		if err != nil {
-			log.Println(err.Error())
-		}
 
 		return nil
 	})
