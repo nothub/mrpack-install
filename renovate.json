@@ -6,5 +6,30 @@
   "timezone": "Europe/Berlin",
   "assignees": [
     "nothub"
+  ],
+  "customManagers": [
+    {
+      "customType": "regex",
+      "description": "labrinth image for the e2e suite",
+      "managerFilePatterns": [
+        "/^e2e/images_test\\.go$/"
+      ],
+      "matchStrings": [
+        "imageLabrinth\\s*=\\s*\"(?<depName>[^:\"]+):(?<currentValue>[^@\"]+)@(?<currentDigest>sha256:[a-f0-9]{64})\""
+      ],
+      "datasourceTemplate": "docker"
+    }
+  ],
+  "packageRules": [
+    {
+      "description": "prod is a mutable tag whose digest updates carry no release timestamp, and an age gate would restart on every deploy",
+      "matchDepNames": [
+        "ghcr.io/modrinth/labrinth"
+      ],
+      "minimumReleaseAge": null,
+      "prBodyNotes": [
+        "Re-check `seedDump` and `allScopes` in `e2e/images_test.go` against the new image's `org.opencontainers.image.revision` label, and update the revision noted there."
+      ]
+    }
   ]
 }
