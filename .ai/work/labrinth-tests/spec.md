@@ -90,7 +90,7 @@ Two production changes come with it. `--host` accepts a full URL, so mrpack-inst
   4. labrinth starts with `--no-background-tasks --no-migrations`.
   5. Readiness is `GET /v2/tag/loader` returning 200.
 - labrinth env: DB, Redis, ClickHouse and Kafka addresses on the network. `CDN_URL=http://localhost:<cdn mapped port>`. `WHITELISTED_MODPACK_DOMAINS=["localhost"]`. The CDN container has to start first so that its mapped port is known.
-- Seed data: labrinth's staging seed dump, copied into the e2e package's testdata from the commit in the image's `org.opencontainers.image.revision` label. Two PATs are inserted by SQL: a user PAT for uploads and an admin PAT for approval. Both use the all-scopes mask for that labrinth version (`2^48-1` at revision `8b1d921`). labrinth treats a mask with unknown bits as no scopes.
+- Seed data: labrinth's staging seed dump, copied into the e2e package's testdata from the commit in the image's `org.opencontainers.image.revision` label. Two PATs are inserted by SQL: a user PAT and an admin PAT. The seeding helpers upload and approve with the admin PAT, because a regular user may create only 10 projects a day (ticket 11). Both use the all-scopes mask for that labrinth version (`2^48-1` at revision `8b1d921`). labrinth treats a mask with unknown bits as no scopes.
 - Seeding helpers in the e2e package (create project, upload version, approve) talk to labrinth's v2 API with multipart uploads. They live only in test code.
 - Test fixtures: a minimal Fabric mod jar and pack contents are built at test time, because pack download URLs contain the CDN's mapped port.
 
