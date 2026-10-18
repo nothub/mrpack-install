@@ -190,3 +190,42 @@ func fabricJar(t testing.TB, modID string) []byte {
 	}
 	return buf.Bytes()
 }
+
+// seedMod creates and approves a mod with one version holding a jar whose
+// bytes depend on slug.
+func seedMod(t testing.TB, slug string, v versionData) *api.Project {
+	t.Helper()
+	project := createProject(t, api.ModProjectType, slug, file{Name: slug + ".jar", Data: fabricJar(t, slug)}, v)
+	if len(project.Versions) != 1 {
+		t.Fatalf("created versions = %v, want one", project.Versions)
+	}
+	approve(t, project.Id)
+	return project
+}
+
+// mrpack returns a minimal modpack for name. labrinth rejects a pack that
+// lists no files and has no overrides, so it carries one override.
+func mrpack(t testing.TB, name string) []byte {
+	t.Helper()
+	var buf bytes.Buffer
+	zw := zip.NewWriter(&buf)
+	w, err := zw.Create("modrinth.index.json")
+	if err != nil {
+		t.Fatal(err)
+	}
+	_, err = fmt.Fprintf(w, `{"formatVersion":1,"game":"minecraft","versionId":"1.0.0","name":%q,"files":[],"dependencies":{"minecraft":"1.21.8"}}`, name)
+	if err != nil {
+		t.Fatal(err)
+	}
+	w, err = zw.Create("overrides/" + name + ".txt")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := io.WriteString(w, name); err != nil {
+		t.Fatal(err)
+	}
+	if err := zw.Close(); err != nil {
+		t.Fatal(err)
+	}
+	return buf.Bytes()
+}
