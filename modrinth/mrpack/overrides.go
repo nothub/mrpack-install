@@ -2,6 +2,7 @@ package mrpack
 
 import (
 	"archive/zip"
+	"bytes"
 	"crypto"
 	"github.com/nothub/hashutils/chksum"
 	"github.com/nothub/hashutils/encoding"
@@ -37,18 +38,27 @@ func (o *override) realPath() string {
 	return strings.TrimPrefix(o.Name, o.prefix())
 }
 
-func (o *override) server() bool {
-	return strings.HasPrefix(o.Name, pathPrefixBoth) ||
-		strings.HasPrefix(o.Name, pathPrefixServer)
+// iterServerOverrides visits every overrides/ entry before any
+// server-overrides/ entry, whatever the zip order, so a path present in both
+// ends up with the server-overrides copy.
+func iterServerOverrides(zipFile string, callback func(file *zip.File) error) error {
+	for _, prefix := range []string{pathPrefixBoth, pathPrefixServer} {
+		err := IterZip(zipFile, func(file *zip.File) error {
+			if !strings.HasPrefix(file.Name, prefix) {
+				return nil
+			}
+			return callback(file)
+		})
+		if err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 func ExtractOverrides(zipFile string, serverDir string) (err error) {
-	return IterZip(zipFile, func(file *zip.File) error {
+	return iterServerOverrides(zipFile, func(file *zip.File) error {
 		o := override(*file)
-		if !o.server() {
-			// skip non-server override files
-			return nil
-		}
 		p := o.realPath()
 		files.AssertSafe(p, serverDir)
 		targetPath := filepath.Join(serverDir, p)
@@ -90,36 +100,34 @@ func ExtractOverrides(zipFile string, serverDir string) (err error) {
 func OverrideHashes(zipFile string) map[string]modrinth.Hashes {
 	overrides := make(map[string]modrinth.Hashes)
 
-	err := IterZip(zipFile, func(file *zip.File) error {
+	err := iterServerOverrides(zipFile, func(file *zip.File) error {
 		o := override(*file)
-		if !o.server() {
-			// skip non-server override files
-			return nil
-		}
 		p := o.realPath()
 
 		r, err := file.Open()
 		if err != nil {
 			return err
 		}
+		data, err := io.ReadAll(r)
+		if cerr := r.Close(); cerr != nil {
+			log.Println(cerr.Error())
+		}
+		if err != nil {
+			return err
+		}
 
 		var hashes modrinth.Hashes
-		h, err := chksum.Create(r, crypto.SHA1.New(), encoding.Hex)
+		h, err := chksum.Create(bytes.NewReader(data), crypto.SHA1.New(), encoding.Hex)
 		if err != nil {
 			return err
 		}
 		hashes.Sha1 = h
-		h, err = chksum.Create(r, crypto.SHA512.New(), encoding.Hex)
+		h, err = chksum.Create(bytes.NewReader(data), crypto.SHA512.New(), encoding.Hex)
 		if err != nil {
 			return err
 		}
 		hashes.Sha512 = h
 		overrides[p] = hashes
-
-		err = r.Close()
-		if err != nil {
-			log.Println(err.Error())
-		}
 
 		return nil
 	})

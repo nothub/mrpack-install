@@ -50,17 +50,27 @@ func TestResolveSymlink(t *testing.T) {
 	}
 	defer os.Remove(link)
 
+	// TMPDIR may itself sit behind a symlink (macOS /var -> /private/var)
+	want, err := filepath.EvalSymlinks(file.Name())
+	if err != nil {
+		t.Fatal(err)
+	}
+
 	// resolve file
 	resolved, err := Resolve(file.Name())
-	if resolved != file.Name() {
-		t.Logf("resolved: %q but should be: %q\n", resolved, file.Name())
-		t.FailNow()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if resolved != want {
+		t.Fatalf("resolved: %q but should be: %q", resolved, want)
 	}
 
 	// resolve symlink
 	resolved, err = Resolve(link)
-	if resolved == link {
-		t.Logf("resolved: %q but should be: %q\n", resolved, file.Name())
-		t.FailNow()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if resolved != want {
+		t.Fatalf("resolved: %q but should be: %q", resolved, want)
 	}
 }

@@ -1,10 +1,10 @@
 package server
 
 import (
-	"errors"
+	"fmt"
 	"github.com/nothub/mrpack-install/web"
 	"log"
-	"strconv"
+	"net/url"
 )
 
 type PaperInstaller struct {
@@ -12,40 +12,31 @@ type PaperInstaller struct {
 }
 
 func (inst *PaperInstaller) Install(serverDir string, serverFile string) error {
-	var response struct {
-		Builds []struct {
-			Id        int    `json:"build"`
-			Channel   string `json:"channel"`
-			Downloads struct {
-				Application struct {
-					Name   string `json:"name"`
-					Sha256 string `json:"sha256"`
-				} `json:"application"`
-			} `json:"downloads"`
-		} `json:"builds"`
+	// builds/latest ignores the channel, so ask for the STABLE list. It is ordered newest first.
+	var builds []struct {
+		Downloads map[string]struct {
+			Url string `json:"url"`
+		} `json:"downloads"`
 	}
-
-	err := web.DefaultClient.GetJson("https://api.papermc.io/v2/projects/paper/versions/"+
-		inst.MinecraftVersion+"/builds", &response, nil)
+	err := web.DefaultClient.GetJson("https://fill.papermc.io/v3/projects/paper/versions/"+
+		url.PathEscape(inst.MinecraftVersion)+"/builds?channel=STABLE", &builds, nil)
 	if err != nil {
-		return err
+		return fmt.Errorf("fetching paper builds for %s: %w", inst.MinecraftVersion, err)
+	}
+	if len(builds) == 0 {
+		return fmt.Errorf("no stable paper build for %s", inst.MinecraftVersion)
 	}
 
-	for i := range response.Builds {
-		i = len(response.Builds) - 1 - i
-		if response.Builds[i].Channel == "default" {
-			u := "https://api.papermc.io/v2/projects/paper/versions/" + inst.MinecraftVersion +
-				"/builds/" + strconv.Itoa(response.Builds[i].Id) +
-				"/downloads/" + response.Builds[i].Downloads.Application.Name
-			file, err := web.DefaultClient.DownloadFile(u, serverDir, serverFile)
-			if err != nil {
-				return err
-			}
-
-			log.Println("Server jar downloaded to:", file)
-			return nil
-		}
+	download, ok := builds[0].Downloads["server:default"]
+	if !ok {
+		return fmt.Errorf("newest stable paper build for %s has no server:default download", inst.MinecraftVersion)
 	}
 
-	return errors.New("no stable paper release found")
+	file, err := web.DefaultClient.DownloadFile(download.Url, serverDir, serverFile)
+	if err != nil {
+		return fmt.Errorf("downloading paper server jar for %s: %w", inst.MinecraftVersion, err)
+	}
+
+	log.Println("Server jar downloaded to:", file)
+	return nil
 }
