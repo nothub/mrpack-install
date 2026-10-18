@@ -55,7 +55,11 @@ func IsSubpath(subPath string, basePath string) (bool, error) {
 		return false, err
 	}
 
-	return strings.HasPrefix(subPath, basePath), nil
+	rel, err := filepath.Rel(basePath, subPath)
+	if err != nil {
+		return false, err
+	}
+	return rel != ".." && !strings.HasPrefix(rel, ".."+string(filepath.Separator)), nil
 }
 
 func AssertSafe(subPath string, basePath string) {
