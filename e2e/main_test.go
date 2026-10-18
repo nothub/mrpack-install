@@ -10,6 +10,7 @@ import (
 	"io"
 	"log"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -24,6 +25,9 @@ import (
 // labrinthURL is the base URL of the labrinth API, without a trailing slash.
 var labrinthURL string
 
+// binary is the path of the mrpack-install binary under test.
+var binary string
+
 // PATs for the seed dump's regular and admin user, sent as the
 // Authorization header. labrinth routes a token to its PAT lookup by the
 // mrp_ prefix. The dump's own mra_ sessions for these users expire in 2030.
@@ -37,6 +41,20 @@ func TestMain(m *testing.M) {
 }
 
 func run(m *testing.M) int {
+	dir, err := os.MkdirTemp("", "mrpack-install-e2e-")
+	if err != nil {
+		log.Printf("create bin dir: %v", err)
+		return 1
+	}
+	defer os.RemoveAll(dir)
+	binary = filepath.Join(dir, "mrpack-install")
+	// Built before the stack starts, so a compile error fails fast.
+	build := exec.Command("go", "build", "-o", binary, "github.com/nothub/mrpack-install")
+	if out, err := build.CombinedOutput(); err != nil {
+		log.Printf("build mrpack-install: %v\n%s", err, out)
+		return 1
+	}
+
 	start := time.Now()
 	s := &stack{}
 	defer func() {
