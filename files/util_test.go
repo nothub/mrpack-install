@@ -35,6 +35,19 @@ func TestPathTraversalRelative(t *testing.T) {
 	}
 }
 
+func TestPathTraversalSiblingPrefix(t *testing.T) {
+	base := filepath.Join(t.TempDir(), "mc")
+	if testPathIsSubpath(t, filepath.Join(base, "../mc-evil/file"), base) {
+		t.FailNow()
+	}
+	if !testPathIsSubpath(t, filepath.Join(base, "mc-evil/file"), base) {
+		t.FailNow()
+	}
+	if !testPathIsSubpath(t, base, base) {
+		t.FailNow()
+	}
+}
+
 func TestResolveSymlink(t *testing.T) {
 
 	file, err := os.CreateTemp("", "test-*")
