@@ -7,19 +7,30 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io"
 	"log"
 	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 	"time"
 
 	"github.com/testcontainers/testcontainers-go"
+	tcexec "github.com/testcontainers/testcontainers-go/exec"
 	"github.com/testcontainers/testcontainers-go/network"
 	"github.com/testcontainers/testcontainers-go/wait"
 )
 
 // labrinthURL is the base URL of the labrinth API, without a trailing slash.
 var labrinthURL string
+
+// PATs for the seed dump's regular and admin user, sent as the
+// Authorization header. labrinth routes a token to its PAT lookup by the
+// mrp_ prefix. The dump's own mra_ sessions for these users expire in 2030.
+const (
+	userPAT  = "mrp_e2euser"
+	adminPAT = "mrp_e2eadmin"
+)
 
 func TestMain(m *testing.M) {
 	os.Exit(run(m))
@@ -58,7 +69,7 @@ func (s *stack) start(ctx context.Context) error {
 	s.network = nw
 	s.volume = nw.Name + "-cdn"
 
-	_, err = s.runContainer(ctx, "postgres", imagePostgres,
+	postgres, err := s.runContainer(ctx, "postgres", imagePostgres,
 		testcontainers.WithEnv(map[string]string{
 			"POSTGRES_USER":     "labrinth",
 			"POSTGRES_PASSWORD": "labrinth",
@@ -146,6 +157,10 @@ func (s *stack) start(ctx context.Context) error {
 		return fmt.Errorf("migrate exited with %d:\n%s", state.ExitCode, tail(ctx, migrate))
 	}
 
+	if err := seed(ctx, postgres); err != nil {
+		return err
+	}
+
 	labrinth, err := s.runContainer(ctx, "labrinth", imageLabrinth,
 		testcontainers.WithEnv(env),
 		testcontainers.WithEnv(map[string]string{
@@ -167,6 +182,35 @@ func (s *stack) start(ctx context.Context) error {
 		return fmt.Errorf("labrinth endpoint: %w", err)
 	}
 
+	return nil
+}
+
+// seed loads labrinth's seed dump and inserts the test PATs.
+func seed(ctx context.Context, postgres testcontainers.Container) error {
+	const dump = "/tmp/seed.sql"
+	err := postgres.CopyFileToContainer(ctx, filepath.Join("testdata", seedDump), dump, 0o644)
+	if err != nil {
+		return fmt.Errorf("copy seed dump: %w", err)
+	}
+	pats := fmt.Sprintf(`INSERT INTO pats (id, name, access_token, scopes, user_id, expires) VALUES
+		(1, 'e2e user', '%s', %d, %d, '2100-01-01'),
+		(2, 'e2e admin', '%s', %d, %d, '2100-01-01')`,
+		userPAT, allScopes, seedUserID,
+		adminPAT, allScopes, seedAdminID)
+	code, out, err := postgres.Exec(ctx, []string{"psql", "-q",
+		"-v", "ON_ERROR_STOP=1", "-U", "labrinth", "-d", "labrinth",
+		"-f", dump, "-c", pats,
+	}, tcexec.Multiplexed())
+	if err != nil {
+		return fmt.Errorf("exec psql: %w", err)
+	}
+	if code != 0 {
+		b, err := io.ReadAll(out)
+		if err != nil {
+			b = fmt.Appendf(b, "(output truncated: %v)", err)
+		}
+		return fmt.Errorf("seed exited with %d:\n%s", code, b)
+	}
 	return nil
 }
 
