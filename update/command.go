@@ -116,7 +116,10 @@ func Cmd(serverDir string, dlThreads uint8, dlRetries uint8, index *mrpack.Index
 		Threads:   int(dlThreads),
 		Retries:   int(dlRetries),
 	}
-	downloader.Download(serverDir)
+	err = downloader.Download(serverDir)
+	if err != nil {
+		log.Fatalln(err)
+	}
 
 	// overrides
 	log.Println("Extracting overrides...")

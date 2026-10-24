@@ -185,7 +185,10 @@ var RootCmd = &cobra.Command{
 			Threads:   int(dlThreads),
 			Retries:   int(dlRetries),
 		}
-		downloader.Download(serverDir)
+		err = downloader.Download(serverDir)
+		if err != nil {
+			log.Fatalln(err)
+		}
 
 		// overrides
 		log.Println("Extracting overrides...")

@@ -122,11 +122,6 @@ func (index *Index) ServerDownloads(filter func(f File) bool) []*download.Downlo
 			continue
 		}
 
-		if len(file.Downloads) < 1 {
-			log.Printf("No downloads for file: %s\n", file.Path)
-			continue
-		}
-
 		downloads = append(downloads, &download.Download{
 			Path:   file.Path,
 			Urls:   file.Downloads,

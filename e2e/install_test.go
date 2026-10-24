@@ -13,6 +13,7 @@ import (
 	"io/fs"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/nothub/mrpack-install/modrinth/api"
@@ -105,7 +106,6 @@ func install(t testing.TB, slug string) string {
 	if err != nil {
 		t.Fatalf("mrpack-install %s: %v\n%s", slug, err, out)
 	}
-	// A failed file download is only logged, and the exit code stays 0.
 	t.Logf("mrpack-install %s:\n%s", slug, out)
 	return dir
 }
@@ -203,4 +203,39 @@ func TestInstallVanillaPack(t *testing.T) {
 	assertSha512(t, filepath.Join(dir, mod.Path), jar)
 	assertContent(t, filepath.Join(dir, "config", "common.txt"), "common")
 	assertContent(t, filepath.Join(dir, "config", "server.txt"), "server")
+}
+
+func TestInstallFailsOnMissingDownload(t *testing.T) {
+	t.Parallel()
+	const slug = "e2e-install-missing-dl"
+	mod, _ := seedPackMod(t, slug+"-mod")
+	missing := mod
+	missing.Path = "mods/" + slug + "-missing.jar"
+	missing.Downloads = []string{mod.Downloads[0] + ".missing"}
+	pack := packArchive(t, packIndex{
+		FormatVersion: 1,
+		Game:          "minecraft",
+		VersionID:     "1.0.0",
+		Name:          slug,
+		Files:         []packFile{mod, missing},
+		Dependencies:  map[string]string{"minecraft": "1.21.8", "fabric-loader": "0.17.2"},
+	}, nil)
+	created := createProject(t, api.ModpackProjectType, slug, file{Name: slug + ".mrpack", Data: pack}, fabric1218)
+	approve(t, created.Id)
+
+	dir := t.TempDir()
+	out, err := mrpackInstall(t, slug, "--host", labrinthURL, "--server-dir", dir)
+
+	if err == nil {
+		t.Fatalf("mrpack-install %s: exit 0, want non-zero\n%s", slug, out)
+	}
+	// Per-attempt log lines also name the file, so check only the last
+	// line, which carries the returned error.
+	lines := strings.Split(strings.TrimSpace(string(out)), "\n")
+	if last := lines[len(lines)-1]; !strings.Contains(last, missing.Path) || strings.Contains(last, mod.Path) {
+		t.Errorf("last line = %q, want it to name only %s", last, missing.Path)
+	}
+	if _, err := os.Stat(filepath.Join(dir, "packstate.json")); !errors.Is(err, fs.ErrNotExist) {
+		t.Errorf("packstate.json: stat error = %v, want not exist", err)
+	}
 }

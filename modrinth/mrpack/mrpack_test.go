@@ -182,3 +182,18 @@ func TestServerOverridesWin(t *testing.T) {
 		})
 	}
 }
+
+// A server file without download URLs stays in the list, so the downloader
+// reports it as failed instead of the install silently lacking it.
+func TestServerDownloadsKeepsFileWithoutUrls(t *testing.T) {
+	t.Parallel()
+	index := Index{Files: []File{
+		{Path: "mods/nourl.jar", Env: Env{Server: modrinth.RequiredEnvSupport}},
+	}}
+
+	dls := index.ServerDownloads(func(File) bool { return true })
+
+	if len(dls) != 1 || dls[0].Path != "mods/nourl.jar" {
+		t.Errorf("ServerDownloads() = %v, want mods/nourl.jar", dls)
+	}
+}
