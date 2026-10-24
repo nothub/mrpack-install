@@ -285,6 +285,7 @@ func TestComputeUnsafePathFails(t *testing.T) {
 	}{
 		{"old state", state(map[string]modrinth.Hashes{"../evil.jar": hashes("old")}), nil},
 		{"new pack", nil, []mrpack.File{indexFile("../evil.jar", modrinth.RequiredEnvSupport, "new")}},
+		{"staging dir", nil, []mrpack.File{indexFile(".mrpack-install-staging/x.jar", modrinth.RequiredEnvSupport, "new")}},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

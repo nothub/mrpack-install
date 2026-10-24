@@ -85,6 +85,9 @@ func Compute(serverDir string, old *packstate.Schema, index *mrpack.Index, archi
 
 	full := make(map[string]string, len(paths))
 	for _, p := range paths {
+		if p == stagingDir || strings.HasPrefix(p, stagingDir+"/") {
+			return nil, fmt.Errorf("file path is reserved for staging downloads: %q", p)
+		}
 		joined, err := files.InDir(serverDir, p)
 		if err != nil {
 			return nil, err
@@ -144,6 +147,17 @@ func Compute(serverDir string, old *packstate.Schema, index *mrpack.Index, archi
 	})
 
 	return &plan, nil
+}
+
+// writes returns the paths the plan writes.
+func (plan *Plan) writes() map[string]bool {
+	writes := make(map[string]bool)
+	for _, a := range plan.Actions {
+		if a.Op == OpWrite || a.Op == OpBackupWrite {
+			writes[a.Path] = true
+		}
+	}
+	return writes
 }
 
 // matches compares disk against h by the strongest hash h has.

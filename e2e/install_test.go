@@ -13,6 +13,7 @@ import (
 	"io/fs"
 	"os"
 	"path/filepath"
+	"reflect"
 	"strings"
 	"testing"
 
@@ -386,8 +387,15 @@ func TestInstallSyncsToNewVersion(t *testing.T) {
 	uploadVersion(t, created.Id, file{Name: slug + "-3.0.0.mrpack", Data: v3}, version("3.0.0"))
 	approve(t, created.Id)
 	dir := t.TempDir()
+	// What a killed run would leave behind: a dir where this run stages
+	// a download, which fails the run unless the leftover is removed first.
+	leftover := filepath.Join(dir, ".mrpack-install-staging", filepath.FromSlash(keep.Path), "partial")
+	if err := os.MkdirAll(leftover, 0755); err != nil {
+		t.Fatal(err)
+	}
 
 	installInto(t, dir, slug, "1.0.0")
+	assertMissing(t, filepath.Join(dir, ".mrpack-install-staging"))
 	assertSha512(t, filepath.Join(dir, keep.Path), keepJar)
 	assertContent(t, filepath.Join(dir, "config", "v1", "only.txt"), "1")
 	mine := filepath.Join(dir, "mods", "mine.jar")
@@ -436,6 +444,7 @@ func TestInstallSyncsToNewVersion(t *testing.T) {
 	if runs := backupRuns(t, filepath.Join(dir, "backups")); len(runs) != 1 {
 		t.Errorf("backup runs = %v, want one", runs)
 	}
+	assertMissing(t, filepath.Join(dir, ".mrpack-install-staging"))
 	if got := readState(t, dir).Version; got != "3.0.0" {
 		t.Errorf("state version = %q, want 3.0.0", got)
 	}
@@ -513,4 +522,78 @@ func TestInstallCachesArchive(t *testing.T) {
 			t.Errorf("server dir holds archives %v, want none", archives)
 		}
 	}
+}
+
+// snapshot maps every file under dir to its content, relative to dir.
+func snapshot(t testing.TB, dir string) map[string]string {
+	t.Helper()
+	files := make(map[string]string)
+	err := filepath.WalkDir(dir, func(path string, d fs.DirEntry, err error) error {
+		if err != nil || d.IsDir() {
+			return err
+		}
+		b, err := os.ReadFile(path)
+		if err != nil {
+			return err
+		}
+		rel, err := filepath.Rel(dir, path)
+		files[rel] = string(b)
+		return err
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	return files
+}
+
+// A failed download leaves the server dir, the backups and the state as
+// they were before the run.
+func TestSyncFailedDownloadChangesNothing(t *testing.T) {
+	t.Parallel()
+	const slug = "e2e-sync-failed-dl"
+	mod, _ := seedPackMod(t, slug+"-mod")
+	missing := mod
+	missing.Path = "mods/" + slug + "-missing.jar"
+	missing.Downloads = []string{mod.Downloads[0] + ".missing"}
+	packs := t.TempDir()
+	v1 := filepath.Join(packs, "v1.mrpack")
+	v2 := filepath.Join(packs, "v2.mrpack")
+	if err := os.WriteFile(v1, fabricPack(t, slug, "1.0.0", []packFile{mod}, []zipEntry{
+		{"overrides/config/tuned.txt", "1"},
+		{"overrides/config/dropped.txt", "1"},
+	}), 0644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(v2, fabricPack(t, slug, "2.0.0", []packFile{mod, missing}, []zipEntry{
+		{"overrides/config/tuned.txt", "2"},
+	}), 0644); err != nil {
+		t.Fatal(err)
+	}
+	dir := t.TempDir()
+	installInto(t, dir, v1)
+	if err := os.WriteFile(filepath.Join(dir, "config", "tuned.txt"), []byte("mine"), 0644); err != nil {
+		t.Fatal(err)
+	}
+	before := snapshot(t, dir)
+
+	out, err := mrpackInstall(t, v2, "--host", labrinthURL, "--server-dir", dir)
+
+	if err == nil {
+		t.Fatalf("mrpack-install v2: exit 0, want non-zero\n%s", out)
+	}
+	after := snapshot(t, dir)
+	if !reflect.DeepEqual(after, before) {
+		for p := range after {
+			if after[p] != before[p] {
+				t.Errorf("%s changed or appeared", p)
+			}
+		}
+		for p := range before {
+			if _, ok := after[p]; !ok {
+				t.Errorf("%s disappeared", p)
+			}
+		}
+	}
+	assertMissing(t, filepath.Join(dir, "backups"))
+	assertMissing(t, filepath.Join(dir, ".mrpack-install-staging"))
 }

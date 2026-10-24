@@ -160,6 +160,20 @@ var RootCmd = &cobra.Command{
 			log.Fatalln(err)
 		}
 
+		// Before staging: its API lookup can fail, and should fail before the downloads.
+		packState, err := packstate.FromArchive(zipPath, opts, lookup)
+		if err != nil {
+			log.Fatalln(err)
+		}
+
+		staging, err := update.Stage(serverDir, plan, index, zipPath, download.Downloader{
+			Threads: int(dlThreads),
+			Retries: int(dlRetries),
+		})
+		if err != nil {
+			log.Fatalln(err)
+		}
+
 		// download server if not present
 		if !files.IsFile(filepath.Join(serverDir, serverFile)) {
 			log.Println("Server file not present, downloading...")
@@ -173,18 +187,11 @@ var RootCmd = &cobra.Command{
 			log.Println("Server file already present, proceeding...")
 		}
 
-		packState, err := packstate.FromArchive(zipPath, opts, lookup)
-		if err != nil {
-			log.Fatalln(err)
-		}
 		backupBase := backupDir
 		if backupBase == "" {
 			backupBase = filepath.Join(serverDir, "backups")
 		}
-		err = update.Apply(serverDir, plan, packState, index, zipPath, download.Downloader{
-			Threads: int(dlThreads),
-			Retries: int(dlRetries),
-		}, backup.NewDir(backupBase))
+		err = update.Apply(serverDir, plan, staging, packState, zipPath, backup.NewDir(backupBase))
 		if err != nil {
 			log.Fatalln(err)
 		}
