@@ -185,24 +185,17 @@ var RootCmd = &cobra.Command{
 			log.Fatalln(err)
 		}
 
-		// download server if not present
-		if !files.IsFile(filepath.Join(serverDir, serverFile)) {
-			log.Println("Server file not present, downloading...")
-			log.Println("(Point --server-dir and --server-file to existing targets to skip this step)")
-			inst := server.InstallerFromDeps(&index.Deps)
-			_, err := inst.Install(serverDir, serverFile)
-			if err != nil {
-				log.Fatalln(err)
-			}
-		} else {
-			log.Println("Server file already present, proceeding...")
-		}
-
 		backupBase := backupDir
 		if backupBase == "" {
 			backupBase = filepath.Join(serverDir, "backups")
 		}
-		err = update.Apply(serverDir, plan, staging, packState, zipPath, backup.NewDir(backupBase))
+		backups := backup.NewDir(backupBase)
+		err = update.InstallServer(serverDir, plan, old, packState, server.InstallerFromDeps(&index.Deps), serverFile, backups)
+		if err != nil {
+			log.Fatalln(err)
+		}
+
+		err = update.Apply(serverDir, plan, staging, packState, zipPath, backups)
 		if err != nil {
 			log.Fatalln(err)
 		}

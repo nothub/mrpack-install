@@ -187,7 +187,7 @@ func hashFile(path string) (*modrinth.Hashes, error) {
 		return nil, err
 	}
 	if info.IsDir() {
-		return nil, fmt.Errorf("%s is a directory, where the pack has a file", path)
+		return nil, fmt.Errorf("%s is a directory, not a file", path)
 	}
 	h1 := sha1.New()
 	h512 := sha512.New()

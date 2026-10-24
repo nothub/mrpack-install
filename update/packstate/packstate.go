@@ -36,6 +36,16 @@ type Schema struct {
 	Deps    mrpack.Deps `json:"dependencies"`
 	// Hashes of every pack file in place after the run, by path.
 	Hashes map[string]modrinth.Hashes `json:"hashes"`
+	// ServerFile is the jar the server installer produced: an empty Path
+	// when only its run.sh starts the server, nil when unknown.
+	ServerFile *ServerFile `json:"server-file,omitempty"`
+}
+
+// ServerFile is the main server file, relative to the server dir, with the
+// hashes it had when it was installed.
+type ServerFile struct {
+	Path   string          `json:"path"`
+	Hashes modrinth.Hashes `json:"hashes"`
 }
 
 // Options are the flags that decide which pack files a run installs.

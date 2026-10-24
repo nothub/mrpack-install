@@ -475,8 +475,24 @@ func TestInstallSyncsLocalPacks(t *testing.T) {
 	if err := os.WriteFile(dropped, []byte("mine"), 0644); err != nil {
 		t.Fatal(err)
 	}
+	launchers, err := filepath.Glob(filepath.Join(dir, "fabric-server-*.jar"))
+	if err != nil || len(launchers) != 1 {
+		t.Fatalf("fabric server jars = %v, %v, want one", launchers, err)
+	}
+	before, err := os.Stat(launchers[0])
+	if err != nil {
+		t.Fatal(err)
+	}
 	installInto(t, dir, v2, "--backup-dir", backups)
 
+	// v2 has v1's dependencies, so the server is not installed again.
+	after, err := os.Stat(launchers[0])
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !os.SameFile(before, after) || !after.ModTime().Equal(before.ModTime()) {
+		t.Errorf("%s was replaced or modified", launchers[0])
+	}
 	assertMissing(t, dropped)
 	runs := backupRuns(t, backups)
 	if len(runs) != 1 {
@@ -640,4 +656,39 @@ func TestSyncSkipsExcludedPaths(t *testing.T) {
 	if want := []string{"config/tuned/**", "config/dropped.*"}; !reflect.DeepEqual(state.Options.Exclude, want) {
 		t.Errorf("state options exclude = %v, want %v", state.Options.Exclude, want)
 	}
+}
+
+// A loader bump installs the new server and deletes the old loader's jar.
+func TestSyncReinstallsServerOnLoaderBump(t *testing.T) {
+	t.Parallel()
+	const slug = "e2e-sync-loader-bump"
+	mod, _ := seedPackMod(t, slug+"-mod")
+	pack := func(version string, loader string) string {
+		data := packArchive(t, packIndex{
+			FormatVersion: 1,
+			Game:          "minecraft",
+			VersionID:     version,
+			Name:          slug,
+			Files:         []packFile{mod},
+			Dependencies:  map[string]string{"minecraft": "1.21.8", "fabric-loader": loader},
+		}, nil)
+		path := filepath.Join(t.TempDir(), version+".mrpack")
+		if err := os.WriteFile(path, data, 0644); err != nil {
+			t.Fatal(err)
+		}
+		return path
+	}
+	dir := t.TempDir()
+
+	installInto(t, dir, pack("1.0.0", "0.16.14"))
+	installInto(t, dir, pack("2.0.0", "0.17.2"))
+
+	jars, err := filepath.Glob(filepath.Join(dir, "fabric-server-*.jar"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(jars) != 1 || !strings.Contains(filepath.Base(jars[0]), "loader.0.17.2-") {
+		t.Errorf("fabric server jars = %v, want only the 0.17.2 one", jars)
+	}
+	assertMissing(t, filepath.Join(dir, "backups"))
 }
