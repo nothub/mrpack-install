@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"github.com/nothub/mrpack-install/cache"
 	"github.com/nothub/mrpack-install/files"
 	"github.com/nothub/mrpack-install/internal/buildinfo"
 	modrinth "github.com/nothub/mrpack-install/modrinth/api"
@@ -204,8 +205,11 @@ func handleArgs(input string, version string, serverDir string, host string) (*m
 	archivePath := ""
 	lookup := lookupIds
 	if web.IsValidHttpUrl(input) {
-		log.Printf("Downloading mrpack file from: %s\n", input)
-		file, err := web.DefaultClient.DownloadFile(input, serverDir, "")
+		cacheDir, err := cache.Dir()
+		if err != nil {
+			log.Fatalln(err)
+		}
+		file, err := cache.Archive(cacheDir, input, "", web.DefaultClient.Download)
 		if err != nil {
 			log.Fatalln(err.Error())
 		}
@@ -254,8 +258,11 @@ func handleArgs(input string, version string, serverDir string, host string) (*m
 
 		for i := range fileInfos {
 			if strings.HasSuffix(fileInfos[i].Filename, ".mrpack") {
-				log.Println("Downloading mrpack file from", fileInfos[i].Url)
-				file, err := web.DefaultClient.DownloadFile(fileInfos[i].Url, serverDir, "")
+				cacheDir, err := cache.Dir()
+				if err != nil {
+					log.Fatalln(err)
+				}
+				file, err := cache.Archive(cacheDir, fileInfos[i].Url, fileInfos[i].Hashes.Sha512, web.DefaultClient.Download)
 				if err != nil {
 					log.Fatalln(err.Error())
 				}

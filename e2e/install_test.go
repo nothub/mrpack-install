@@ -474,3 +474,43 @@ func TestInstallSyncsLocalPacks(t *testing.T) {
 	assertContent(t, filepath.Join(dir, "config", "kept.txt"), "2")
 	assertSha512(t, filepath.Join(dir, mod.Path), jar)
 }
+
+// The archive of a slug install is cached outside the server dir, and a
+// second install of the same version reuses it.
+func TestInstallCachesArchive(t *testing.T) {
+	t.Parallel()
+	const slug = "e2e-install-cache"
+	mod, _ := seedPackMod(t, slug+"-mod")
+	pack := fabricPack(t, slug, "1.0.0", []packFile{mod}, nil)
+	created := createProject(t, api.ModpackProjectType, slug, file{Name: slug + ".mrpack", Data: pack}, fabric1218)
+	approve(t, created.Id)
+	sum := sha512.Sum512(pack)
+	cached := filepath.Join(cacheHome, "mrpack-install", hex.EncodeToString(sum[:])+".mrpack")
+	// Two server dirs, so the second run can only skip the download
+	// through the cache.
+	dirs := []string{t.TempDir(), t.TempDir()}
+
+	installInto(t, dirs[0], slug)
+	before, err := os.Stat(cached)
+	if err != nil {
+		t.Fatal(err)
+	}
+	installInto(t, dirs[1], slug)
+
+	after, err := os.Stat(cached)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !os.SameFile(before, after) || !after.ModTime().Equal(before.ModTime()) {
+		t.Errorf("cached archive was replaced or modified by the second run")
+	}
+	for _, dir := range dirs {
+		archives, err := filepath.Glob(filepath.Join(dir, "*.mrpack"))
+		if err != nil {
+			t.Fatal(err)
+		}
+		if len(archives) != 0 {
+			t.Errorf("server dir holds archives %v, want none", archives)
+		}
+	}
+}

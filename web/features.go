@@ -68,22 +68,9 @@ func (c *Client) DownloadFile(url string, downloadDir string, fileName string) (
 
 	// TODO: this needs to (silently?) overwrite existing files!
 
-	log.Printf("Downloading file from: %s", url)
-
-	request, err := http.NewRequest(http.MethodGet, url, nil)
+	response, err := c.get(url)
 	if err != nil {
 		return "", err
-	}
-	request.Header.Set("User-Agent", c.ua)
-	request.Close = true
-
-	response, err := c.sendRequest(request)
-	if err != nil {
-		return "", err
-	}
-
-	if response.StatusCode < http.StatusOK || response.StatusCode >= http.StatusBadRequest {
-		return "", errors.New("http status " + strconv.Itoa(response.StatusCode))
 	}
 
 	if fileName == "" && response.Header.Get("content-disposition") != "" {
@@ -128,6 +115,40 @@ func (c *Client) DownloadFile(url string, downloadDir string, fileName string) (
 	}
 
 	return file.Name(), nil
+}
+
+// Download writes the body at url to w.
+func (c *Client) Download(url string, w io.Writer) error {
+	response, err := c.get(url)
+	if err != nil {
+		return err
+	}
+	defer response.Body.Close()
+	_, err = io.Copy(w, response.Body)
+	return err
+}
+
+// get requests url and fails on a status outside 2xx and 3xx.
+func (c *Client) get(url string) (*http.Response, error) {
+	log.Printf("Downloading file from: %s", url)
+
+	request, err := http.NewRequest(http.MethodGet, url, nil)
+	if err != nil {
+		return nil, err
+	}
+	request.Header.Set("User-Agent", c.ua)
+	request.Close = true
+
+	response, err := c.sendRequest(request)
+	if err != nil {
+		return nil, err
+	}
+
+	if response.StatusCode < http.StatusOK || response.StatusCode >= http.StatusBadRequest {
+		response.Body.Close()
+		return nil, errors.New("http status " + strconv.Itoa(response.StatusCode))
+	}
+	return response, nil
 }
 
 func (c *Client) sendRequest(request *http.Request) (*http.Response, error) {

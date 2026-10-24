@@ -28,6 +28,10 @@ var labrinthURL string
 // binary is the path of the mrpack-install binary under test.
 var binary string
 
+// cacheHome is the XDG_CACHE_HOME every run of the binary gets, so archive
+// caching stays out of the user's own cache.
+var cacheHome string
+
 // runTimeout bounds one run of the binary. The slowest run downloads the
 // Mojang server jar.
 const runTimeout = 5 * time.Minute
@@ -51,6 +55,7 @@ func mrpackInstall(t testing.TB, args ...string) ([]byte, error) {
 	defer cancel()
 	cmd := exec.CommandContext(ctx, binary, args...)
 	cmd.Stdin = stdin
+	cmd.Env = append(os.Environ(), "XDG_CACHE_HOME="+cacheHome)
 	out, err := cmd.CombinedOutput()
 	if errors.Is(ctx.Err(), context.DeadlineExceeded) {
 		t.Fatalf("mrpack-install %s: no exit after %s, did it read stdin?\n%s", strings.Join(args, " "), runTimeout, out)
@@ -78,6 +83,7 @@ func run(m *testing.M) int {
 	}
 	defer os.RemoveAll(dir)
 	binary = filepath.Join(dir, "mrpack-install")
+	cacheHome = filepath.Join(dir, "cache")
 	// Built before the stack starts, so a compile error fails fast.
 	build := exec.Command("go", "build", "-o", binary, "github.com/nothub/mrpack-install")
 	if out, err := build.CombinedOutput(); err != nil {
