@@ -102,12 +102,26 @@ func seedPackMod(t testing.TB, slug string) (packFile, []byte) {
 func install(t testing.TB, slug string) string {
 	t.Helper()
 	dir := t.TempDir()
-	out, err := mrpackInstall(t, slug, "--host", labrinthURL, "--server-dir", dir)
-	if err != nil {
-		t.Fatalf("mrpack-install %s: %v\n%s", slug, err, out)
-	}
-	t.Logf("mrpack-install %s:\n%s", slug, out)
+	installInto(t, dir, slug)
 	return dir
+}
+
+// installInto runs mrpack-install with args against labrinth into dir.
+func installInto(t testing.TB, dir string, args ...string) {
+	t.Helper()
+	args = append(args, "--host", labrinthURL, "--server-dir", dir)
+	out, err := mrpackInstall(t, args...)
+	if err != nil {
+		t.Fatalf("mrpack-install %s: %v\n%s", strings.Join(args, " "), err, out)
+	}
+	t.Logf("mrpack-install %s:\n%s", strings.Join(args, " "), out)
+}
+
+func assertMissing(t testing.TB, path string) {
+	t.Helper()
+	if _, err := os.Stat(path); !errors.Is(err, fs.ErrNotExist) {
+		t.Errorf("%s: stat error = %v, want not exist", path, err)
+	}
 }
 
 // packState is the part of packstate.json the e2e tests check.
@@ -318,4 +332,120 @@ func TestInstallLocalPackWritesState(t *testing.T) {
 	if _, ok := state.Hashes["config/common.txt"]; !ok {
 		t.Errorf("hashes = %v, want config/common.txt", state.Hashes)
 	}
+}
+
+var fabricDeps = map[string]string{"minecraft": "1.21.8", "fabric-loader": "0.17.2"}
+
+func fabricPack(t testing.TB, name string, version string, files []packFile, entries []zipEntry) []byte {
+	t.Helper()
+	return packArchive(t, packIndex{
+		FormatVersion: 1,
+		Game:          "minecraft",
+		VersionID:     version,
+		Name:          name,
+		Files:         files,
+		Dependencies:  fabricDeps,
+	}, entries)
+}
+
+// Each install of a newer version deletes what the version dropped and
+// leaves files no pack version listed alone.
+func TestInstallSyncsToNewVersion(t *testing.T) {
+	t.Parallel()
+	const slug = "e2e-sync-versions"
+	keep, keepJar := seedPackMod(t, slug+"-keep")
+	drop, _ := seedPackMod(t, slug+"-drop")
+	v1 := fabricPack(t, slug, "1.0.0", []packFile{keep, drop}, []zipEntry{
+		{"overrides/config/all.txt", "1"},
+		{"overrides/config/v1/only.txt", "1"},
+		{"overrides/config/tuned.txt", "1"},
+		{"overrides/config/tuned-dropped.txt", "1"},
+	})
+	v2 := fabricPack(t, slug, "2.0.0", []packFile{keep}, []zipEntry{
+		{"overrides/config/all.txt", "2"},
+		{"overrides/config/tuned.txt", "2"},
+	})
+	v3 := fabricPack(t, slug, "3.0.0", []packFile{}, []zipEntry{{"overrides/config/all.txt", "3"}})
+	version := func(number string) versionData {
+		v := fabric1218
+		v.VersionNumber = number
+		return v
+	}
+	created := createProject(t, api.ModpackProjectType, slug, file{Name: slug + "-1.0.0.mrpack", Data: v1}, version("1.0.0"))
+	uploadVersion(t, created.Id, file{Name: slug + "-2.0.0.mrpack", Data: v2}, version("2.0.0"))
+	uploadVersion(t, created.Id, file{Name: slug + "-3.0.0.mrpack", Data: v3}, version("3.0.0"))
+	approve(t, created.Id)
+	dir := t.TempDir()
+
+	installInto(t, dir, slug, "1.0.0")
+	assertSha512(t, filepath.Join(dir, keep.Path), keepJar)
+	assertContent(t, filepath.Join(dir, "config", "v1", "only.txt"), "1")
+	mine := filepath.Join(dir, "mods", "mine.jar")
+	if err := os.WriteFile(mine, []byte("mine"), 0644); err != nil {
+		t.Fatal(err)
+	}
+	empty := filepath.Join(dir, "world", "empty")
+	if err := os.MkdirAll(empty, 0755); err != nil {
+		t.Fatal(err)
+	}
+	// Edited files are kept, and keep their v1 record, until backups land.
+	tuned := filepath.Join(dir, "config", "tuned.txt")
+	tunedDropped := filepath.Join(dir, "config", "tuned-dropped.txt")
+	for _, p := range []string{tuned, tunedDropped} {
+		if err := os.WriteFile(p, []byte("mine"), 0644); err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	installInto(t, dir, slug, "2.0.0")
+	assertSha512(t, filepath.Join(dir, keep.Path), keepJar)
+	assertMissing(t, filepath.Join(dir, drop.Path))
+	assertMissing(t, filepath.Join(dir, "config", "v1"))
+	assertContent(t, filepath.Join(dir, "config", "all.txt"), "2")
+	assertContent(t, mine, "mine")
+	assertContent(t, tuned, "mine")
+	assertContent(t, tunedDropped, "mine")
+	sum := sha512.Sum512([]byte("1"))
+	v1Sha512 := hex.EncodeToString(sum[:])
+	hashes := readState(t, dir).Hashes
+	for _, p := range []string{"config/tuned.txt", "config/tuned-dropped.txt"} {
+		if got := hashes[p]["sha512"]; got != v1Sha512 {
+			t.Errorf("state hashes[%s].sha512 = %q, want the v1 record %q", p, got, v1Sha512)
+		}
+	}
+
+	installInto(t, dir, slug, "3.0.0")
+	assertMissing(t, filepath.Join(dir, keep.Path))
+	assertContent(t, filepath.Join(dir, "config", "all.txt"), "3")
+	assertContent(t, mine, "mine")
+	if _, err := os.Stat(empty); err != nil {
+		t.Errorf("admin's empty dir: %v", err)
+	}
+	if got := readState(t, dir).Version; got != "3.0.0" {
+		t.Errorf("state version = %q, want 3.0.0", got)
+	}
+}
+
+func TestInstallSyncsLocalPacks(t *testing.T) {
+	t.Parallel()
+	const slug = "e2e-sync-local"
+	mod, jar := seedPackMod(t, slug+"-mod")
+	packs := t.TempDir()
+	v1 := filepath.Join(packs, "v1.mrpack")
+	v2 := filepath.Join(packs, "v2.mrpack")
+	if err := os.WriteFile(v1, fabricPack(t, slug, "1.0.0", []packFile{mod}, []zipEntry{{"overrides/config/dropped.txt", "1"}}), 0644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(v2, fabricPack(t, slug, "2.0.0", []packFile{mod}, []zipEntry{{"overrides/config/kept.txt", "2"}}), 0644); err != nil {
+		t.Fatal(err)
+	}
+	dir := t.TempDir()
+
+	installInto(t, dir, v1)
+	assertContent(t, filepath.Join(dir, "config", "dropped.txt"), "1")
+	installInto(t, dir, v2)
+
+	assertMissing(t, filepath.Join(dir, "config", "dropped.txt"))
+	assertContent(t, filepath.Join(dir, "config", "kept.txt"), "2")
+	assertSha512(t, filepath.Join(dir, mod.Path), jar)
 }

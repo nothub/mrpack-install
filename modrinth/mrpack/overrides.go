@@ -56,10 +56,15 @@ func iterServerOverrides(zipFile string, callback func(file *zip.File) error) er
 	return nil
 }
 
-func ExtractOverrides(zipFile string, serverDir string) (err error) {
+// ExtractOverrides writes the server's override files to serverDir. With a
+// non-nil keep, only the paths keep accepts are written.
+func ExtractOverrides(zipFile string, serverDir string, keep func(path string) bool) (err error) {
 	return iterServerOverrides(zipFile, func(file *zip.File) error {
 		o := override(*file)
 		p := o.realPath()
+		if keep != nil && !keep(p) {
+			return nil
+		}
 		files.AssertSafe(p, serverDir)
 		targetPath := filepath.Join(serverDir, p)
 

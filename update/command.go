@@ -125,7 +125,7 @@ func Cmd(serverDir string, dlThreads uint8, dlRetries uint8, index *mrpack.Index
 
 	// overrides
 	log.Println("Extracting overrides...")
-	err = mrpack.ExtractOverrides(zipPath, serverDir)
+	err = mrpack.ExtractOverrides(zipPath, serverDir, nil)
 	if err != nil {
 		log.Fatalln(err)
 	}

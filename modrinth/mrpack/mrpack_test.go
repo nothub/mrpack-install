@@ -67,7 +67,7 @@ func TestExtractOverrides(t *testing.T) {
 	serverDir := t.TempDir()
 	t.Chdir(serverDir)
 
-	err = ExtractOverrides(pack, serverDir)
+	err = ExtractOverrides(pack, serverDir, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -160,7 +160,7 @@ func TestServerOverridesWin(t *testing.T) {
 			serverDir := t.TempDir()
 			t.Chdir(serverDir)
 
-			err := ExtractOverrides(pack, serverDir)
+			err := ExtractOverrides(pack, serverDir, nil)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -195,5 +195,24 @@ func TestServerDownloadsKeepsFileWithoutUrls(t *testing.T) {
 
 	if len(dls) != 1 || dls[0].Path != "mods/nourl.jar" {
 		t.Errorf("ServerDownloads() = %v, want mods/nourl.jar", dls)
+	}
+}
+
+// Not parallel: ExtractOverrides needs the CWD set to the server dir.
+func TestExtractOverridesFilter(t *testing.T) {
+	pack := writeZip(t, [][2]string{{"overrides/a", "a"}, {"overrides/b", "b"}})
+	serverDir := t.TempDir()
+	t.Chdir(serverDir)
+
+	err := ExtractOverrides(pack, serverDir, func(p string) bool { return p == "a" })
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if _, err := os.Stat(filepath.Join(serverDir, "a")); err != nil {
+		t.Error(err)
+	}
+	if _, err := os.Stat(filepath.Join(serverDir, "b")); !os.IsNotExist(err) {
+		t.Errorf("b: stat error = %v, want not exist", err)
 	}
 }

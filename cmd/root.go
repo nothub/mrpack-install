@@ -6,6 +6,7 @@ import (
 	modrinth "github.com/nothub/mrpack-install/modrinth/api"
 	"github.com/nothub/mrpack-install/modrinth/mrpack"
 	"github.com/nothub/mrpack-install/server"
+	"github.com/nothub/mrpack-install/update"
 	"github.com/nothub/mrpack-install/update/packstate"
 	"github.com/nothub/mrpack-install/web"
 	"github.com/nothub/mrpack-install/web/download"
@@ -137,8 +138,13 @@ var RootCmd = &cobra.Command{
 			log.Fatalln(err)
 		}
 
-		for _, file := range index.Files {
-			files.AssertSafe(filepath.Join(serverDir, file.Path), serverDir)
+		old, err := packstate.LoadPackState(serverDir)
+		if err != nil {
+			log.Fatalln(err)
+		}
+		plan, err := update.Compute(serverDir, old, index, zipPath, opts)
+		if err != nil {
+			log.Fatalln(err)
 		}
 
 		// download server if not present
@@ -154,37 +160,17 @@ var RootCmd = &cobra.Command{
 			log.Println("Server file already present, proceeding...")
 		}
 
-		// downloads
-		downloads := index.ServerDownloads(opts.Selects)
-		log.Printf("Downloading %v dependencies...\n", len(downloads))
-		downloader := download.Downloader{
-			Downloads: downloads,
-			Threads:   int(dlThreads),
-			Retries:   int(dlRetries),
-		}
-		err = downloader.Download(serverDir)
-		if err != nil {
-			log.Fatalln(err)
-		}
-
-		// overrides
-		log.Println("Extracting overrides...")
-		err = mrpack.ExtractOverrides(zipPath, serverDir)
-		if err != nil {
-			log.Fatalln(err)
-		}
-
-		// save state file
 		packState, err := packstate.FromArchive(zipPath, opts, lookup)
 		if err != nil {
 			log.Fatalln(err)
 		}
-		err = packState.Save(serverDir)
+		err = update.Apply(serverDir, plan, old, packState, index, zipPath, download.Downloader{
+			Threads: int(dlThreads),
+			Retries: int(dlRetries),
+		})
 		if err != nil {
 			log.Fatalln(err)
 		}
-
-		files.RmEmptyDirs(serverDir)
 
 		log.Println("Installation done :) Have a nice day ✌️")
 	},
