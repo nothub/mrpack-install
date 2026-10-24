@@ -28,6 +28,36 @@ var labrinthURL string
 // binary is the path of the mrpack-install binary under test.
 var binary string
 
+// runTimeout bounds one run of the binary. The slowest run downloads the
+// Mojang server jar.
+const runTimeout = 5 * time.Minute
+
+// mrpackInstall runs the binary under test with args and returns its
+// combined output and exit error. A run that outlives runTimeout fails t.
+func mrpackInstall(t testing.TB, args ...string) ([]byte, error) {
+	t.Helper()
+	// No run may read stdin. A stdin that stays open and never delivers
+	// data turns a stray read into a hang that hits the timeout, where
+	// the default /dev/null would return EOF and let it pass. An io.Pipe
+	// would make Wait block on its copying goroutine instead.
+	stdin, w, err := os.Pipe()
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer stdin.Close()
+	defer w.Close()
+
+	ctx, cancel := context.WithTimeout(t.Context(), runTimeout)
+	defer cancel()
+	cmd := exec.CommandContext(ctx, binary, args...)
+	cmd.Stdin = stdin
+	out, err := cmd.CombinedOutput()
+	if errors.Is(ctx.Err(), context.DeadlineExceeded) {
+		t.Fatalf("mrpack-install %s: no exit after %s, did it read stdin?\n%s", strings.Join(args, " "), runTimeout, out)
+	}
+	return out, err
+}
+
 // PATs for the seed dump's regular and admin user, sent as the
 // Authorization header. labrinth routes a token to its PAT lookup by the
 // mrp_ prefix. The dump's own mra_ sessions for these users expire in 2030.

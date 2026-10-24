@@ -30,7 +30,7 @@ jobs:
           go-version-file: 'go.mod'
           check-latest: true
           cache: true
-      - run: go test -v -race -tags e2e ./e2e/...
+      - run: go test -v -race -timeout 15m -tags e2e ./e2e/...
 
   release:
     if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v') == true
