@@ -47,7 +47,7 @@ Flags:
       --optional-select stringArray   Select optional mods by file path (regex)
       --proxy string                  Proxy url for http connections
       --server-dir string             Server directory path (default "mc")
-      --server-file string            Server jar file name
+      --server-file string            Name of the jar that starts the server
   -v, --verbose                       Enable verbose output
   -V, --version                       Print version and exit
 
@@ -72,7 +72,7 @@ Global Flags:
       --host string          Labrinth host address or full URL, e.g. http://labrinth.lan:8000 (default "api.modrinth.com")
       --proxy string         Proxy url for http connections
       --server-dir string    Server directory path (default "mc")
-      --server-file string   Server jar file name
+      --server-file string   Name of the jar that starts the server
   -v, --verbose              Enable verbose output
 
 ```
@@ -100,7 +100,7 @@ Global Flags:
       --host string          Labrinth host address or full URL, e.g. http://labrinth.lan:8000 (default "api.modrinth.com")
       --proxy string         Proxy url for http connections
       --server-dir string    Server directory path (default "mc")
-      --server-file string   Server jar file name
+      --server-file string   Name of the jar that starts the server
   -v, --verbose              Enable verbose output
 
 ```
@@ -126,7 +126,7 @@ Global Flags:
       --host string          Labrinth host address or full URL, e.g. http://labrinth.lan:8000 (default "api.modrinth.com")
       --proxy string         Proxy url for http connections
       --server-dir string    Server directory path (default "mc")
-      --server-file string   Server jar file name
+      --server-file string   Name of the jar that starts the server
   -v, --verbose              Enable verbose output
 
 ```
@@ -148,7 +148,7 @@ Global Flags:
       --host string          Labrinth host address or full URL, e.g. http://labrinth.lan:8000 (default "api.modrinth.com")
       --proxy string         Proxy url for http connections
       --server-dir string    Server directory path (default "mc")
-      --server-file string   Server jar file name
+      --server-file string   Name of the jar that starts the server
   -v, --verbose              Enable verbose output
 
 ```
