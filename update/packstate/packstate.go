@@ -11,6 +11,7 @@ import (
 	"io/fs"
 	"log"
 	"os"
+	"path"
 	"path/filepath"
 	"regexp"
 	"strings"
@@ -41,6 +42,63 @@ type Schema struct {
 type Options struct {
 	OptionalSelect     []string `json:"optional-select"`
 	OptionalDisableAll bool     `json:"optional-disable-all"`
+	// Exclude holds patterns of paths no run touches, see Excludes.
+	Exclude []string `json:"exclude"`
+}
+
+// Excludes reports whether the pack-relative path matches an Exclude
+// pattern: path.Match per segment, where a ** segment matches any number of
+// segments, none included.
+func (opts Options) Excludes(p string) bool {
+	segments := strings.Split(p, "/")
+	for _, pattern := range opts.Exclude {
+		if matchSegments(strings.Split(pattern, "/"), segments) {
+			return true
+		}
+	}
+	return false
+}
+
+func matchSegments(pattern []string, segments []string) bool {
+	if len(pattern) == 0 {
+		return len(segments) == 0
+	}
+	if pattern[0] == "**" {
+		for i := 0; i <= len(segments); i++ {
+			if matchSegments(pattern[1:], segments[i:]) {
+				return true
+			}
+		}
+		return false
+	}
+	if len(segments) == 0 {
+		return false
+	}
+	ok, err := path.Match(pattern[0], segments[0])
+	return err == nil && ok && matchSegments(pattern[1:], segments[1:])
+}
+
+// CheckPattern fails for an Exclude pattern that could never match a pack
+// path: empty, absolute, with an empty, . or .. segment, or a malformed one.
+func CheckPattern(pattern string) error {
+	if pattern == "" {
+		return errors.New("exclude pattern is empty")
+	}
+	if strings.HasPrefix(pattern, "/") {
+		return fmt.Errorf("exclude pattern %q is absolute, patterns are relative to the server dir", pattern)
+	}
+	if strings.HasSuffix(pattern, "/") {
+		return fmt.Errorf("exclude pattern %q ends in /, use %q for everything below it", pattern, pattern+"**")
+	}
+	for _, segment := range strings.Split(pattern, "/") {
+		if segment == "" || segment == "." || segment == ".." {
+			return fmt.Errorf("exclude pattern %q has an empty, . or .. segment", pattern)
+		}
+		if _, err := path.Match(segment, ""); err != nil {
+			return fmt.Errorf("exclude pattern %q: %w", pattern, err)
+		}
+	}
+	return nil
 }
 
 // Selects reports whether an index file is installed on the server.
@@ -184,16 +242,19 @@ func FromArchive(path string, opts Options, ids func(sha512 string) (Ids, error)
 
 // ShippedFiles returns the hashes of every file the pack at archive puts
 // on the server with opts, by path. An override's content wins over the
-// index file at the same path.
+// index file at the same path. Excluded paths are left out.
 func ShippedFiles(index *mrpack.Index, archive string, opts Options) map[string]modrinth.Hashes {
 	shipped := make(map[string]modrinth.Hashes)
 	for _, indexFile := range index.Files {
-		if !opts.Selects(indexFile) {
+		if !opts.Selects(indexFile) || opts.Excludes(indexFile.Path) {
 			continue
 		}
 		shipped[indexFile.Path] = indexFile.Hashes
 	}
 	for p, hashes := range mrpack.OverrideHashes(archive) {
+		if opts.Excludes(p) {
+			continue
+		}
 		shipped[p] = hashes
 	}
 	return shipped

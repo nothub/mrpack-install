@@ -35,6 +35,7 @@ var (
 	optionalSelected   []string
 	optionalDisableAll bool
 	backupDir          string
+	excludes           []string
 )
 
 func init() {
@@ -59,6 +60,7 @@ func init() {
 	RootCmd.Flags().StringArrayVar(&optionalSelected, "optional-select", nil, "Select optional mods by file path (regex)")
 	RootCmd.Flags().BoolVar(&optionalDisableAll, "optional-disable-all", false, "Disable all optional mods")
 	RootCmd.Flags().StringVar(&backupDir, "backup-dir", "", "Backup directory path (default <server-dir>/backups)")
+	RootCmd.Flags().StringArrayVar(&excludes, "exclude", nil, excludeUsage)
 
 	cobra.OnInitialize(func() {
 		if printVersion {
@@ -98,6 +100,13 @@ func init() {
 			backupDir = absBackupDir
 		}
 
+		// --exclude
+		for _, p := range excludes {
+			if err := packstate.CheckPattern(p); err != nil {
+				log.Fatalln(err)
+			}
+		}
+
 		// -- server-file
 		serverFile = strings.TrimSpace(serverFile)
 		if serverFile != "" && serverFile != filepath.Base(serverFile) {
@@ -114,6 +123,8 @@ func init() {
 		modrinth.Client = modrinth.NewClient(host)
 	})
 }
+
+const excludeUsage = "Never touch paths matching this pattern, relative to the server dir (repeatable, e.g. 'config/**', 'mods/*-client.jar')"
 
 var RootCmd = &cobra.Command{
 	Use:   "mrpack-install (<filepath> | <url> | <slug> [<version>] | <id> [<version>])",
@@ -134,7 +145,7 @@ var RootCmd = &cobra.Command{
 			version = args[1]
 		}
 		index, zipPath, lookup := handleArgs(input, version, serverDir, host)
-		opts := packstate.Options{OptionalSelect: optionalSelected, OptionalDisableAll: optionalDisableAll}
+		opts := packstate.Options{OptionalSelect: optionalSelected, OptionalDisableAll: optionalDisableAll, Exclude: excludes}
 
 		zipPath, err := filepath.Abs(zipPath)
 		if err != nil {

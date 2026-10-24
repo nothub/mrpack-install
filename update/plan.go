@@ -77,7 +77,7 @@ func Compute(serverDir string, old *packstate.Schema, index *mrpack.Index, archi
 		paths = append(paths, p)
 	}
 	for p := range recorded {
-		if _, ok := shipped[p]; !ok {
+		if _, ok := shipped[p]; !ok && !opts.Excludes(p) {
 			paths = append(paths, p)
 		}
 	}

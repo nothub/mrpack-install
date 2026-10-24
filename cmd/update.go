@@ -15,6 +15,7 @@ func init() {
 
 	updateCmd.Flags().StringArrayVar(&optionalSelected, "optional-select", nil, "Select optional mods by file path (regex)")
 	updateCmd.Flags().BoolVar(&optionalDisableAll, "optional-disable-all", false, "Disable all optional mods")
+	updateCmd.Flags().StringArrayVar(&excludes, "exclude", nil, excludeUsage)
 
 	RootCmd.AddCommand(updateCmd)
 }

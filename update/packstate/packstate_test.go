@@ -262,3 +262,85 @@ func TestLoadUnknownSchemaFails(t *testing.T) {
 		t.Errorf("LoadPackState() = %+v, nil, want an error", state)
 	}
 }
+
+func TestExcludes(t *testing.T) {
+	t.Parallel()
+	opts := Options{Exclude: []string{"config/**", "mods/*-client.jar"}}
+	tests := map[string]bool{
+		"config/a.txt":          true,
+		"config/sub/dir/b.json": true,
+		"mods/foo-client.jar":   true,
+		"mods/foo.jar":          false,
+		"mods/sub/x-client.jar": false,
+		"configs/a.txt":         false,
+		"other/config/a.txt":    false,
+	}
+	for p, want := range tests {
+		if got := opts.Excludes(p); got != want {
+			t.Errorf("Excludes(%q) = %v, want %v", p, got, want)
+		}
+	}
+}
+
+func TestExcludesDoubleStarInTheMiddle(t *testing.T) {
+	t.Parallel()
+	opts := Options{Exclude: []string{"world/**/region/*.mca"}}
+	tests := map[string]bool{
+		"world/region/r.0.0.mca":        true,
+		"world/DIM-1/region/r.0.0.mca":  true,
+		"world/a/b/region/r.0.0.mca":    true,
+		"world/region/r.0.0.mca.bak":    false,
+		"world/DIM-1/regions/r.0.0.mca": false,
+	}
+	for p, want := range tests {
+		if got := opts.Excludes(p); got != want {
+			t.Errorf("Excludes(%q) = %v, want %v", p, got, want)
+		}
+	}
+}
+
+func TestExcludesLeadingDoubleStar(t *testing.T) {
+	t.Parallel()
+	opts := Options{Exclude: []string{"**/*-client.jar"}}
+	tests := map[string]bool{
+		"a-client.jar":        true,
+		"mods/a-client.jar":   true,
+		"mods/x/a-client.jar": true,
+		"mods/a.jar":          false,
+	}
+	for p, want := range tests {
+		if got := opts.Excludes(p); got != want {
+			t.Errorf("Excludes(%q) = %v, want %v", p, got, want)
+		}
+	}
+}
+
+func TestCheckPattern(t *testing.T) {
+	t.Parallel()
+	for _, p := range []string{"config/**", "mods/*-client.jar", "a/[bc]/d"} {
+		if err := CheckPattern(p); err != nil {
+			t.Errorf("CheckPattern(%q) = %v, want nil", p, err)
+		}
+	}
+	for _, p := range []string{"mods/[a.jar", "", "/abs/path", "config/", "./config/**", "config//x", "a/../b"} {
+		if err := CheckPattern(p); err == nil {
+			t.Errorf("CheckPattern(%q) = nil, want an error", p)
+		}
+	}
+}
+
+func TestShippedFilesSkipsExcluded(t *testing.T) {
+	t.Parallel()
+	index := mrpack.Index{Name: "Example", Files: []mrpack.File{
+		indexFile("mods/required.jar", modrinth.RequiredEnvSupport, "required"),
+		indexFile("mods/foo-client.jar", modrinth.RequiredEnvSupport, "client"),
+	}}
+	pack := writePack(t, index, [][2]string{{"overrides/config/a.txt", "server"}})
+
+	got := ShippedFiles(&index, pack, Options{Exclude: []string{"config/**", "mods/*-client.jar"}})
+
+	want := map[string]modrinth.Hashes{"mods/required.jar": {Sha1: "required-sha1", Sha512: "required-sha512"}}
+	if !reflect.DeepEqual(got, want) {
+		t.Errorf("ShippedFiles() = %v, want %v", got, want)
+	}
+}

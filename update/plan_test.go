@@ -331,3 +331,28 @@ func TestComputeInstallServer(t *testing.T) {
 		})
 	}
 }
+
+func TestComputeSkipsExcludedPaths(t *testing.T) {
+	t.Parallel()
+	index, archive := writePack(t, mrpack.Index{Name: "pack", Files: []mrpack.File{
+		indexFile("mods/tuned.jar", modrinth.RequiredEnvSupport, "new"),
+		indexFile("mods/other.jar", modrinth.RequiredEnvSupport, "new"),
+	}}, map[string]string{"overrides/config/x.txt": "new"})
+	old := state(map[string]modrinth.Hashes{
+		"mods/tuned.jar":  hashes("old"),
+		"config/x.txt":    hashes("old"),
+		"config/gone.txt": hashes("old"),
+	})
+	dir := serverDir(t, map[string]string{"mods/tuned.jar": "edited", "config/x.txt": "old", "config/gone.txt": "old"})
+	opts := packstate.Options{Exclude: []string{"config/**", "mods/tuned.jar"}}
+
+	plan, err := Compute(dir, old, index, archive, opts)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	want := []Action{{Path: "mods/other.jar", Op: OpWrite}}
+	if !reflect.DeepEqual(plan.Actions, want) {
+		t.Errorf("Actions = %+v, want %+v", plan.Actions, want)
+	}
+}

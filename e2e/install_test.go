@@ -137,14 +137,17 @@ func assertMissing(t testing.TB, path string) {
 
 // packState is the part of packstate.json the e2e tests check.
 type packState struct {
-	Schema        int                          `json:"schema"`
-	Name          string                       `json:"name"`
-	Version       string                       `json:"version"`
-	ArchiveSha512 string                       `json:"archive-sha512"`
-	Slug          string                       `json:"slug"`
-	ProjectID     string                       `json:"project-id"`
-	VersionID     string                       `json:"version-id"`
-	Hashes        map[string]map[string]string `json:"hashes"`
+	Schema        int    `json:"schema"`
+	Name          string `json:"name"`
+	Version       string `json:"version"`
+	ArchiveSha512 string `json:"archive-sha512"`
+	Slug          string `json:"slug"`
+	ProjectID     string `json:"project-id"`
+	VersionID     string `json:"version-id"`
+	Options       struct {
+		Exclude []string `json:"exclude"`
+	} `json:"options"`
+	Hashes map[string]map[string]string `json:"hashes"`
 }
 
 func readState(t testing.TB, dir string) packState {
@@ -596,4 +599,45 @@ func TestSyncFailedDownloadChangesNothing(t *testing.T) {
 	}
 	assertMissing(t, filepath.Join(dir, "backups"))
 	assertMissing(t, filepath.Join(dir, ".mrpack-install-staging"))
+}
+
+// Excluded paths keep v1's content, also when v2 changes or drops them.
+func TestSyncSkipsExcludedPaths(t *testing.T) {
+	t.Parallel()
+	const slug = "e2e-sync-exclude"
+	mod, _ := seedPackMod(t, slug+"-mod")
+	packs := t.TempDir()
+	v1 := filepath.Join(packs, "v1.mrpack")
+	v2 := filepath.Join(packs, "v2.mrpack")
+	if err := os.WriteFile(v1, fabricPack(t, slug, "1.0.0", []packFile{mod}, []zipEntry{
+		{"overrides/config/tuned/a.txt", "1"},
+		{"overrides/config/dropped.txt", "1"},
+		{"overrides/config/normal.txt", "1"},
+	}), 0644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(v2, fabricPack(t, slug, "2.0.0", []packFile{mod}, []zipEntry{
+		{"overrides/config/tuned/a.txt", "2"},
+		{"overrides/config/normal.txt", "2"},
+	}), 0644); err != nil {
+		t.Fatal(err)
+	}
+	dir := t.TempDir()
+	installInto(t, dir, v1)
+
+	installInto(t, dir, v2, "--exclude", "config/tuned/**", "--exclude", "config/dropped.*")
+
+	assertContent(t, filepath.Join(dir, "config", "tuned", "a.txt"), "1")
+	assertContent(t, filepath.Join(dir, "config", "dropped.txt"), "1")
+	assertContent(t, filepath.Join(dir, "config", "normal.txt"), "2")
+	assertMissing(t, filepath.Join(dir, "backups"))
+	state := readState(t, dir)
+	for _, p := range []string{"config/tuned/a.txt", "config/dropped.txt"} {
+		if _, ok := state.Hashes[p]; ok {
+			t.Errorf("state records excluded %s", p)
+		}
+	}
+	if want := []string{"config/tuned/**", "config/dropped.*"}; !reflect.DeepEqual(state.Options.Exclude, want) {
+		t.Errorf("state options exclude = %v, want %v", state.Options.Exclude, want)
+	}
 }

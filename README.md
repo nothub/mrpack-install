@@ -40,6 +40,7 @@ Flags:
       --backup-dir string             Backup directory path (default <server-dir>/backups)
       --dl-retries uint8              Retries when download fails (default 3)
       --dl-threads uint8              Concurrent download threads (default 8)
+      --exclude stringArray           Never touch paths matching this pattern, relative to the server dir (repeatable, e.g. 'config/**', 'mods/*-client.jar')
   -h, --help                          help for mrpack-install
       --host string                   Labrinth host address or full URL, e.g. http://labrinth.lan:8000 (default "api.modrinth.com")
       --optional-disable-all          Disable all optional mods
@@ -114,6 +115,7 @@ Usage:
 
 Flags:
       --backup-dir string             Backup directory path (default <server-dir>/backups)
+      --exclude stringArray           Never touch paths matching this pattern, relative to the server dir (repeatable, e.g. 'config/**', 'mods/*-client.jar')
   -h, --help                          help for update
       --optional-disable-all          Disable all optional mods
       --optional-select stringArray   Select optional mods by file path (regex)
