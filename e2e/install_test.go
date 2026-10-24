@@ -12,7 +12,6 @@ import (
 	"errors"
 	"io/fs"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"testing"
 
@@ -102,8 +101,7 @@ func seedPackMod(t testing.TB, slug string) (packFile, []byte) {
 func install(t testing.TB, slug string) string {
 	t.Helper()
 	dir := t.TempDir()
-	cmd := exec.CommandContext(t.Context(), binary, slug, "--host", labrinthURL, "--server-dir", dir)
-	out, err := cmd.CombinedOutput()
+	out, err := mrpackInstall(t, slug, "--host", labrinthURL, "--server-dir", dir)
 	if err != nil {
 		t.Fatalf("mrpack-install %s: %v\n%s", slug, err, out)
 	}

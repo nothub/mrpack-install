@@ -4,7 +4,6 @@ package e2e
 
 import (
 	"os"
-	"os/exec"
 	"path/filepath"
 	"testing"
 )
@@ -15,8 +14,7 @@ func TestServer(t *testing.T) {
 		t.Run(flavor, func(t *testing.T) {
 			t.Parallel()
 			dir := t.TempDir()
-			cmd := exec.CommandContext(t.Context(), binary, "server", flavor, "--minecraft-version", "1.21.1", "--server-dir", dir)
-			out, err := cmd.CombinedOutput()
+			out, err := mrpackInstall(t, "server", flavor, "--minecraft-version", "1.21.1", "--server-dir", dir)
 			if err != nil {
 				t.Fatalf("mrpack-install server %s: %v\n%s", flavor, err, out)
 			}
