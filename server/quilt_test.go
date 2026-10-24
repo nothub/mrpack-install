@@ -132,7 +132,7 @@ func TestQuiltInstallRejectsVanillaJarName(t *testing.T) {
 	t.Parallel()
 	inst := QuiltInstaller{MinecraftVersion: "1.20.1", QuiltVersion: "0.20.1"}
 
-	if err := inst.Install(t.TempDir(), "server.jar"); err == nil {
+	if _, err := inst.Install(t.TempDir(), "server.jar"); err == nil {
 		t.Error("Install() = nil, want an error")
 	}
 }
@@ -141,7 +141,7 @@ func TestQuiltInstallRejectsFlagLikeVersion(t *testing.T) {
 	t.Parallel()
 	inst := QuiltInstaller{MinecraftVersion: "1.20.1", QuiltVersion: "--install-dir=/tmp"}
 
-	if err := inst.Install(t.TempDir(), ""); err == nil {
+	if _, err := inst.Install(t.TempDir(), ""); err == nil {
 		t.Error("Install() = nil, want an error")
 	}
 }

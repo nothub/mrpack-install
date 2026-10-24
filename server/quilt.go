@@ -25,53 +25,53 @@ type QuiltInstaller struct {
 // server. It loads the vanilla server.jar next to it.
 const quiltLaunchJar = "quilt-server-launch.jar"
 
-func (inst *QuiltInstaller) Install(serverDir string, serverFile string) error {
+func (inst *QuiltInstaller) Install(serverDir string, serverFile string) (string, error) {
 	if serverFile == "server.jar" {
-		return errors.New("--server-file server.jar would replace the vanilla jar the Quilt launcher loads, choose another name")
+		return "", errors.New("--server-file server.jar would replace the vanilla jar the Quilt launcher loads, choose another name")
 	}
 	if strings.HasPrefix(inst.QuiltVersion, "-") {
-		return fmt.Errorf("invalid Quilt loader version %q", inst.QuiltVersion)
+		return "", fmt.Errorf("invalid Quilt loader version %q", inst.QuiltVersion)
 	}
 
 	meta, err := maven.FetchMetadata("https://maven.quiltmc.org/repository/release/org/quiltmc/quilt-installer/maven-metadata.xml")
 	if err != nil {
-		return err
+		return "", err
 	}
 	quiltInstallerUrl := "https://maven.quiltmc.org/repository/release/org/quiltmc/quilt-installer/" + meta.Versioning.Release + "/quilt-installer-" + meta.Versioning.Release + ".jar"
 
 	installer, err := web.DefaultClient.DownloadFile(quiltInstallerUrl, ".", "")
 	if err != nil {
-		return err
+		return "", err
 	}
 
 	// A launch jar from an earlier install would pass the check below.
 	err = os.Remove(filepath.Join(serverDir, quiltLaunchJar))
 	if err != nil && !errors.Is(err, fs.ErrNotExist) {
-		return err
+		return "", err
 	}
 
 	cmd := exec.Command("java", inst.args(installer, serverDir)...)
 	log.Println("Executing command:", cmd.String())
 	out, err := cmd.CombinedOutput()
 	if err != nil {
-		return fmt.Errorf("%w\n%s", err, out)
+		return "", fmt.Errorf("%w\n%s", err, out)
 	}
 
 	// The Quilt installer exits 0 on every failure, so the jar it writes is
 	// the only proof the install worked, and its output the only reason.
 	err = checkLaunchJar(filepath.Join(serverDir, quiltLaunchJar), inst.QuiltVersion)
 	if err != nil {
-		return fmt.Errorf("quilt install failed: %w\n%s", err, out)
+		return "", fmt.Errorf("quilt install failed: %w\n%s", err, out)
 	}
 
-	if serverFile != "" {
-		err = os.Rename(filepath.Join(serverDir, quiltLaunchJar), filepath.Join(serverDir, serverFile))
-		if err != nil {
-			return err
-		}
+	if serverFile == "" {
+		return quiltLaunchJar, nil
 	}
-
-	return nil
+	err = os.Rename(filepath.Join(serverDir, quiltLaunchJar), filepath.Join(serverDir, serverFile))
+	if err != nil {
+		return "", err
+	}
+	return serverFile, nil
 }
 
 func (inst *QuiltInstaller) args(installer string, serverDir string) []string {

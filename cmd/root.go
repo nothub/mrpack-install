@@ -190,7 +190,7 @@ var RootCmd = &cobra.Command{
 			log.Println("Server file not present, downloading...")
 			log.Println("(Point --server-dir and --server-file to existing targets to skip this step)")
 			inst := server.InstallerFromDeps(&index.Deps)
-			err := inst.Install(serverDir, serverFile)
+			_, err := inst.Install(serverDir, serverFile)
 			if err != nil {
 				log.Fatalln(err)
 			}

@@ -15,7 +15,7 @@ type NeoForgeInstaller struct {
 	NeoForgeVersion  string
 }
 
-func (inst *NeoForgeInstaller) Install(serverDir string, serverFile string) error {
+func (inst *NeoForgeInstaller) Install(serverDir string, serverFile string) (string, error) {
 	version := inst.NeoForgeVersion
 	if version == "" || version == "latest" {
 
@@ -25,7 +25,7 @@ func (inst *NeoForgeInstaller) Install(serverDir string, serverFile string) erro
 		}
 		meta, err := maven.FetchMetadata(metaUrl)
 		if err != nil {
-			return err
+			return "", err
 		}
 
 		mcPrefix := strings.Join(strings.Split(inst.MinecraftVersion, ".")[1:3], ".")
@@ -44,7 +44,7 @@ func (inst *NeoForgeInstaller) Install(serverDir string, serverFile string) erro
 
 		parsed, err := semver.ParseAll(versions)
 		if err != nil {
-			return err
+			return "", err
 		}
 
 		var releases []semver.Version
@@ -57,7 +57,7 @@ func (inst *NeoForgeInstaller) Install(serverDir string, serverFile string) erro
 		sorted := semver.SortDesc(releases)
 
 		if len(sorted) <= 0 {
-			return fmt.Errorf("no neoforge release version found for mc version %s", inst.MinecraftVersion)
+			return "", fmt.Errorf("no neoforge release version found for mc version %s", inst.MinecraftVersion)
 		}
 
 		version = sorted[0].String()
@@ -69,7 +69,7 @@ func (inst *NeoForgeInstaller) Install(serverDir string, serverFile string) erro
 	}
 	installerFile, err := web.DefaultClient.DownloadFile(u, serverDir, fmt.Sprintf("neoforge-%s-installer.jar", version))
 	if err != nil {
-		return err
+		return "", err
 	}
 
 	log.Println("Installer downloaded to:", installerFile)
@@ -77,12 +77,13 @@ func (inst *NeoForgeInstaller) Install(serverDir string, serverFile string) erro
 	cmd := exec.Command("java", "-jar", installerFile, "--install-server", serverDir)
 	log.Println("Executing command:", cmd.String())
 	if err = cmd.Run(); err != nil {
-		return err
+		return "", err
 	}
 
 	if serverFile != "" {
 		log.Println("ignoring --server-file option for neoforged server installation!")
 	}
 
-	return nil
+	// NeoForge starts only through the run.sh and run.bat it writes.
+	return "", nil
 }

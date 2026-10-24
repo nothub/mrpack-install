@@ -6,7 +6,10 @@ import (
 )
 
 type Installer interface {
-	Install(serverDir string, serverFile string) error
+	// Install installs the server into serverDir and returns the jar that
+	// starts it, relative to serverDir, or "" when only the run.sh and
+	// run.bat the installer writes start it.
+	Install(serverDir string, serverFile string) (string, error)
 }
 
 func InstallerFromDeps(deps *mrpack.Deps) Installer {

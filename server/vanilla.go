@@ -8,16 +8,17 @@ import (
 	"github.com/nothub/mrpack-install/mojang"
 	"github.com/nothub/mrpack-install/web"
 	"log"
+	"path/filepath"
 )
 
 type VanillaInstaller struct {
 	MinecraftVersion string
 }
 
-func (inst *VanillaInstaller) Install(serverDir string, serverFile string) error {
+func (inst *VanillaInstaller) Install(serverDir string, serverFile string) (string, error) {
 	meta, err := mojang.GetMeta(inst.MinecraftVersion)
 	if err != nil {
-		return err
+		return "", err
 	}
 
 	file, err := web.DefaultClient.DownloadFile(meta.Downloads.Server.Url, serverDir, serverFile)
@@ -30,8 +31,8 @@ func (inst *VanillaInstaller) Install(serverDir string, serverFile string) error
 		log.Fatalln(err)
 	}
 	if !ok {
-		return errors.New("invalid file hashsum")
+		return "", errors.New("invalid file hashsum")
 	}
 
-	return nil
+	return filepath.Base(file), nil
 }

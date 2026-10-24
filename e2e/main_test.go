@@ -4,6 +4,7 @@ package e2e
 
 import (
 	"bufio"
+	"bytes"
 	"context"
 	"errors"
 	"fmt"
@@ -40,6 +41,22 @@ const runTimeout = 5 * time.Minute
 // combined output and exit error. A run that outlives runTimeout fails t.
 func mrpackInstall(t testing.TB, args ...string) ([]byte, error) {
 	t.Helper()
+	var out bytes.Buffer
+	err := runBinary(t, &out, &out, args)
+	return out.Bytes(), err
+}
+
+// mrpackInstallStdout runs the binary like mrpackInstall and returns its
+// stdout and stderr apart.
+func mrpackInstallStdout(t testing.TB, args ...string) (stdout []byte, stderr []byte, err error) {
+	t.Helper()
+	var so, se bytes.Buffer
+	err = runBinary(t, &so, &se, args)
+	return so.Bytes(), se.Bytes(), err
+}
+
+func runBinary(t testing.TB, stdout io.Writer, stderr io.Writer, args []string) error {
+	t.Helper()
 	// No run may read stdin. A stdin that stays open and never delivers
 	// data turns a stray read into a hang that hits the timeout, where
 	// the default /dev/null would return EOF and let it pass. An io.Pipe
@@ -55,12 +72,14 @@ func mrpackInstall(t testing.TB, args ...string) ([]byte, error) {
 	defer cancel()
 	cmd := exec.CommandContext(ctx, binary, args...)
 	cmd.Stdin = stdin
+	cmd.Stdout = stdout
+	cmd.Stderr = stderr
 	cmd.Env = append(os.Environ(), "XDG_CACHE_HOME="+cacheHome)
-	out, err := cmd.CombinedOutput()
+	err = cmd.Run()
 	if errors.Is(ctx.Err(), context.DeadlineExceeded) {
-		t.Fatalf("mrpack-install %s: no exit after %s, did it read stdin?\n%s", strings.Join(args, " "), runTimeout, out)
+		t.Fatalf("mrpack-install %s: no exit after %s, did it read stdin?", strings.Join(args, " "), runTimeout)
 	}
-	return out, err
+	return err
 }
 
 // PATs for the seed dump's regular and admin user, sent as the

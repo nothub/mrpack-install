@@ -82,6 +82,10 @@ Global Flags:
 ```
 Download and configure one of several Minecraft server flavors.
 
+Prints the file that starts the server on stdout: a jar to run with
+java -jar, or run.sh (run.bat on Windows) where only the installer's
+start script starts it.
+
 Usage:
   mrpack-install server ( vanilla | fabric | quilt | forge | neoforge | paper ) [flags]
 

@@ -1,11 +1,13 @@
 package cmd
 
 import (
+	"fmt"
 	"github.com/nothub/mrpack-install/mojang"
 	"github.com/nothub/mrpack-install/server"
 	"github.com/spf13/cobra"
 	"log"
 	"os"
+	"runtime"
 	"strings"
 )
 
@@ -41,7 +43,11 @@ func init() {
 var serverCmd = &cobra.Command{
 	Use:   "server ( " + strings.Join(server.FlavorNames(), " | ") + " )",
 	Short: "Prepare a plain server environment",
-	Long:  `Download and configure one of several Minecraft server flavors.`,
+	Long: `Download and configure one of several Minecraft server flavors.
+
+Prints the file that starts the server on stdout: a jar to run with
+java -jar, or run.sh (run.bat on Windows) where only the installer's
+start script starts it.`,
 	Example: `  mrpack-install server fabric --server-dir fabric-srv
   mrpack-install server paper --minecraft-version 1.18.2 --server-file srv.jar`,
 	Args:      cobra.MatchAll(cobra.ExactArgs(1), cobra.OnlyValidArgs),
@@ -62,9 +68,17 @@ var serverCmd = &cobra.Command{
 			log.Fatalln(err)
 		}
 
-		err = inst.Install(serverDir, serverFile)
+		file, err := inst.Install(serverDir, serverFile)
 		if err != nil {
 			log.Fatalln(err)
 		}
+		// The result on stdout, so a script can start the server with it.
+		if file == "" {
+			file = "run.sh"
+			if runtime.GOOS == "windows" {
+				file = "run.bat"
+			}
+		}
+		fmt.Println(file)
 	},
 }
