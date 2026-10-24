@@ -25,7 +25,9 @@ func Cmd(serverDir string, dlThreads uint8, dlRetries uint8, index *mrpack.Index
 		log.Fatalln(err)
 	}
 
-	newState, err := packstate.FromArchive(zipPath)
+	opts := packstate.Options{OptionalSelect: optionalSelected, OptionalDisableAll: optionalDisableAll}
+	noIds := func(string) (packstate.Ids, error) { return packstate.Ids{}, nil }
+	newState, err := packstate.FromArchive(zipPath, opts, noIds)
 	if err != nil {
 		log.Fatalln(err)
 	}

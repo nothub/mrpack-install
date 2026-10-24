@@ -65,7 +65,7 @@ var updateCmd = &cobra.Command{
 			log.Fatalln(err.Error())
 		}
 
-		index, zipPath := handleArgs(state.Slug, version, serverDir, host)
+		index, zipPath, _ := handleArgs(state.Slug, version, serverDir, host)
 
 		zipPath, err = filepath.Abs(zipPath)
 		if err != nil {

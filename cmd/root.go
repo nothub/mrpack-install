@@ -13,7 +13,6 @@ import (
 	"log"
 	"os"
 	"path/filepath"
-	"regexp"
 	"runtime"
 	"strings"
 )
@@ -120,7 +119,8 @@ var RootCmd = &cobra.Command{
 		if len(args) > 1 {
 			version = args[1]
 		}
-		index, zipPath := handleArgs(input, version, serverDir, host)
+		index, zipPath, lookup := handleArgs(input, version, serverDir, host)
+		opts := packstate.Options{OptionalSelect: optionalSelected, OptionalDisableAll: optionalDisableAll}
 
 		zipPath, err := filepath.Abs(zipPath)
 		if err != nil {
@@ -155,30 +155,7 @@ var RootCmd = &cobra.Command{
 		}
 
 		// downloads
-		downloads := index.ServerDownloads(func(f mrpack.File) bool {
-			switch f.Env.Server {
-			case modrinth.RequiredEnvSupport:
-				return true
-			case modrinth.OptionalEnvSupport:
-				if optionalDisableAll {
-					return false
-				}
-				if len(optionalSelected) < 1 {
-					return true
-				}
-				for _, p := range optionalSelected {
-					if regexp.MustCompile(p).Match([]byte(filepath.Base(f.Path))) {
-						return true
-					}
-				}
-				return false
-			case modrinth.UnsupportedEnvSupport:
-				return false
-			default:
-				log.Fatalf("Unexpected environment configuration %q for mod %q\n", f.Env.Server, f.Path)
-				return false
-			}
-		})
+		downloads := index.ServerDownloads(opts.Selects)
 		log.Printf("Downloading %v dependencies...\n", len(downloads))
 		downloader := download.Downloader{
 			Downloads: downloads,
@@ -198,14 +175,13 @@ var RootCmd = &cobra.Command{
 		}
 
 		// save state file
-		packState, err := packstate.FromArchive(zipPath)
+		packState, err := packstate.FromArchive(zipPath, opts, lookup)
 		if err != nil {
-			log.Printf("Unable to generate %s: %s\n", packstate.FileName, err)
-		} else {
-			err = packState.Save(serverDir)
-			if err != nil {
-				log.Fatalln(err)
-			}
+			log.Fatalln(err)
+		}
+		err = packState.Save(serverDir)
+		if err != nil {
+			log.Fatalln(err)
 		}
 
 		files.RmEmptyDirs(serverDir)
@@ -214,13 +190,17 @@ var RootCmd = &cobra.Command{
 	},
 }
 
-func handleArgs(input string, version string, serverDir string, host string) (*mrpack.Index, string) {
+// handleArgs resolves the pack input to its index and archive path, and
+// returns how to find the pack's Modrinth ids: the ones a slug or id input
+// resolved, or a lookup by archive hash for a file or URL input.
+func handleArgs(input string, version string, serverDir string, host string) (*mrpack.Index, string, func(string) (packstate.Ids, error)) {
 	err := os.MkdirAll(serverDir, 0755)
 	if err != nil {
 		log.Fatalln(err)
 	}
 
 	archivePath := ""
+	lookup := lookupIds
 	if web.IsValidHttpUrl(input) {
 		log.Printf("Downloading mrpack file from: %s\n", input)
 		file, err := web.DefaultClient.DownloadFile(input, serverDir, "")
@@ -239,29 +219,36 @@ func handleArgs(input string, version string, serverDir string, host string) (*m
 	} else {
 		log.Printf("Trying to resolve project id or slug: %s\n", input)
 
+		project, err := modrinth.Client.GetProject(input)
+		if err != nil {
+			log.Fatalln(err)
+		}
 		versions, err := modrinth.Client.GetProjectVersions(input, nil)
 		if err != nil {
 			log.Fatalln(err)
 		}
 
-		var fileInfos []modrinth.File = nil
+		var picked *modrinth.Version
 		for i := range versions {
 			if version != "" {
 				if versions[i].VersionNumber == version {
-					fileInfos = versions[i].Files
+					picked = versions[i]
 					break
 				}
 			} else {
 				// latest stable release if version not specified
 				if versions[i].VersionType == modrinth.ReleaseVersionType {
-					fileInfos = versions[i].Files
+					picked = versions[i]
 					break
 				}
 			}
 		}
-		if len(fileInfos) == 0 {
+		if picked == nil || len(picked.Files) == 0 {
 			log.Fatalln("No files found for", input, version)
 		}
+		fileInfos := picked.Files
+		ids := packstate.Ids{Slug: project.Slug, ProjectId: project.Id, VersionId: picked.Id}
+		lookup = func(string) (packstate.Ids, error) { return ids, nil }
 
 		for i := range fileInfos {
 			if strings.HasSuffix(fileInfos[i].Filename, ".mrpack") {
@@ -289,7 +276,20 @@ func handleArgs(input string, version string, serverDir string, host string) (*m
 		log.Fatalln(err.Error())
 	}
 
-	return index, archivePath
+	return index, archivePath, lookup
+}
+
+// lookupIds finds the Modrinth ids of the archive with the given SHA-512.
+func lookupIds(sha512 string) (packstate.Ids, error) {
+	version, err := modrinth.Client.VersionFromHash(sha512, "sha512")
+	if err != nil {
+		return packstate.Ids{}, err
+	}
+	project, err := modrinth.Client.GetProject(version.ProjectId)
+	if err != nil {
+		return packstate.Ids{}, err
+	}
+	return packstate.Ids{Slug: project.Slug, ProjectId: project.Id, VersionId: version.Id}, nil
 }
 
 func Execute() {

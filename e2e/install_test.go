@@ -110,6 +110,31 @@ func install(t testing.TB, slug string) string {
 	return dir
 }
 
+// packState is the part of packstate.json the e2e tests check.
+type packState struct {
+	Schema        int                          `json:"schema"`
+	Name          string                       `json:"name"`
+	Version       string                       `json:"version"`
+	ArchiveSha512 string                       `json:"archive-sha512"`
+	Slug          string                       `json:"slug"`
+	ProjectID     string                       `json:"project-id"`
+	VersionID     string                       `json:"version-id"`
+	Hashes        map[string]map[string]string `json:"hashes"`
+}
+
+func readState(t testing.TB, dir string) packState {
+	t.Helper()
+	b, err := os.ReadFile(filepath.Join(dir, "packstate.json"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	var state packState
+	if err := json.Unmarshal(b, &state); err != nil {
+		t.Fatal(err)
+	}
+	return state
+}
+
 func assertContent(t testing.TB, path string, want string) {
 	t.Helper()
 	got, err := os.ReadFile(path)
@@ -170,6 +195,19 @@ func TestInstallFabricPack(t *testing.T) {
 	assertContent(t, filepath.Join(dir, "config", "shared.txt"), "server")
 	if _, err := os.Stat(filepath.Join(dir, "config", "client-only.txt")); !errors.Is(err, fs.ErrNotExist) {
 		t.Errorf("client override: stat error = %v, want not exist", err)
+	}
+	// A file input gets its ids from the archive hash lookup.
+	path := filepath.Join(t.TempDir(), slug+".mrpack")
+	if err := os.WriteFile(path, pack, 0644); err != nil {
+		t.Fatal(err)
+	}
+	fileDir := install(t, path)
+	for _, d := range []string{dir, fileDir} {
+		state := readState(t, d)
+		if state.Slug != slug || state.ProjectID != created.Id || state.VersionID != created.Versions[0] {
+			t.Errorf("%s: slug, project-id, version-id = %q, %q, %q, want %q, %q, %q", d,
+				state.Slug, state.ProjectID, state.VersionID, slug, created.Id, created.Versions[0])
+		}
 	}
 }
 
@@ -237,5 +275,47 @@ func TestInstallFailsOnMissingDownload(t *testing.T) {
 	}
 	if _, err := os.Stat(filepath.Join(dir, "packstate.json")); !errors.Is(err, fs.ErrNotExist) {
 		t.Errorf("packstate.json: stat error = %v, want not exist", err)
+	}
+}
+
+// A pack labrinth doesn't know still gets a state, without ids.
+func TestInstallLocalPackWritesState(t *testing.T) {
+	t.Parallel()
+	const slug = "e2e-install-local"
+	mod, _ := seedPackMod(t, slug+"-mod")
+	pack := packArchive(t, packIndex{
+		FormatVersion: 1,
+		Game:          "minecraft",
+		VersionID:     "1.0.0",
+		Name:          slug,
+		Files:         []packFile{mod},
+		Dependencies:  map[string]string{"minecraft": "1.21.8", "fabric-loader": "0.17.2"},
+	}, []zipEntry{{"overrides/config/common.txt", "common"}})
+	path := filepath.Join(t.TempDir(), slug+".mrpack")
+	if err := os.WriteFile(path, pack, 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	dir := install(t, path)
+
+	state := readState(t, dir)
+	if state.Schema != 1 {
+		t.Errorf("schema = %d, want 1", state.Schema)
+	}
+	if state.Name != slug || state.Version != "1.0.0" {
+		t.Errorf("name, version = %q, %q, want %q, %q", state.Name, state.Version, slug, "1.0.0")
+	}
+	sum := sha512.Sum512(pack)
+	if want := hex.EncodeToString(sum[:]); state.ArchiveSha512 != want {
+		t.Errorf("archive-sha512 = %q, want %q", state.ArchiveSha512, want)
+	}
+	if state.Slug != "" || state.ProjectID != "" || state.VersionID != "" {
+		t.Errorf("slug, project-id, version-id = %q, %q, %q, want empty", state.Slug, state.ProjectID, state.VersionID)
+	}
+	if got := state.Hashes[mod.Path]["sha512"]; got != mod.Hashes["sha512"] {
+		t.Errorf("hashes[%s].sha512 = %q, want %q", mod.Path, got, mod.Hashes["sha512"])
+	}
+	if _, ok := state.Hashes["config/common.txt"]; !ok {
+		t.Errorf("hashes = %v, want config/common.txt", state.Hashes)
 	}
 }
