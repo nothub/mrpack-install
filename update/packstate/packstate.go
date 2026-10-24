@@ -171,7 +171,7 @@ func FromArchive(path string, opts Options, ids func(sha512 string) (Ids, error)
 	state.ArchiveSha512 = archiveSha512
 	state.Options = opts
 	state.Deps = index.Deps
-	state.Hashes = make(map[string]modrinth.Hashes)
+	state.Hashes = ShippedFiles(index, path, opts)
 
 	state.Ids, err = ids(archiveSha512)
 	if err != nil {
@@ -179,18 +179,22 @@ func FromArchive(path string, opts Options, ids func(sha512 string) (Ids, error)
 		state.Ids = Ids{}
 	}
 
-	// download hashes
+	return &state, nil
+}
+
+// ShippedFiles returns the hashes of every file the pack at archive puts
+// on the server with opts, by path. An override's content wins over the
+// index file at the same path.
+func ShippedFiles(index *mrpack.Index, archive string, opts Options) map[string]modrinth.Hashes {
+	shipped := make(map[string]modrinth.Hashes)
 	for _, indexFile := range index.Files {
 		if !opts.Selects(indexFile) {
 			continue
 		}
-		state.Hashes[indexFile.Path] = indexFile.Hashes
+		shipped[indexFile.Path] = indexFile.Hashes
 	}
-
-	// override hashes
-	for p, hashes := range mrpack.OverrideHashes(path) {
-		state.Hashes[p] = hashes
+	for p, hashes := range mrpack.OverrideHashes(archive) {
+		shipped[p] = hashes
 	}
-
-	return &state, nil
+	return shipped
 }

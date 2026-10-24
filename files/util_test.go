@@ -87,3 +87,53 @@ func TestResolveSymlink(t *testing.T) {
 		t.Fatalf("resolved: %q but should be: %q", resolved, want)
 	}
 }
+
+func TestInDir(t *testing.T) {
+	base := filepath.Join(t.TempDir(), "mc")
+	if err := os.MkdirAll(base, 0755); err != nil {
+		t.Fatal(err)
+	}
+	outside := t.TempDir()
+	if err := os.Symlink(outside, filepath.Join(base, "link")); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(outside, "file"), nil, 0644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Symlink(filepath.Join(outside, "missing"), filepath.Join(base, "dangling")); err != nil {
+		t.Fatal(err)
+	}
+
+	for _, rel := range []string{"mods/a.jar", "config/../mods/a.jar", "mc-evil/file"} {
+		got, err := InDir(base, rel)
+		if err != nil {
+			t.Errorf("InDir(%q) error = %v, want nil", rel, err)
+		} else if want := filepath.Join(base, rel); got != want {
+			t.Errorf("InDir(%q) = %q, want %q", rel, got, want)
+		}
+	}
+	for _, rel := range []string{"../mc-evil/file", "..", ".", "", "/etc/passwd", "link/file", "link/new/file", "link", "dangling", "dangling/file"} {
+		if got, err := InDir(base, rel); err == nil {
+			t.Errorf("InDir(%q) = %q, want an error", rel, got)
+		}
+	}
+}
+
+// A server dir reached through a symlink still accepts files that don't
+// exist yet.
+func TestInDirSymlinkedDir(t *testing.T) {
+	real := t.TempDir()
+	dir := filepath.Join(t.TempDir(), "mc")
+	if err := os.Symlink(real, dir); err != nil {
+		t.Fatal(err)
+	}
+
+	got, err := InDir(dir, "mods/new.jar")
+
+	if err != nil {
+		t.Fatal(err)
+	}
+	if want := filepath.Join(dir, "mods", "new.jar"); got != want {
+		t.Errorf("InDir() = %q, want %q", got, want)
+	}
+}

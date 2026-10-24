@@ -2,6 +2,8 @@ package files
 
 import (
 	"errors"
+	"fmt"
+	"io/fs"
 	"log"
 	"math/rand"
 	"os"
@@ -69,6 +71,59 @@ func AssertSafe(subPath string, basePath string) {
 	}
 	if err != nil || !ok {
 		log.Fatalln("File path is not safe: " + subPath)
+	}
+}
+
+// InDir joins the pack-relative path rel to dir. It fails when rel is
+// absolute, names dir itself, or lies outside dir once symlinks resolve,
+// including symlinks in the part of the path that already exists.
+func InDir(dir string, rel string) (string, error) {
+	if filepath.IsAbs(rel) || filepath.VolumeName(rel) != "" || filepath.Clean(rel) == "." {
+		return "", fmt.Errorf("file path is not safe: %q", rel)
+	}
+	dir, err := filepath.Abs(dir)
+	if err != nil {
+		return "", err
+	}
+	joined := filepath.Join(dir, rel)
+
+	base, err := resolveExisting(dir)
+	if err != nil {
+		return "", fmt.Errorf("checking file path %q: %w", rel, err)
+	}
+	target, err := resolveExisting(joined)
+	if err != nil {
+		return "", fmt.Errorf("checking file path %q: %w", rel, err)
+	}
+	r, err := filepath.Rel(base, target)
+	if err != nil || r == "." || r == ".." || strings.HasPrefix(r, ".."+string(filepath.Separator)) {
+		return "", fmt.Errorf("file path is not safe: %q", rel)
+	}
+	return joined, nil
+}
+
+// resolveExisting resolves the symlinks of the longest existing prefix of
+// the absolute path and appends the rest. A dangling symlink fails, since
+// writing through it would create its target.
+func resolveExisting(path string) (string, error) {
+	rest := ""
+	for {
+		resolved, err := filepath.EvalSymlinks(path)
+		if err == nil {
+			return filepath.Join(resolved, rest), nil
+		}
+		if !errors.Is(err, fs.ErrNotExist) {
+			return "", err
+		}
+		if _, err := os.Lstat(path); err == nil {
+			return "", fmt.Errorf("dangling symlink %s", path)
+		}
+		parent := filepath.Dir(path)
+		if parent == path {
+			return filepath.Join(path, rest), nil
+		}
+		rest = filepath.Join(filepath.Base(path), rest)
+		path = parent
 	}
 }
 
