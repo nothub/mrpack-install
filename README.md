@@ -37,6 +37,7 @@ Available Commands:
   version     Print version infos
 
 Flags:
+      --backup-dir string             Backup directory path (default <server-dir>/backups)
       --dl-retries uint8              Retries when download fails (default 3)
       --dl-threads uint8              Concurrent download threads (default 8)
   -h, --help                          help for mrpack-install
@@ -112,7 +113,7 @@ Usage:
   mrpack-install update [<version>] [flags]
 
 Flags:
-      --backup-dir string             Backup directory path
+      --backup-dir string             Backup directory path (default <server-dir>/backups)
   -h, --help                          help for update
       --optional-disable-all          Disable all optional mods
       --optional-select stringArray   Select optional mods by file path (regex)

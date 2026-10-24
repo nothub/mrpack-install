@@ -3,6 +3,7 @@ package files
 import (
 	"errors"
 	"fmt"
+	"io"
 	"io/fs"
 	"log"
 	"math/rand"
@@ -125,6 +126,63 @@ func resolveExisting(path string) (string, error) {
 		rest = filepath.Join(filepath.Base(path), rest)
 		path = parent
 	}
+}
+
+// rename is swapped by tests to simulate a cross-device move.
+var rename = os.Rename
+
+// Move moves the file at src to dst, creating dst's parent dirs. It fails
+// when dst exists. A move across filesystems, such as into a bind-mounted
+// dir, falls back to copy and delete.
+func Move(src string, dst string) error {
+	err := os.MkdirAll(filepath.Dir(dst), 0755)
+	if err != nil {
+		return err
+	}
+	if _, err := os.Lstat(dst); err == nil {
+		return fmt.Errorf("moving %s: %s exists", src, dst)
+	}
+	err = rename(src, dst)
+	if !errors.Is(err, errCrossDevice) {
+		return err
+	}
+	err = copyFile(src, dst)
+	if err != nil {
+		return fmt.Errorf("copying %s across filesystems: %w", src, err)
+	}
+	return os.Remove(src)
+}
+
+func copyFile(src string, dst string) error {
+	in, err := os.Open(src)
+	if err != nil {
+		return err
+	}
+	defer in.Close()
+	fi, err := in.Stat()
+	if err != nil {
+		return err
+	}
+	out, err := os.OpenFile(dst, os.O_WRONLY|os.O_CREATE|os.O_EXCL, fi.Mode().Perm())
+	if err != nil {
+		return err
+	}
+	_, err = io.Copy(out, in)
+	if err == nil {
+		// The source is removed next, so the copy must be on disk first.
+		err = out.Sync()
+	}
+	if err != nil {
+		out.Close()
+		os.Remove(dst)
+		return err
+	}
+	err = out.Close()
+	if err != nil {
+		os.Remove(dst)
+		return err
+	}
+	return os.Chmod(dst, fi.Mode().Perm())
 }
 
 func CountFiles(dir string) int {

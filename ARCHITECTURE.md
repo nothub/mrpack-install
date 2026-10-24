@@ -6,7 +6,7 @@ Installing a pack brings the server dir to that pack version, whether the dir is
 
 - `packstate.json` in the server dir records what the last run put in place: the pack, the archive's SHA-512, the options, the dependencies, and the hashes of every pack file. It is written to a temp file and renamed into place.
 - `update.Compute` plans one action per path the old state records or the new pack ships. It compares the file on disk with the new content and with the old record. It only reads the server dir, so it is unit-tested offline.
-- `update.Apply` runs the plan. It downloads and extracts only the files the plan writes, deletes the files the new version dropped, saves the new state, and removes only the dirs those deletes emptied. A file no pack version listed is never touched. Until backups exist, a file that differs from its record is left alone with a warning and keeps its old record.
+- `update.Apply` runs the plan. It first moves every file the plan backs up into a per-run dir, `<base>/<timestamp>/`, under its relative path. Then it downloads and extracts only the files the plan writes, deletes the files the new version dropped, saves the new state, and removes only the dirs those moves and deletes emptied. A file no pack version listed is never touched. The run dir is created on the first backup, and a run never reuses an existing one.
 
 ## Testing
 

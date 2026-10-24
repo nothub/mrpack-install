@@ -9,14 +9,9 @@ import (
 	"path/filepath"
 )
 
-var (
-	// local options
-	backupDir string
-)
-
 func init() {
 	// TODO flags: --start-server
-	updateCmd.Flags().StringVar(&backupDir, "backup-dir", "", "Backup directory path")
+	updateCmd.Flags().StringVar(&backupDir, "backup-dir", "", "Backup directory path (default <server-dir>/backups)")
 
 	updateCmd.Flags().StringArrayVar(&optionalSelected, "optional-select", nil, "Select optional mods by file path (regex)")
 	updateCmd.Flags().BoolVar(&optionalDisableAll, "optional-disable-all", false, "Disable all optional mods")

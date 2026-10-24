@@ -117,6 +117,16 @@ func installInto(t testing.TB, dir string, args ...string) {
 	t.Logf("mrpack-install %s:\n%s", strings.Join(args, " "), out)
 }
 
+// backupRuns returns the per-run dirs under the backup base.
+func backupRuns(t testing.TB, base string) []string {
+	t.Helper()
+	runs, err := filepath.Glob(filepath.Join(base, "*"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	return runs
+}
+
 func assertMissing(t testing.TB, path string) {
 	t.Helper()
 	if _, err := os.Stat(path); !errors.Is(err, fs.ErrNotExist) {
@@ -388,7 +398,7 @@ func TestInstallSyncsToNewVersion(t *testing.T) {
 	if err := os.MkdirAll(empty, 0755); err != nil {
 		t.Fatal(err)
 	}
-	// Edited files are kept, and keep their v1 record, until backups land.
+	// Edited files are backed up before v2 overwrites or deletes them.
 	tuned := filepath.Join(dir, "config", "tuned.txt")
 	tunedDropped := filepath.Join(dir, "config", "tuned-dropped.txt")
 	for _, p := range []string{tuned, tunedDropped} {
@@ -403,15 +413,16 @@ func TestInstallSyncsToNewVersion(t *testing.T) {
 	assertMissing(t, filepath.Join(dir, "config", "v1"))
 	assertContent(t, filepath.Join(dir, "config", "all.txt"), "2")
 	assertContent(t, mine, "mine")
-	assertContent(t, tuned, "mine")
-	assertContent(t, tunedDropped, "mine")
-	sum := sha512.Sum512([]byte("1"))
-	v1Sha512 := hex.EncodeToString(sum[:])
-	hashes := readState(t, dir).Hashes
-	for _, p := range []string{"config/tuned.txt", "config/tuned-dropped.txt"} {
-		if got := hashes[p]["sha512"]; got != v1Sha512 {
-			t.Errorf("state hashes[%s].sha512 = %q, want the v1 record %q", p, got, v1Sha512)
-		}
+	assertContent(t, tuned, "2")
+	assertMissing(t, tunedDropped)
+	runs := backupRuns(t, filepath.Join(dir, "backups"))
+	if len(runs) != 1 {
+		t.Fatalf("backup runs = %v, want one", runs)
+	}
+	assertContent(t, filepath.Join(runs[0], "config", "tuned.txt"), "mine")
+	assertContent(t, filepath.Join(runs[0], "config", "tuned-dropped.txt"), "mine")
+	for _, unedited := range []string{"config/all.txt", "config/v1/only.txt", drop.Path} {
+		assertMissing(t, filepath.Join(runs[0], unedited))
 	}
 
 	installInto(t, dir, slug, "3.0.0")
@@ -420,6 +431,10 @@ func TestInstallSyncsToNewVersion(t *testing.T) {
 	assertContent(t, mine, "mine")
 	if _, err := os.Stat(empty); err != nil {
 		t.Errorf("admin's empty dir: %v", err)
+	}
+	// v3 replaces and drops only unedited files, so it backs up nothing.
+	if runs := backupRuns(t, filepath.Join(dir, "backups")); len(runs) != 1 {
+		t.Errorf("backup runs = %v, want one", runs)
 	}
 	if got := readState(t, dir).Version; got != "3.0.0" {
 		t.Errorf("state version = %q, want 3.0.0", got)
@@ -440,12 +455,22 @@ func TestInstallSyncsLocalPacks(t *testing.T) {
 		t.Fatal(err)
 	}
 	dir := t.TempDir()
+	backups := t.TempDir()
 
 	installInto(t, dir, v1)
-	assertContent(t, filepath.Join(dir, "config", "dropped.txt"), "1")
-	installInto(t, dir, v2)
+	dropped := filepath.Join(dir, "config", "dropped.txt")
+	assertContent(t, dropped, "1")
+	if err := os.WriteFile(dropped, []byte("mine"), 0644); err != nil {
+		t.Fatal(err)
+	}
+	installInto(t, dir, v2, "--backup-dir", backups)
 
-	assertMissing(t, filepath.Join(dir, "config", "dropped.txt"))
+	assertMissing(t, dropped)
+	runs := backupRuns(t, backups)
+	if len(runs) != 1 {
+		t.Fatalf("backup runs = %v, want one", runs)
+	}
+	assertContent(t, filepath.Join(runs[0], "config", "dropped.txt"), "mine")
 	assertContent(t, filepath.Join(dir, "config", "kept.txt"), "2")
 	assertSha512(t, filepath.Join(dir, mod.Path), jar)
 }

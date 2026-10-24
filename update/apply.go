@@ -10,37 +10,37 @@ import (
 
 	"github.com/nothub/mrpack-install/files"
 	"github.com/nothub/mrpack-install/modrinth/mrpack"
+	"github.com/nothub/mrpack-install/update/backup"
 	"github.com/nothub/mrpack-install/update/packstate"
 	"github.com/nothub/mrpack-install/web/download"
 )
 
 // Apply runs plan on serverDir for the pack with index and archive: it
-// downloads and extracts the files the plan writes, deletes the files it
-// deletes, saves state, and removes the dirs those deletes left empty. old
-// is the state the plan was computed from, nil when there was none.
-//
-// Backups are not supported yet. A recorded file that differs from its
-// record is left alone with a warning and keeps its old record, so a later
-// run still knows mrpack-install put it there.
-func Apply(serverDir string, plan *Plan, old *packstate.Schema, state *packstate.Schema, index *mrpack.Index, archive string, dl download.Downloader) error {
+// moves the files the plan backs up into backups, downloads and extracts
+// the files it writes, deletes the files it deletes, saves state, and
+// removes the dirs those moves and deletes left empty.
+func Apply(serverDir string, plan *Plan, state *packstate.Schema, index *mrpack.Index, archive string, dl download.Downloader, backups *backup.Dir) error {
 	writes := make(map[string]bool)
 	var deletes []string
+	var backedUp []string
 	for _, a := range plan.Actions {
 		switch a.Op {
 		case OpWrite:
 			writes[a.Path] = true
 		case OpBackupWrite:
-			if a.Recorded {
-				log.Printf("Keeping %s, it differs from what was installed\n", a.Path)
-				state.Hashes[a.Path] = old.Hashes[a.Path]
-				continue
-			}
 			writes[a.Path] = true
+			backedUp = append(backedUp, a.Path)
 		case OpDelete:
 			deletes = append(deletes, a.Path)
 		case OpBackupDelete:
-			log.Printf("Keeping %s, it differs from what was installed\n", a.Path)
-			state.Hashes[a.Path] = old.Hashes[a.Path]
+			backedUp = append(backedUp, a.Path)
+		}
+	}
+
+	for _, p := range backedUp {
+		err := backups.Move(serverDir, p)
+		if err != nil {
+			return fmt.Errorf("backing up %s: %w", p, err)
 		}
 	}
 
@@ -81,7 +81,7 @@ func Apply(serverDir string, plan *Plan, old *packstate.Schema, state *packstate
 		return fmt.Errorf("saving %s: %w", packstate.FileName, err)
 	}
 
-	removeEmptiedDirs(serverDir, deletes)
+	removeEmptiedDirs(serverDir, append(deletes, backedUp...))
 	return nil
 }
 

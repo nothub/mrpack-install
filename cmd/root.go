@@ -7,6 +7,7 @@ import (
 	"github.com/nothub/mrpack-install/modrinth/mrpack"
 	"github.com/nothub/mrpack-install/server"
 	"github.com/nothub/mrpack-install/update"
+	"github.com/nothub/mrpack-install/update/backup"
 	"github.com/nothub/mrpack-install/update/packstate"
 	"github.com/nothub/mrpack-install/web"
 	"github.com/nothub/mrpack-install/web/download"
@@ -32,6 +33,7 @@ var (
 	// local options
 	optionalSelected   []string
 	optionalDisableAll bool
+	backupDir          string
 )
 
 func init() {
@@ -55,6 +57,7 @@ func init() {
 
 	RootCmd.Flags().StringArrayVar(&optionalSelected, "optional-select", nil, "Select optional mods by file path (regex)")
 	RootCmd.Flags().BoolVar(&optionalDisableAll, "optional-disable-all", false, "Disable all optional mods")
+	RootCmd.Flags().StringVar(&backupDir, "backup-dir", "", "Backup directory path (default <server-dir>/backups)")
 
 	cobra.OnInitialize(func() {
 		if printVersion {
@@ -83,6 +86,15 @@ func init() {
 			// normalize lower case windows path
 			// e.g. c:\MCServers to C:\MCServers
 			serverDir = strings.ToUpper(serverDir[0:1]) + serverDir[1:]
+		}
+
+		// --backup-dir, before the run changes into the server dir
+		if backupDir != "" {
+			absBackupDir, err := filepath.Abs(backupDir)
+			if err != nil {
+				log.Fatalln(err)
+			}
+			backupDir = absBackupDir
 		}
 
 		// -- server-file
@@ -164,10 +176,14 @@ var RootCmd = &cobra.Command{
 		if err != nil {
 			log.Fatalln(err)
 		}
-		err = update.Apply(serverDir, plan, old, packState, index, zipPath, download.Downloader{
+		backupBase := backupDir
+		if backupBase == "" {
+			backupBase = filepath.Join(serverDir, "backups")
+		}
+		err = update.Apply(serverDir, plan, packState, index, zipPath, download.Downloader{
 			Threads: int(dlThreads),
 			Retries: int(dlRetries),
-		})
+		}, backup.NewDir(backupBase))
 		if err != nil {
 			log.Fatalln(err)
 		}

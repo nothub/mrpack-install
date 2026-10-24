@@ -137,3 +137,82 @@ func TestInDirSymlinkedDir(t *testing.T) {
 		t.Errorf("InDir() = %q, want %q", got, want)
 	}
 }
+
+func TestMove(t *testing.T) {
+	dir := t.TempDir()
+	src := filepath.Join(dir, "src")
+	dst := filepath.Join(dir, "a", "b", "dst")
+	if err := os.WriteFile(src, []byte("data"), 0640); err != nil {
+		t.Fatal(err)
+	}
+
+	if err := Move(src, dst); err != nil {
+		t.Fatal(err)
+	}
+
+	assertMoved(t, src, dst, "data", 0640)
+}
+
+// Not parallel: it swaps the package's rename.
+func TestMoveAcrossFilesystems(t *testing.T) {
+	rename = func(src string, dst string) error {
+		return &os.LinkError{Op: "rename", Old: src, New: dst, Err: errCrossDevice}
+	}
+	t.Cleanup(func() { rename = os.Rename })
+	dir := t.TempDir()
+	src := filepath.Join(dir, "src")
+	dst := filepath.Join(dir, "a", "dst")
+	if err := os.WriteFile(src, []byte("data"), 0640); err != nil {
+		t.Fatal(err)
+	}
+
+	if err := Move(src, dst); err != nil {
+		t.Fatal(err)
+	}
+
+	assertMoved(t, src, dst, "data", 0640)
+}
+
+func TestMoveRefusesExistingDst(t *testing.T) {
+	dir := t.TempDir()
+	src := filepath.Join(dir, "src")
+	dst := filepath.Join(dir, "dst")
+	for _, p := range []string{src, dst} {
+		if err := os.WriteFile(p, []byte(p), 0644); err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	if err := Move(src, dst); err == nil {
+		t.Fatal("Move() = nil, want an error")
+	}
+
+	got, err := os.ReadFile(dst)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if string(got) != dst {
+		t.Errorf("dst = %q, want it unchanged", got)
+	}
+}
+
+func assertMoved(t *testing.T, src string, dst string, data string, mode os.FileMode) {
+	t.Helper()
+	if _, err := os.Stat(src); !os.IsNotExist(err) {
+		t.Errorf("src: stat error = %v, want not exist", err)
+	}
+	got, err := os.ReadFile(dst)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if string(got) != data {
+		t.Errorf("dst = %q, want %q", got, data)
+	}
+	fi, err := os.Stat(dst)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if fi.Mode().Perm() != mode {
+		t.Errorf("dst mode = %v, want %v", fi.Mode().Perm(), mode)
+	}
+}
