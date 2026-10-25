@@ -54,6 +54,8 @@ type Options struct {
 	OptionalDisableAll bool     `json:"optional-disable-all"`
 	// Exclude holds patterns of paths no run touches, see Excludes.
 	Exclude []string `json:"exclude"`
+	// ServerFile is the --server-file name, "" for the installer's own.
+	ServerFile string `json:"server-file"`
 }
 
 // Excludes reports whether the pack-relative path matches an Exclude

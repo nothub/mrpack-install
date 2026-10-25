@@ -356,3 +356,41 @@ func TestComputeSkipsExcludedPaths(t *testing.T) {
 		t.Errorf("Actions = %+v, want %+v", plan.Actions, want)
 	}
 }
+
+func TestComputeInstallServerForServerFile(t *testing.T) {
+	t.Parallel()
+	deps := mrpack.Deps{Minecraft: "1.21.8", Fabric: "0.17.2"}
+	recorded := func(path string) *packstate.Schema {
+		return &packstate.Schema{SchemaVersion: 1, Deps: deps, ServerFile: &packstate.ServerFile{Path: path, Hashes: hashes("jar")}}
+	}
+	tests := []struct {
+		name string
+		old  *packstate.Schema
+		disk map[string]string
+		flag string
+		want bool
+	}{
+		{"recorded jar in place", recorded("server.jar"), map[string]string{"server.jar": "jar"}, "", false},
+		{"recorded jar missing", recorded("server.jar"), nil, "", true},
+		{"run.sh only", recorded(""), nil, "", false},
+		{"unknown server file", &packstate.Schema{SchemaVersion: 1, Deps: deps}, nil, "", false},
+		{"same --server-file", recorded("mc.jar"), map[string]string{"mc.jar": "jar"}, "mc.jar", false},
+		{"new --server-file", recorded("server.jar"), map[string]string{"server.jar": "jar"}, "mc.jar", true},
+		{"--server-file on unknown", &packstate.Schema{SchemaVersion: 1, Deps: deps}, nil, "mc.jar", true},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			index, archive := writePack(t, mrpack.Index{Name: "pack", Deps: deps}, nil)
+
+			plan, err := Compute(serverDir(t, tt.disk), tt.old, index, archive, packstate.Options{ServerFile: tt.flag})
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			if plan.InstallServer != tt.want {
+				t.Errorf("InstallServer = %v, want %v", plan.InstallServer, tt.want)
+			}
+		})
+	}
+}

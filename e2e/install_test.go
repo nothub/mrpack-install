@@ -494,6 +494,23 @@ func TestInstallSyncsLocalPacks(t *testing.T) {
 		t.Errorf("%s was replaced or modified", launchers[0])
 	}
 	assertMissing(t, dropped)
+
+	// A deleted server jar comes back on the next run.
+	if err := os.Remove(launchers[0]); err != nil {
+		t.Fatal(err)
+	}
+	installInto(t, dir, v2, "--backup-dir", backups)
+	if _, err := os.Stat(launchers[0]); err != nil {
+		t.Errorf("deleted server jar not reinstalled: %v", err)
+	}
+	// A new --server-file installs the server under that name and drops
+	// the old jar.
+	installInto(t, dir, v2, "--backup-dir", backups, "--server-file", "mc.jar")
+	if _, err := os.Stat(filepath.Join(dir, "mc.jar")); err != nil {
+		t.Errorf("--server-file mc.jar: %v", err)
+	}
+	assertMissing(t, launchers[0])
+
 	runs := backupRuns(t, backups)
 	if len(runs) != 1 {
 		t.Fatalf("backup runs = %v, want one", runs)

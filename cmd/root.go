@@ -145,7 +145,7 @@ var RootCmd = &cobra.Command{
 			version = args[1]
 		}
 		index, zipPath, lookup := handleArgs(input, version, serverDir, host)
-		opts := packstate.Options{OptionalSelect: optionalSelected, OptionalDisableAll: optionalDisableAll, Exclude: excludes}
+		opts := packstate.Options{OptionalSelect: optionalSelected, OptionalDisableAll: optionalDisableAll, Exclude: excludes, ServerFile: serverFile}
 
 		zipPath, err := filepath.Abs(zipPath)
 		if err != nil {

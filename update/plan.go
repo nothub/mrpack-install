@@ -95,7 +95,11 @@ func Compute(serverDir string, old *packstate.Schema, index *mrpack.Index, archi
 		full[p] = joined
 	}
 
-	plan := Plan{InstallServer: old == nil || old.Deps != index.Deps}
+	install, err := installServer(serverDir, old, index.Deps, opts.ServerFile)
+	if err != nil {
+		return nil, err
+	}
+	plan := Plan{InstallServer: install}
 	for _, p := range paths {
 		disk, err := hashFile(full[p])
 		if err != nil {
@@ -147,6 +151,31 @@ func Compute(serverDir string, old *packstate.Schema, index *mrpack.Index, archi
 	})
 
 	return &plan, nil
+}
+
+// installServer reports whether the server needs installing: there is no
+// old state, the Minecraft or a loader version changed, the recorded server
+// jar is missing, or --server-file names another file than the recorded one.
+func installServer(serverDir string, old *packstate.Schema, deps mrpack.Deps, serverFile string) (bool, error) {
+	if old == nil || old.Deps != deps {
+		return true, nil
+	}
+	recorded := old.ServerFile
+	if serverFile != "" && (recorded == nil || recorded.Path != serverFile) {
+		return true, nil
+	}
+	if recorded == nil || recorded.Path == "" {
+		return false, nil
+	}
+	full, err := files.InDir(serverDir, recorded.Path)
+	if err != nil {
+		return false, err
+	}
+	_, err = os.Stat(full)
+	if errors.Is(err, fs.ErrNotExist) {
+		return true, nil
+	}
+	return false, err
 }
 
 // writes returns the paths the plan writes.
