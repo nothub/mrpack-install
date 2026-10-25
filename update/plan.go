@@ -153,6 +153,25 @@ func Compute(serverDir string, old *packstate.Schema, index *mrpack.Index, archi
 	return &plan, nil
 }
 
+// Describe writes one line per action that changes the server dir, in
+// path order, and whether the server installs.
+func (plan *Plan) Describe(w io.Writer) error {
+	for _, a := range plan.Actions {
+		if a.Op == OpNone {
+			continue
+		}
+		if _, err := fmt.Fprintf(w, "%s %s\n", a.Op, a.Path); err != nil {
+			return err
+		}
+	}
+	install := "no"
+	if plan.InstallServer {
+		install = "yes"
+	}
+	_, err := fmt.Fprintf(w, "install server: %s\n", install)
+	return err
+}
+
 // NoOp reports whether syncing the archive with SHA-512 sum under opts
 // would change nothing: the old state records the same archive and the same
 // options, the recorded server jar is in place, and ForceSync is not set.

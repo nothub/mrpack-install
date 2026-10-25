@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"fmt"
 	"github.com/nothub/mrpack-install/cache"
 	"github.com/nothub/mrpack-install/files"
 	"github.com/nothub/mrpack-install/internal/buildinfo"
@@ -37,6 +38,7 @@ var (
 	backupDir          string
 	excludes           []string
 	forceSync          bool
+	dryRun             bool
 )
 
 func init() {
@@ -63,6 +65,7 @@ func init() {
 	RootCmd.Flags().StringVar(&backupDir, "backup-dir", "", "Backup directory path (default <server-dir>/backups)")
 	RootCmd.Flags().StringArrayVar(&excludes, "exclude", nil, excludeUsage)
 	RootCmd.Flags().BoolVar(&forceSync, "force-sync", false, "Re-apply the pack and reinstall the server, even when it is already installed")
+	RootCmd.Flags().BoolVar(&dryRun, "dry-run", false, "Print what the run would change and exit without changing anything")
 
 	cobra.OnInitialize(func() {
 		if printVersion {
@@ -158,6 +161,10 @@ var RootCmd = &cobra.Command{
 			}
 			if noop {
 				log.Printf("%q %s is already installed in %q, nothing to do\n", old.Name, old.Version, serverDir)
+				if dryRun {
+					// The empty plan, in the shape a dry-run always prints.
+					fmt.Println("install server: no")
+				}
 			}
 			return noop
 		}
@@ -182,17 +189,26 @@ var RootCmd = &cobra.Command{
 			log.Fatalln(err)
 		}
 
+		plan, err := update.Compute(serverDir, old, index, zipPath, opts)
+		if err != nil {
+			log.Fatalln(err)
+		}
+		if dryRun {
+			err = plan.Describe(os.Stdout)
+			if err != nil {
+				log.Fatalln(err)
+			}
+			return
+		}
+
 		log.Printf("Installing %q from %q to %q\n", index.Name, zipPath, serverDir)
 		err = os.MkdirAll(serverDir, 0755)
 		if err != nil {
 			log.Fatalln(err)
 		}
+		// The Forge and Quilt installers and override extraction resolve
+		// paths against the working directory.
 		err = os.Chdir(serverDir)
-		if err != nil {
-			log.Fatalln(err)
-		}
-
-		plan, err := update.Compute(serverDir, old, index, zipPath, opts)
 		if err != nil {
 			log.Fatalln(err)
 		}

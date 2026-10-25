@@ -40,6 +40,7 @@ Flags:
       --backup-dir string             Backup directory path (default <server-dir>/backups)
       --dl-retries uint8              Retries when download fails (default 3)
       --dl-threads uint8              Concurrent download threads (default 8)
+      --dry-run                       Print what the run would change and exit without changing anything
       --exclude stringArray           Never touch paths matching this pattern, relative to the server dir (repeatable, e.g. 'config/**', 'mods/*-client.jar')
       --force-sync                    Re-apply the pack and reinstall the server, even when it is already installed
   -h, --help                          help for mrpack-install

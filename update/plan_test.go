@@ -474,3 +474,32 @@ func TestNoOpNilAndEmptyLists(t *testing.T) {
 		t.Errorf("NoOp() = %v, %v, want true", got, err)
 	}
 }
+
+func TestDescribe(t *testing.T) {
+	t.Parallel()
+	plan := &Plan{
+		Actions: []Action{
+			{Path: "config/kept.txt", Op: OpNone},
+			{Path: "config/new.txt", Op: OpWrite},
+			{Path: "config/tuned.txt", Op: OpBackupWrite},
+			{Path: "mods/old.jar", Op: OpDelete},
+			{Path: "mods/edited.jar", Op: OpBackupDelete},
+		},
+		InstallServer: true,
+	}
+	var out strings.Builder
+
+	if err := plan.Describe(&out); err != nil {
+		t.Fatal(err)
+	}
+
+	want := `write config/new.txt
+backup+write config/tuned.txt
+delete mods/old.jar
+backup+delete mods/edited.jar
+install server: yes
+`
+	if out.String() != want {
+		t.Errorf("Describe() wrote\n%s\nwant\n%s", out.String(), want)
+	}
+}

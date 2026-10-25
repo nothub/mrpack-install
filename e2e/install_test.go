@@ -812,3 +812,44 @@ func TestForceSyncRepairs(t *testing.T) {
 	}
 	assertContent(t, filepath.Join(runs[0], "config", "a.txt"), "mine")
 }
+
+// --dry-run prints the plan and changes nothing, not even a missing dir.
+func TestDryRun(t *testing.T) {
+	t.Parallel()
+	const slug = "e2e-dry-run"
+	mod, _ := seedPackMod(t, slug+"-mod")
+	packs := t.TempDir()
+	v1 := filepath.Join(packs, "v1.mrpack")
+	v2 := filepath.Join(packs, "v2.mrpack")
+	if err := os.WriteFile(v1, fabricPack(t, slug, "1.0.0", []packFile{mod}, []zipEntry{{"overrides/config/dropped.txt", "1"}}), 0644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(v2, fabricPack(t, slug, "2.0.0", []packFile{mod}, []zipEntry{{"overrides/config/new.txt", "2"}}), 0644); err != nil {
+		t.Fatal(err)
+	}
+	dir := t.TempDir()
+	installInto(t, dir, v1)
+	contents, times := snapshot(t, dir), modTimes(t, dir)
+
+	stdout, stderr, err := mrpackInstallStdout(t, v2, "--dry-run", "--host", labrinthURL, "--server-dir", dir)
+	if err != nil {
+		t.Fatalf("mrpack-install --dry-run: %v\n%s", err, stderr)
+	}
+
+	if want := "delete config/dropped.txt\nwrite config/new.txt\ninstall server: no\n"; string(stdout) != want {
+		t.Errorf("stdout = %q, want %q", stdout, want)
+	}
+	if !reflect.DeepEqual(snapshot(t, dir), contents) || !reflect.DeepEqual(modTimes(t, dir), times) {
+		t.Error("--dry-run changed the server dir")
+	}
+
+	missing := filepath.Join(t.TempDir(), "new-server")
+	stdout, stderr, err = mrpackInstallStdout(t, v1, "--dry-run", "--host", labrinthURL, "--server-dir", missing)
+	if err != nil {
+		t.Fatalf("mrpack-install --dry-run: %v\n%s", err, stderr)
+	}
+	if !strings.Contains(string(stdout), "install server: yes\n") {
+		t.Errorf("stdout lacks the server install:\n%s", stdout)
+	}
+	assertMissing(t, missing)
+}
