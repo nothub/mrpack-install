@@ -919,3 +919,122 @@ func TestSyncConvertsBetaState(t *testing.T) {
 		t.Errorf("state server file = %+v, want the inferred fabric launcher", state.ServerFile)
 	}
 }
+
+// legacyServerDir installs v1 into a new dir and replaces its state with
+// the modpack.json v0.16.10 would have written for it.
+func legacyServerDir(t *testing.T, v1 string, mod packFile, overrides map[string]string) string {
+	t.Helper()
+	dir := t.TempDir()
+	installInto(t, dir, v1)
+	if err := os.Remove(filepath.Join(dir, "packstate.json")); err != nil {
+		t.Fatal(err)
+	}
+	files := map[string]any{
+		mod.Path: map[string]any{"Hash": mod.Hashes["sha1"], "DownloadLink": mod.Downloads},
+	}
+	for p, content := range overrides {
+		sum := sha1.Sum([]byte(content))
+		files[p] = map[string]any{"Hash": hex.EncodeToString(sum[:]), "DownloadLink": nil}
+	}
+	info, err := json.MarshalIndent(map[string]any{
+		"modPackVersion": "1.0.0",
+		"modPackName":    "legacy",
+		"file":           files,
+		"dependencies":   map[string]string{"minecraft": fabricDeps["minecraft"], "fabric-loader": fabricDeps["fabric-loader"], "quilt-loader": "", "forge": ""},
+	}, "", "\t")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(dir, "modpack.json"), info, 0644); err != nil {
+		t.Fatal(err)
+	}
+	return dir
+}
+
+// A v0.16.10 server dir updates on its first run, and its modpack.json is
+// gone afterwards.
+func TestSyncConvertsModpackJson(t *testing.T) {
+	t.Parallel()
+	const slug = "e2e-sync-modpack-json"
+	mod, _ := seedPackMod(t, slug+"-mod")
+	packs := t.TempDir()
+	v1 := filepath.Join(packs, "v1.mrpack")
+	if err := os.WriteFile(v1, fabricPack(t, slug, "1.0.0", []packFile{mod}, []zipEntry{
+		{"overrides/config/kept.txt", "1"},
+		{"overrides/config/dropped.txt", "1"},
+	}), 0644); err != nil {
+		t.Fatal(err)
+	}
+	overrides := map[string]string{"config/kept.txt": "1", "config/dropped.txt": "1"}
+
+	t.Run("same dependencies", func(t *testing.T) {
+		t.Parallel()
+		v2 := filepath.Join(t.TempDir(), "v2.mrpack")
+		if err := os.WriteFile(v2, fabricPack(t, slug, "2.0.0", []packFile{mod}, []zipEntry{{"overrides/config/kept.txt", "2"}}), 0644); err != nil {
+			t.Fatal(err)
+		}
+		dir := legacyServerDir(t, v1, mod, overrides)
+		legacy, err := os.ReadFile(filepath.Join(dir, "modpack.json"))
+		if err != nil {
+			t.Fatal(err)
+		}
+		launchers, err := filepath.Glob(filepath.Join(dir, "fabric-server-*.jar"))
+		if err != nil || len(launchers) != 1 {
+			t.Fatalf("fabric server jars = %v, %v, want one", launchers, err)
+		}
+		before, err := os.Stat(launchers[0])
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		installInto(t, dir, v2)
+
+		assertMissing(t, filepath.Join(dir, "backups"))
+		assertMissing(t, filepath.Join(dir, "config", "dropped.txt"))
+		assertContent(t, filepath.Join(dir, "config", "kept.txt"), "2")
+		after, err := os.Stat(launchers[0])
+		if err != nil {
+			t.Fatal(err)
+		}
+		if !os.SameFile(before, after) || !after.ModTime().Equal(before.ModTime()) {
+			t.Errorf("server jar %s was reinstalled", launchers[0])
+		}
+		assertMissing(t, filepath.Join(dir, "modpack.json"))
+
+		// Next to a packstate.json it is not read, but still deleted.
+		if err := os.WriteFile(filepath.Join(dir, "modpack.json"), legacy, 0644); err != nil {
+			t.Fatal(err)
+		}
+		installInto(t, dir, v2, "--force-sync")
+		assertMissing(t, filepath.Join(dir, "modpack.json"))
+		assertContent(t, filepath.Join(dir, "config", "kept.txt"), "2")
+	})
+
+	t.Run("loader bump", func(t *testing.T) {
+		t.Parallel()
+		v2 := filepath.Join(t.TempDir(), "v2.mrpack")
+		data := packArchive(t, packIndex{
+			FormatVersion: 1,
+			Game:          "minecraft",
+			VersionID:     "2.0.0",
+			Name:          slug,
+			Files:         []packFile{mod},
+			Dependencies:  map[string]string{"minecraft": "1.21.8", "fabric-loader": "0.16.14"},
+		}, nil)
+		if err := os.WriteFile(v2, data, 0644); err != nil {
+			t.Fatal(err)
+		}
+		dir := legacyServerDir(t, v1, mod, overrides)
+
+		installInto(t, dir, v2)
+
+		jars, err := filepath.Glob(filepath.Join(dir, "fabric-server-*.jar"))
+		if err != nil {
+			t.Fatal(err)
+		}
+		if len(jars) != 1 || !strings.Contains(filepath.Base(jars[0]), "loader.0.16.14-") {
+			t.Errorf("fabric server jars = %v, want only the 0.16.14 one", jars)
+		}
+		assertMissing(t, filepath.Join(dir, "modpack.json"))
+	})
+}

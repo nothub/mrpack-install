@@ -1,0 +1,22 @@
+{
+	"modPackVersion": "1.0.0",
+	"modPackName": "Example",
+	"file": {
+		"config/a.txt": {
+			"Hash": "356a192b7913b04c54574d18c28d46e6395428ab",
+			"DownloadLink": null
+		},
+		"mods/a.jar": {
+			"Hash": "f92e777f4341930bad9b2422283c4680d00dbc06",
+			"DownloadLink": [
+				"https://cdn.modrinth.com/data/x/versions/y/a.jar"
+			]
+		}
+	},
+	"dependencies": {
+		"minecraft": "1.21.8",
+		"fabric-loader": "0.17.2",
+		"quilt-loader": "",
+		"forge": ""
+	}
+}

@@ -134,6 +134,12 @@ func Apply(serverDir string, plan *Plan, staging *Staging, state *packstate.Sche
 		log.Printf("Unable to remove staging dir: %s\n", err)
 	}
 	removeEmptiedDirs(serverDir, append(deletes, backedUp...))
+	// The sync is complete, so a modpack.json that can't be removed now is
+	// only reported. Its state is stale either way: packstate.json wins.
+	err = packstate.RemoveLegacy(serverDir)
+	if err != nil {
+		log.Printf("Unable to delete %s: %s\n", packstate.LegacyFileName, err)
+	}
 	return nil
 }
 

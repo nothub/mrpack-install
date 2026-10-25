@@ -9,6 +9,7 @@ import (
 	"os"
 	"path/filepath"
 	"reflect"
+	"strings"
 	"testing"
 
 	modrinth "github.com/nothub/mrpack-install/modrinth/api"
@@ -486,5 +487,127 @@ func TestInferServerFile(t *testing.T) {
 				t.Errorf("inferServerFile() = %+v, want %s with its hashes", got, tt.want)
 			}
 		})
+	}
+}
+
+// copyLegacy lays out a server dir holding the given testdata file as its
+// modpack.json, and files by path.
+func copyLegacy(t *testing.T, fixture string, files map[string]string) string {
+	t.Helper()
+	b, err := os.ReadFile(filepath.Join("testdata", fixture))
+	if err != nil {
+		t.Fatal(err)
+	}
+	dir := t.TempDir()
+	if err := os.WriteFile(filepath.Join(dir, LegacyFileName), b, 0644); err != nil {
+		t.Fatal(err)
+	}
+	for p, data := range files {
+		if err := os.WriteFile(filepath.Join(dir, p), []byte(data), 0644); err != nil {
+			t.Fatal(err)
+		}
+	}
+	return dir
+}
+
+func TestLoadModpackJson(t *testing.T) {
+	t.Parallel()
+	dir := copyLegacy(t, "modpack.json", map[string]string{"fabric-server-mc.1.21.8-loader.0.17.2-launcher.1.0.1.jar": "launcher"})
+
+	state, err := LoadPackState(dir)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if state == nil {
+		t.Fatal("LoadPackState() = nil, want the converted modpack.json")
+	}
+	if state.SchemaVersion != 1 || state.Name != "Example" || state.Version != "1.0.0" || state.ArchiveSha512 != "" {
+		t.Errorf("SchemaVersion, Name, Version, ArchiveSha512 = %d, %q, %q, %q", state.SchemaVersion, state.Name, state.Version, state.ArchiveSha512)
+	}
+	if state.Deps != (mrpack.Deps{Minecraft: "1.21.8", Fabric: "0.17.2"}) {
+		t.Errorf("Deps = %+v", state.Deps)
+	}
+	if state.Ids != (Ids{}) {
+		t.Errorf("Ids = %+v, want none: v0.16.10 never recorded them", state.Ids)
+	}
+	want := map[string]modrinth.Hashes{
+		"mods/a.jar":   {Sha1: "f92e777f4341930bad9b2422283c4680d00dbc06"},
+		"config/a.txt": {Sha1: "356a192b7913b04c54574d18c28d46e6395428ab"},
+	}
+	if !reflect.DeepEqual(state.Hashes, want) {
+		t.Errorf("Hashes = %v, want %v", state.Hashes, want)
+	}
+	if state.ServerFile == nil || state.ServerFile.Path != "fabric-server-mc.1.21.8-loader.0.17.2-launcher.1.0.1.jar" {
+		t.Errorf("ServerFile = %+v, want the inferred fabric launcher", state.ServerFile)
+	}
+}
+
+func TestForeignModpackJsonIsNeitherReadNorDeleted(t *testing.T) {
+	t.Parallel()
+	dir := copyLegacy(t, "foreign-modpack.json", nil)
+
+	state, err := LoadPackState(dir)
+	if err != nil || state != nil {
+		t.Errorf("LoadPackState() = %+v, %v, want nil, nil", state, err)
+	}
+	if err := RemoveLegacy(dir); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := os.Stat(filepath.Join(dir, LegacyFileName)); err != nil {
+		t.Errorf("foreign modpack.json: %v, want it kept", err)
+	}
+}
+
+func TestModpackJsonDetection(t *testing.T) {
+	t.Parallel()
+	valid, err := os.ReadFile("testdata/modpack.json")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, ok := parseLegacy(valid); !ok {
+		t.Fatal("parseLegacy(fixture) is not ok, want ok")
+	}
+	upper := strings.Replace(string(valid), "356a192b7913b04c54574d18c28d46e6395428ab", "356A192B7913B04C54574D18C28D46E6395428AB", 1)
+	if _, ok := parseLegacy([]byte(upper)); !ok {
+		t.Error("parseLegacy() rejects an uppercase SHA-1, which v0.16.10 copied from the index")
+	}
+	for name, content := range map[string]string{
+		"extra top-level key":   `{"modPackVersion":"1","modPackName":"x","file":{},"dependencies":{"minecraft":"1.21.8","fabric-loader":"","quilt-loader":"","forge":""},"other":1}`,
+		"neoforge key":          `{"modPackVersion":"1","modPackName":"x","file":{},"dependencies":{"minecraft":"1.21.8","fabric-loader":"","quilt-loader":"","forge":"","neoforge":""}}`,
+		"missing forge key":     `{"modPackVersion":"1","modPackName":"x","file":{},"dependencies":{"minecraft":"1.21.8","fabric-loader":"","quilt-loader":""}}`,
+		"missing DownloadLink":  `{"modPackVersion":"1","modPackName":"x","file":{"a":{"Hash":"356a192b7913b04c54574d18c28d46e6395428ab"}},"dependencies":{"minecraft":"1.21.8","fabric-loader":"","quilt-loader":"","forge":""}}`,
+		"malformed Hash":        `{"modPackVersion":"1","modPackName":"x","file":{"a":{"Hash":"xyz","DownloadLink":null}},"dependencies":{"minecraft":"1.21.8","fabric-loader":"","quilt-loader":"","forge":""}}`,
+		"DownloadLink a string": `{"modPackVersion":"1","modPackName":"x","file":{"a":{"Hash":"356a192b7913b04c54574d18c28d46e6395428ab","DownloadLink":"x"}},"dependencies":{"minecraft":"1.21.8","fabric-loader":"","quilt-loader":"","forge":""}}`,
+		"not json":              `modpack`,
+	} {
+		if _, ok := parseLegacy([]byte(content)); ok {
+			t.Errorf("%s: parseLegacy() is ok, want not ok", name)
+		}
+	}
+}
+
+// With both files, packstate.json wins, and the modpack.json is removed
+// after the run.
+func TestPackstateTakesPrecedenceOverModpackJson(t *testing.T) {
+	t.Parallel()
+	dir := copyLegacy(t, "modpack.json", nil)
+	saved := &Schema{SchemaVersion: 1, Name: "Current", Hashes: map[string]modrinth.Hashes{}}
+	if err := saved.Save(dir); err != nil {
+		t.Fatal(err)
+	}
+
+	state, err := LoadPackState(dir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if state == nil || state.Name != "Current" {
+		t.Fatalf("LoadPackState() = %+v, want the packstate.json", state)
+	}
+	if err := RemoveLegacy(dir); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := os.Stat(filepath.Join(dir, LegacyFileName)); !os.IsNotExist(err) {
+		t.Errorf("modpack.json: stat error = %v, want removed", err)
 	}
 }

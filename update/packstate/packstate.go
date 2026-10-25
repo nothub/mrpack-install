@@ -210,11 +210,12 @@ func (state *Schema) Save(serverDir string) error {
 }
 
 // LoadPackState returns the state in serverDir, or nil when there is none.
-// A beta state, without a schema field, is converted to the current schema.
+// A beta state, without a schema field, is converted to the current schema,
+// and so is a v0.16.10 modpack.json when there is no packstate.json.
 func LoadPackState(serverDir string) (*Schema, error) {
 	b, err := os.ReadFile(filepath.Join(serverDir, FileName))
 	if errors.Is(err, fs.ErrNotExist) {
-		return nil, nil
+		return loadLegacy(serverDir)
 	}
 	if err != nil {
 		return nil, err
@@ -234,6 +235,118 @@ func LoadPackState(serverDir string) (*Schema, error) {
 	default:
 		return nil, fmt.Errorf("%s has unknown schema %d, written by a newer mrpack-install", FileName, state.SchemaVersion)
 	}
+}
+
+// LegacyFileName is the state file v0.16.10 wrote.
+const LegacyFileName = "modpack.json"
+
+// legacySchema is modpack.json as v0.16.10 wrote it. The pointers and raw
+// messages tell a missing key from an empty value, since only the exact
+// v0.16.10 shape counts as one: another tool's modpack.json is left alone.
+type legacySchema struct {
+	ModPackVersion *string               `json:"modPackVersion"`
+	ModPackName    *string               `json:"modPackName"`
+	File           map[string]legacyFile `json:"file"`
+	Dependencies   *legacyDeps           `json:"dependencies"`
+}
+
+type legacyFile struct {
+	Hash         *string         `json:"Hash"`
+	DownloadLink json.RawMessage `json:"DownloadLink"`
+}
+
+type legacyDeps struct {
+	Minecraft *string `json:"minecraft"`
+	Fabric    *string `json:"fabric-loader"`
+	Quilt     *string `json:"quilt-loader"`
+	Forge     *string `json:"forge"`
+}
+
+var sha1Hex = regexp.MustCompile(`^[0-9a-fA-F]{40}$`)
+
+// parseLegacy decodes b when it has exactly the v0.16.10 modpack.json shape:
+// these keys and no others, every dependency present (loaders may be
+// empty), and each file a SHA-1 Hash with a DownloadLink list, or null for
+// an override.
+func parseLegacy(b []byte) (*legacySchema, bool) {
+	var legacy legacySchema
+	dec := json.NewDecoder(bytes.NewReader(b))
+	dec.DisallowUnknownFields()
+	if dec.Decode(&legacy) != nil || dec.More() {
+		return nil, false
+	}
+	d := legacy.Dependencies
+	if legacy.ModPackVersion == nil || legacy.ModPackName == nil || legacy.File == nil || d == nil ||
+		d.Minecraft == nil || *d.Minecraft == "" || d.Fabric == nil || d.Quilt == nil || d.Forge == nil {
+		return nil, false
+	}
+	for _, f := range legacy.File {
+		if f.Hash == nil || !sha1Hex.MatchString(*f.Hash) || len(f.DownloadLink) == 0 {
+			return nil, false
+		}
+		var links []string
+		if json.Unmarshal(f.DownloadLink, &links) != nil {
+			return nil, false
+		}
+	}
+	return &legacy, true
+}
+
+// loadLegacy converts a v0.16.10 modpack.json in serverDir, or returns nil
+// when there is none or it isn't one. It only recorded SHA-1 hashes, so its
+// files compare by SHA-1.
+func loadLegacy(serverDir string) (*Schema, error) {
+	b, err := os.ReadFile(filepath.Join(serverDir, LegacyFileName))
+	if errors.Is(err, fs.ErrNotExist) {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, err
+	}
+	legacy, ok := parseLegacy(b)
+	if !ok {
+		log.Printf("Ignoring %s, it was not written by mrpack-install v0.16.10\n", LegacyFileName)
+		return nil, nil
+	}
+	d := legacy.Dependencies
+	state := Schema{
+		SchemaVersion: SchemaVersion,
+		Name:          *legacy.ModPackName,
+		Version:       *legacy.ModPackVersion,
+		Deps:          mrpack.Deps{Minecraft: *d.Minecraft, Fabric: *d.Fabric, Quilt: *d.Quilt, Forge: *d.Forge},
+		Hashes:        make(map[string]modrinth.Hashes, len(legacy.File)),
+	}
+	for p, f := range legacy.File {
+		state.Hashes[p] = modrinth.Hashes{Sha1: *f.Hash}
+	}
+	state.ServerFile, err = inferServerFile(serverDir, state.Deps)
+	if err != nil {
+		return nil, err
+	}
+	log.Printf("Reading the v0.16.10 %s as schema %d\n", LegacyFileName, SchemaVersion)
+	return &state, nil
+}
+
+// RemoveLegacy deletes a v0.16.10 modpack.json from serverDir once a run has
+// saved its packstate.json, so a later deleted packstate.json can't bring
+// the stale state back. Another tool's modpack.json stays.
+func RemoveLegacy(serverDir string) error {
+	p := filepath.Join(serverDir, LegacyFileName)
+	b, err := os.ReadFile(p)
+	if errors.Is(err, fs.ErrNotExist) {
+		return nil
+	}
+	if err != nil {
+		return err
+	}
+	if _, ok := parseLegacy(b); !ok {
+		return nil
+	}
+	err = os.Remove(p)
+	if err == nil {
+		log.Printf("Deleted the v0.16.10 %s\n", LegacyFileName)
+	}
+	return err
 }
 
 // emptySha512 is the SHA-512 of empty input. Betas recorded it for every

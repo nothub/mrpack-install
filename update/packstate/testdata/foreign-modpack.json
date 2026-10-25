@@ -1,0 +1,7 @@
+{
+  "name": "Some other tool",
+  "version": "3",
+  "mods": [
+    "a.jar"
+  ]
+}
