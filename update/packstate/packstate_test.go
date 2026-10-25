@@ -344,3 +344,58 @@ func TestShippedFilesSkipsExcluded(t *testing.T) {
 		t.Errorf("ShippedFiles() = %v, want %v", got, want)
 	}
 }
+
+func TestInvalidateDropsArchiveHash(t *testing.T) {
+	t.Parallel()
+	dir := t.TempDir()
+	state := &Schema{SchemaVersion: 1, Name: "Example", ArchiveSha512: "abc", Hashes: map[string]modrinth.Hashes{}}
+
+	if err := state.Invalidate(dir); err != nil {
+		t.Fatal(err)
+	}
+
+	got, err := LoadPackState(dir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got.ArchiveSha512 != "" || got.Name != "Example" {
+		t.Errorf("saved state = %+v, want Example without archive hash", got)
+	}
+	if state.ArchiveSha512 != "abc" {
+		t.Errorf("in-memory state lost its archive hash")
+	}
+}
+
+func TestArchiveSha512(t *testing.T) {
+	t.Parallel()
+	pack := writePack(t, mrpack.Index{Name: "Example"}, nil)
+
+	got, err := ArchiveSha512(pack)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if want := archiveSha512(t, pack); got != want {
+		t.Errorf("ArchiveSha512() = %q, want %q", got, want)
+	}
+}
+
+func TestForceSyncIsNotRecorded(t *testing.T) {
+	t.Parallel()
+	dir := t.TempDir()
+	state := &Schema{SchemaVersion: 1, Options: Options{ForceSync: true}, Hashes: map[string]modrinth.Hashes{}}
+	if err := state.Save(dir); err != nil {
+		t.Fatal(err)
+	}
+
+	got, err := LoadPackState(dir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got.Options.ForceSync {
+		t.Error("ForceSync was recorded")
+	}
+	if !got.Options.Equal(Options{ForceSync: true}) {
+		t.Error("Equal() compares ForceSync, want it ignored")
+	}
+}

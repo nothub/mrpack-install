@@ -16,6 +16,7 @@ import (
 	"reflect"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/nothub/mrpack-install/modrinth/api"
 )
@@ -708,4 +709,106 @@ func TestSyncReinstallsServerOnLoaderBump(t *testing.T) {
 		t.Errorf("fabric server jars = %v, want only the 0.17.2 one", jars)
 	}
 	assertMissing(t, filepath.Join(dir, "backups"))
+}
+
+// modTimes maps every file under dir to its modification time.
+func modTimes(t testing.TB, dir string) map[string]time.Time {
+	t.Helper()
+	times := make(map[string]time.Time)
+	err := filepath.WalkDir(dir, func(path string, d fs.DirEntry, err error) error {
+		if err != nil || d.IsDir() {
+			return err
+		}
+		fi, err := d.Info()
+		if err != nil {
+			return err
+		}
+		times[path] = fi.ModTime()
+		return nil
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	return times
+}
+
+// A re-run for the installed archive changes no file and, for a slug,
+// downloads nothing.
+func TestRerunIsNoOp(t *testing.T) {
+	t.Parallel()
+	const slug = "e2e-rerun-noop"
+	mod, _ := seedPackMod(t, slug+"-mod")
+	pack := fabricPack(t, slug, "1.0.0", []packFile{mod}, []zipEntry{{"overrides/config/a.txt", "1"}})
+	created := createProject(t, api.ModpackProjectType, slug, file{Name: slug + ".mrpack", Data: pack}, fabric1218)
+	approve(t, created.Id)
+	sum := sha512.Sum512(pack)
+	cached := filepath.Join(cacheHome, "mrpack-install", hex.EncodeToString(sum[:])+".mrpack")
+	dir := t.TempDir()
+	installInto(t, dir, slug)
+	contents, times := snapshot(t, dir), modTimes(t, dir)
+	if err := os.Remove(cached); err != nil {
+		t.Fatal(err)
+	}
+
+	installInto(t, dir, slug)
+
+	if !reflect.DeepEqual(snapshot(t, dir), contents) {
+		t.Error("a file changed")
+	}
+	if !reflect.DeepEqual(modTimes(t, dir), times) {
+		t.Error("a modification time changed")
+	}
+	assertMissing(t, cached)
+}
+
+// --force-sync restores a deleted pack file, and backs up and resets an
+// edited one.
+func TestForceSyncRepairs(t *testing.T) {
+	t.Parallel()
+	const slug = "e2e-force-sync"
+	mod, jar := seedPackMod(t, slug+"-mod")
+	path := filepath.Join(t.TempDir(), "pack.mrpack")
+	if err := os.WriteFile(path, fabricPack(t, slug, "1.0.0", []packFile{mod}, []zipEntry{{"overrides/config/a.txt", "1"}}), 0644); err != nil {
+		t.Fatal(err)
+	}
+	dir := t.TempDir()
+	installInto(t, dir, path)
+	// A re-run of a local archive is a no-op too.
+	times := modTimes(t, dir)
+	installInto(t, dir, path)
+	if !reflect.DeepEqual(modTimes(t, dir), times) {
+		t.Error("re-run of a local archive changed a modification time")
+	}
+	launchers, err := filepath.Glob(filepath.Join(dir, "fabric-server-*.jar"))
+	if err != nil || len(launchers) != 1 {
+		t.Fatalf("fabric server jars = %v, %v, want one", launchers, err)
+	}
+	before, err := os.Stat(launchers[0])
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Remove(filepath.Join(dir, mod.Path)); err != nil {
+		t.Fatal(err)
+	}
+	edited := filepath.Join(dir, "config", "a.txt")
+	if err := os.WriteFile(edited, []byte("mine"), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	installInto(t, dir, path, "--force-sync")
+
+	after, err := os.Stat(launchers[0])
+	if err != nil {
+		t.Fatal(err)
+	}
+	if after.ModTime().Equal(before.ModTime()) {
+		t.Errorf("--force-sync did not reinstall the server: %s unchanged", launchers[0])
+	}
+	assertSha512(t, filepath.Join(dir, mod.Path), jar)
+	assertContent(t, edited, "1")
+	runs := backupRuns(t, filepath.Join(dir, "backups"))
+	if len(runs) != 1 {
+		t.Fatalf("backup runs = %v, want one", runs)
+	}
+	assertContent(t, filepath.Join(runs[0], "config", "a.txt"), "mine")
 }

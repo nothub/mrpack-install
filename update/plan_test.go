@@ -314,13 +314,14 @@ func TestComputeInstallServer(t *testing.T) {
 		{"loader changed", &packstate.Schema{SchemaVersion: 1, Deps: mrpack.Deps{Minecraft: "1.21.8", Fabric: "0.16.14"}}, true},
 		{"minecraft changed", &packstate.Schema{SchemaVersion: 1, Deps: mrpack.Deps{Minecraft: "1.21.7", Fabric: "0.17.2"}}, true},
 		{"loader switched", &packstate.Schema{SchemaVersion: 1, Deps: mrpack.Deps{Minecraft: "1.21.8", Quilt: "0.29.1"}}, true},
+		{"force sync", &packstate.Schema{SchemaVersion: 1, Deps: deps}, true},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			index, archive := writePack(t, mrpack.Index{Name: "pack", Deps: deps}, nil)
 
-			plan, err := Compute(serverDir(t, nil), tt.old, index, archive, packstate.Options{})
+			plan, err := Compute(serverDir(t, nil), tt.old, index, archive, packstate.Options{ForceSync: tt.name == "force sync"})
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -392,5 +393,84 @@ func TestComputeInstallServerForServerFile(t *testing.T) {
 				t.Errorf("InstallServer = %v, want %v", plan.InstallServer, tt.want)
 			}
 		})
+	}
+}
+
+func TestNoOp(t *testing.T) {
+	t.Parallel()
+	opts := packstate.Options{OptionalSelect: []string{"a", "b"}, Exclude: []string{"config/**", "mods/x.jar"}}
+	old := &packstate.Schema{SchemaVersion: 1, ArchiveSha512: "sum", Options: opts}
+	tests := []struct {
+		name  string
+		old   *packstate.Schema
+		sum   string
+		opts  packstate.Options
+		force bool
+		want  bool
+	}{
+		{"same archive and options", old, "sum", opts, false, true},
+		{"reordered lists", old, "sum", packstate.Options{OptionalSelect: []string{"b", "a"}, Exclude: []string{"mods/x.jar", "config/**"}}, false, true},
+		{"no old state", nil, "sum", opts, false, false},
+		{"other archive", old, "other", opts, false, false},
+		{"unknown archive", old, "", opts, false, false},
+		{"invalidated state", &packstate.Schema{SchemaVersion: 1, Options: opts}, "", opts, false, false},
+		{"changed optional selection", old, "sum", packstate.Options{OptionalSelect: []string{"a"}, Exclude: opts.Exclude}, false, false},
+		{"optional mods disabled", old, "sum", packstate.Options{OptionalSelect: opts.OptionalSelect, OptionalDisableAll: true, Exclude: opts.Exclude}, false, false},
+		{"changed exclusions", old, "sum", packstate.Options{OptionalSelect: opts.OptionalSelect, Exclude: []string{"config/**"}}, false, false},
+		{"changed server file", old, "sum", packstate.Options{OptionalSelect: opts.OptionalSelect, Exclude: opts.Exclude, ServerFile: "mc.jar"}, false, false},
+		{"force sync", old, "sum", opts, true, false},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			tt.opts.ForceSync = tt.force
+
+			got, err := NoOp(t.TempDir(), tt.old, tt.sum, tt.opts)
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			if got != tt.want {
+				t.Errorf("NoOp() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestNoOpNeedsRecordedServerJar(t *testing.T) {
+	t.Parallel()
+	old := &packstate.Schema{SchemaVersion: 1, ArchiveSha512: "sum", ServerFile: &packstate.ServerFile{Path: "server.jar"}}
+	tests := []struct {
+		name string
+		disk map[string]string
+		want bool
+	}{
+		{"jar in place", map[string]string{"server.jar": "jar"}, true},
+		{"jar missing", nil, false},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			got, err := NoOp(serverDir(t, tt.disk), old, "sum", packstate.Options{})
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			if got != tt.want {
+				t.Errorf("NoOp() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+// nil and empty lists are the same options: cobra leaves an unset flag nil,
+// and a state read back from JSON may hold either.
+func TestNoOpNilAndEmptyLists(t *testing.T) {
+	t.Parallel()
+	old := &packstate.Schema{SchemaVersion: 1, ArchiveSha512: "sum", Options: packstate.Options{OptionalSelect: []string{}}}
+
+	if got, err := NoOp(t.TempDir(), old, "sum", packstate.Options{}); err != nil || !got {
+		t.Errorf("NoOp() = %v, %v, want true", got, err)
 	}
 }

@@ -13,7 +13,9 @@ import (
 	"os"
 	"path"
 	"path/filepath"
+	"reflect"
 	"regexp"
+	"slices"
 	"strings"
 
 	modrinth "github.com/nothub/mrpack-install/modrinth/api"
@@ -56,6 +58,27 @@ type Options struct {
 	Exclude []string `json:"exclude"`
 	// ServerFile is the --server-file name, "" for the installer's own.
 	ServerFile string `json:"server-file"`
+	// ForceSync skips the no-op check and reinstalls the server. It applies
+	// to one run, so it is never recorded.
+	ForceSync bool `json:"-"`
+}
+
+// Equal reports whether opts and other shape a sync the same way. The
+// order of list entries doesn't matter, and a nil list equals an empty one.
+func (opts Options) Equal(other Options) bool {
+	return reflect.DeepEqual(opts.normalized(), other.normalized())
+}
+
+func (opts Options) normalized() Options {
+	sorted := func(list []string) []string {
+		c := append([]string{}, list...)
+		slices.Sort(c)
+		return c
+	}
+	opts.OptionalSelect = sorted(opts.OptionalSelect)
+	opts.Exclude = sorted(opts.Exclude)
+	opts.ForceSync = false
+	return opts
 }
 
 // Excludes reports whether the pack-relative path matches an Exclude
@@ -222,17 +245,10 @@ func FromArchive(path string, opts Options, ids func(sha512 string) (Ids, error)
 		return nil, err
 	}
 
-	f, err := os.Open(path)
+	archiveSha512, err := ArchiveSha512(path)
 	if err != nil {
 		return nil, err
 	}
-	defer f.Close()
-	h := sha512.New()
-	_, err = io.Copy(h, f)
-	if err != nil {
-		return nil, err
-	}
-	archiveSha512 := hex.EncodeToString(h.Sum(nil))
 
 	var state Schema
 	state.SchemaVersion = SchemaVersion
@@ -250,6 +266,34 @@ func FromArchive(path string, opts Options, ids func(sha512 string) (Ids, error)
 	}
 
 	return &state, nil
+}
+
+// ArchiveSha512 returns the hex SHA-512 of the archive at path, the pack's
+// identity for the no-op check.
+func ArchiveSha512(path string) (string, error) {
+	f, err := os.Open(path)
+	if err != nil {
+		return "", err
+	}
+	defer f.Close()
+	h := sha512.New()
+	_, err = io.Copy(h, f)
+	if err != nil {
+		return "", err
+	}
+	return hex.EncodeToString(h.Sum(nil)), nil
+}
+
+// Invalidate saves the state without its archive hash, so a run that fails
+// after this can't satisfy a later no-op check. The in-memory state keeps
+// it.
+func (state *Schema) Invalidate(serverDir string) error {
+	if state == nil {
+		return nil
+	}
+	c := *state
+	c.ArchiveSha512 = ""
+	return c.Save(serverDir)
 }
 
 // ShippedFiles returns the hashes of every file the pack at archive puts

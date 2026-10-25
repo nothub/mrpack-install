@@ -99,7 +99,7 @@ func Compute(serverDir string, old *packstate.Schema, index *mrpack.Index, archi
 	if err != nil {
 		return nil, err
 	}
-	plan := Plan{InstallServer: install}
+	plan := Plan{InstallServer: install || opts.ForceSync}
 	for _, p := range paths {
 		disk, err := hashFile(full[p])
 		if err != nil {
@@ -151,6 +151,19 @@ func Compute(serverDir string, old *packstate.Schema, index *mrpack.Index, archi
 	})
 
 	return &plan, nil
+}
+
+// NoOp reports whether syncing the archive with SHA-512 sum under opts
+// would change nothing: the old state records the same archive and the same
+// options, the recorded server jar is in place, and ForceSync is not set.
+func NoOp(serverDir string, old *packstate.Schema, sum string, opts packstate.Options) (bool, error) {
+	if opts.ForceSync || old == nil || sum == "" || old.ArchiveSha512 != sum || !old.Options.Equal(opts) {
+		return false, nil
+	}
+	// The same archive has the same dependencies, so this only checks the
+	// server jar.
+	install, err := installServer(serverDir, old, old.Deps, opts.ServerFile)
+	return !install, err
 }
 
 // installServer reports whether the server needs installing: there is no

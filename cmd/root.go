@@ -36,6 +36,7 @@ var (
 	optionalDisableAll bool
 	backupDir          string
 	excludes           []string
+	forceSync          bool
 )
 
 func init() {
@@ -61,6 +62,7 @@ func init() {
 	RootCmd.Flags().BoolVar(&optionalDisableAll, "optional-disable-all", false, "Disable all optional mods")
 	RootCmd.Flags().StringVar(&backupDir, "backup-dir", "", "Backup directory path (default <server-dir>/backups)")
 	RootCmd.Flags().StringArrayVar(&excludes, "exclude", nil, excludeUsage)
+	RootCmd.Flags().BoolVar(&forceSync, "force-sync", false, "Re-apply the pack and reinstall the server, even when it is already installed")
 
 	cobra.OnInitialize(func() {
 		if printVersion {
@@ -144,10 +146,38 @@ var RootCmd = &cobra.Command{
 		if len(args) > 1 {
 			version = args[1]
 		}
-		index, zipPath, lookup := handleArgs(input, version, serverDir, host)
-		opts := packstate.Options{OptionalSelect: optionalSelected, OptionalDisableAll: optionalDisableAll, Exclude: excludes, ServerFile: serverFile}
-
-		zipPath, err := filepath.Abs(zipPath)
+		opts := packstate.Options{OptionalSelect: optionalSelected, OptionalDisableAll: optionalDisableAll, Exclude: excludes, ServerFile: serverFile, ForceSync: forceSync}
+		old, err := packstate.LoadPackState(serverDir)
+		if err != nil {
+			log.Fatalln(err)
+		}
+		installed := func(sum string) bool {
+			noop, err := update.NoOp(serverDir, old, sum, opts)
+			if err != nil {
+				log.Fatalln(err)
+			}
+			if noop {
+				log.Printf("%q %s is already installed in %q, nothing to do\n", old.Name, old.Version, serverDir)
+			}
+			return noop
+		}
+		src := resolvePack(input, version)
+		// A slug or id input knows its archive's SHA-512 before downloading.
+		if installed(src.sha512) {
+			return
+		}
+		zipPath, err := filepath.Abs(src.archive())
+		if err != nil {
+			log.Fatalln(err)
+		}
+		sum, err := packstate.ArchiveSha512(zipPath)
+		if err != nil {
+			log.Fatalln(err)
+		}
+		if installed(sum) {
+			return
+		}
+		index, err := mrpack.ReadIndex(zipPath)
 		if err != nil {
 			log.Fatalln(err)
 		}
@@ -162,17 +192,13 @@ var RootCmd = &cobra.Command{
 			log.Fatalln(err)
 		}
 
-		old, err := packstate.LoadPackState(serverDir)
-		if err != nil {
-			log.Fatalln(err)
-		}
 		plan, err := update.Compute(serverDir, old, index, zipPath, opts)
 		if err != nil {
 			log.Fatalln(err)
 		}
 
 		// Before staging: its API lookup can fail, and should fail before the downloads.
-		packState, err := packstate.FromArchive(zipPath, opts, lookup)
+		packState, err := packstate.FromArchive(zipPath, opts, src.lookup)
 		if err != nil {
 			log.Fatalln(err)
 		}
@@ -181,6 +207,12 @@ var RootCmd = &cobra.Command{
 			Threads: int(dlThreads),
 			Retries: int(dlRetries),
 		})
+		if err != nil {
+			log.Fatalln(err)
+		}
+
+		// Everything from here on changes the server dir.
+		err = old.Invalidate(serverDir)
 		if err != nil {
 			log.Fatalln(err)
 		}
@@ -204,99 +236,108 @@ var RootCmd = &cobra.Command{
 	},
 }
 
+// packSource is a pack input resolved to where its archive comes from.
+type packSource struct {
+	// path is a local archive, read in place.
+	path string
+	// url is where the archive downloads from, into the archive cache.
+	url string
+	// sha512 is the archive's SHA-512 when known before the download, for
+	// a slug or id input.
+	sha512 string
+	// lookup finds the pack's Modrinth ids: the ones a slug or id input
+	// resolved, or a lookup by archive hash for a file or URL input.
+	lookup func(string) (packstate.Ids, error)
+}
+
+// resolvePack resolves a file path, URL, slug or id input without
+// downloading the archive.
+func resolvePack(input string, version string) packSource {
+	if web.IsValidHttpUrl(input) {
+		return packSource{url: input, lookup: lookupIds}
+	}
+	if files.IsFile(input) {
+		path := input
+		if runtime.GOOS == "windows" {
+			path = strings.ToUpper(path[0:1]) + path[1:]
+		}
+		log.Printf("Installing from mrpack file: %s\n", path)
+		return packSource{path: path, lookup: lookupIds}
+	}
+
+	log.Printf("Trying to resolve project id or slug: %s\n", input)
+	project, err := modrinth.Client.GetProject(input)
+	if err != nil {
+		log.Fatalln(err)
+	}
+	versions, err := modrinth.Client.GetProjectVersions(input, nil)
+	if err != nil {
+		log.Fatalln(err)
+	}
+
+	var picked *modrinth.Version
+	for i := range versions {
+		if version != "" {
+			if versions[i].VersionNumber == version {
+				picked = versions[i]
+				break
+			}
+		} else {
+			// latest stable release if version not specified
+			if versions[i].VersionType == modrinth.ReleaseVersionType {
+				picked = versions[i]
+				break
+			}
+		}
+	}
+	if picked == nil || len(picked.Files) == 0 {
+		log.Fatalln("No files found for", input, version)
+	}
+	ids := packstate.Ids{Slug: project.Slug, ProjectId: project.Id, VersionId: picked.Id}
+	for _, f := range picked.Files {
+		if strings.HasSuffix(f.Filename, ".mrpack") {
+			return packSource{
+				url:    f.Url,
+				sha512: f.Hashes.Sha512,
+				lookup: func(string) (packstate.Ids, error) { return ids, nil },
+			}
+		}
+	}
+	log.Fatalln("No mrpack file found for", input, version)
+	return packSource{}
+}
+
+// archive returns the local path of the source's archive, downloading it
+// into the archive cache unless a matching copy is cached.
+func (src packSource) archive() string {
+	if src.path != "" {
+		return src.path
+	}
+	cacheDir, err := cache.Dir()
+	if err != nil {
+		log.Fatalln(err)
+	}
+	path, err := cache.Archive(cacheDir, src.url, src.sha512, web.DefaultClient.Download)
+	if err != nil {
+		log.Fatalln(err)
+	}
+	return path
+}
+
 // handleArgs resolves the pack input to its index and archive path, and
-// returns how to find the pack's Modrinth ids: the ones a slug or id input
-// resolved, or a lookup by archive hash for a file or URL input.
+// returns how to find the pack's Modrinth ids.
 func handleArgs(input string, version string, serverDir string, host string) (*mrpack.Index, string, func(string) (packstate.Ids, error)) {
 	err := os.MkdirAll(serverDir, 0755)
 	if err != nil {
 		log.Fatalln(err)
 	}
-
-	archivePath := ""
-	lookup := lookupIds
-	if web.IsValidHttpUrl(input) {
-		cacheDir, err := cache.Dir()
-		if err != nil {
-			log.Fatalln(err)
-		}
-		file, err := cache.Archive(cacheDir, input, "", web.DefaultClient.Download)
-		if err != nil {
-			log.Fatalln(err.Error())
-		}
-		archivePath = file
-
-	} else if files.IsFile(input) {
-		archivePath = input
-		if runtime.GOOS == "windows" {
-			archivePath = strings.ToUpper(archivePath[0:1]) + archivePath[1:]
-		}
-		log.Printf("Installing from mrpack file: %s\n", archivePath)
-
-	} else {
-		log.Printf("Trying to resolve project id or slug: %s\n", input)
-
-		project, err := modrinth.Client.GetProject(input)
-		if err != nil {
-			log.Fatalln(err)
-		}
-		versions, err := modrinth.Client.GetProjectVersions(input, nil)
-		if err != nil {
-			log.Fatalln(err)
-		}
-
-		var picked *modrinth.Version
-		for i := range versions {
-			if version != "" {
-				if versions[i].VersionNumber == version {
-					picked = versions[i]
-					break
-				}
-			} else {
-				// latest stable release if version not specified
-				if versions[i].VersionType == modrinth.ReleaseVersionType {
-					picked = versions[i]
-					break
-				}
-			}
-		}
-		if picked == nil || len(picked.Files) == 0 {
-			log.Fatalln("No files found for", input, version)
-		}
-		fileInfos := picked.Files
-		ids := packstate.Ids{Slug: project.Slug, ProjectId: project.Id, VersionId: picked.Id}
-		lookup = func(string) (packstate.Ids, error) { return ids, nil }
-
-		for i := range fileInfos {
-			if strings.HasSuffix(fileInfos[i].Filename, ".mrpack") {
-				cacheDir, err := cache.Dir()
-				if err != nil {
-					log.Fatalln(err)
-				}
-				file, err := cache.Archive(cacheDir, fileInfos[i].Url, fileInfos[i].Hashes.Sha512, web.DefaultClient.Download)
-				if err != nil {
-					log.Fatalln(err.Error())
-				}
-				archivePath = file
-				break
-			}
-		}
-
-		if archivePath == "" {
-			log.Fatalln("No mrpack file found for", input, version)
-		}
-	}
-
-	if archivePath == "" {
-		log.Fatalln("Unable to handle input: ", input, version)
-	}
-
+	src := resolvePack(input, version)
+	archivePath := src.archive()
 	index, err := mrpack.ReadIndex(archivePath)
 	if err != nil {
 		log.Fatalln(err.Error())
 	}
-
-	return index, archivePath, lookup
+	return index, archivePath, src.lookup
 }
 
 // lookupIds finds the Modrinth ids of the archive with the given SHA-512.
