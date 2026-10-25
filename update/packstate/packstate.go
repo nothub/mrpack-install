@@ -2,6 +2,7 @@ package packstate
 
 import (
 	"bytes"
+	"crypto/sha1"
 	"crypto/sha512"
 	"encoding/hex"
 	"encoding/json"
@@ -209,7 +210,7 @@ func (state *Schema) Save(serverDir string) error {
 }
 
 // LoadPackState returns the state in serverDir, or nil when there is none.
-// A beta state, without a schema field, also counts as none.
+// A beta state, without a schema field, is converted to the current schema.
 func LoadPackState(serverDir string) (*Schema, error) {
 	b, err := os.ReadFile(filepath.Join(serverDir, FileName))
 	if errors.Is(err, fs.ErrNotExist) {
@@ -227,12 +228,122 @@ func LoadPackState(serverDir string) (*Schema, error) {
 
 	switch state.SchemaVersion {
 	case 0:
-		return nil, nil
+		return convertBeta(serverDir, b)
 	case SchemaVersion:
 		return &state, nil
 	default:
 		return nil, fmt.Errorf("%s has unknown schema %d, written by a newer mrpack-install", FileName, state.SchemaVersion)
 	}
+}
+
+// emptySha512 is the SHA-512 of empty input. Betas recorded it for every
+// override, because the SHA-1 pass drained the entry first.
+const emptySha512 = "cf83e1357eefb8bdf1542850d66d8007d620e4050b5715dc83f4a921d36ce9ce47d0d13c5d85f2b0ff8318d2877eec2f63b931bd47417a81a538327af927da3e"
+
+// betaSchema is packstate.json as v0.17.0-beta to v0.21.0-beta wrote it.
+type betaSchema struct {
+	Slug      string                     `json:"slug"`
+	ProjectId string                     `json:"project-id"`
+	Version   string                     `json:"version"`
+	VersionId string                     `json:"version-id"`
+	Deps      mrpack.Deps                `json:"dependencies"`
+	Hashes    map[string]modrinth.Hashes `json:"hashes"`
+}
+
+// convertBeta reads a beta state as the current schema. It has no archive
+// hash, so it never satisfies a no-op, and its server file is inferred.
+func convertBeta(serverDir string, b []byte) (*Schema, error) {
+	var beta betaSchema
+	err := json.Unmarshal(b, &beta)
+	if err != nil {
+		return nil, err
+	}
+	state := Schema{
+		SchemaVersion: SchemaVersion,
+		Version:       beta.Version,
+		Ids:           Ids{Slug: beta.Slug, ProjectId: beta.ProjectId, VersionId: beta.VersionId},
+		Deps:          beta.Deps,
+		Hashes:        make(map[string]modrinth.Hashes, len(beta.Hashes)),
+	}
+	for p, h := range beta.Hashes {
+		if h.Sha512 == emptySha512 {
+			h.Sha512 = ""
+		}
+		state.Hashes[p] = h
+	}
+	state.ServerFile, err = inferServerFile(serverDir, beta.Deps)
+	if err != nil {
+		return nil, err
+	}
+	log.Printf("Reading the beta %s as schema %d\n", FileName, SchemaVersion)
+	return &state, nil
+}
+
+// inferServerFile finds the server jar an old state never recorded, under
+// a name derived from its own dependencies: Forge's versioned jar by exact
+// name, or Fabric's launcher with the launcher version as the only
+// wildcard. Only a single match is recorded, with its current hashes.
+func inferServerFile(serverDir string, deps mrpack.Deps) (*ServerFile, error) {
+	var matches []string
+	switch {
+	case deps.Forge != "":
+		version := deps.Minecraft + "-" + deps.Forge
+		for _, name := range []string{
+			"forge-" + version + ".jar",
+			"forge-" + version + "-universal.jar",
+			"forge-" + version + "-shim.jar",
+		} {
+			if fi, err := os.Lstat(filepath.Join(serverDir, name)); err == nil && fi.Mode().IsRegular() {
+				matches = append(matches, name)
+			}
+		}
+	case deps.Fabric != "":
+		pattern := "fabric-server-mc." + escapeGlob(deps.Minecraft) + "-loader." + escapeGlob(deps.Fabric) + "-launcher.*.jar"
+		entries, err := os.ReadDir(serverDir)
+		if err != nil {
+			return nil, err
+		}
+		for _, e := range entries {
+			if ok, _ := path.Match(pattern, e.Name()); ok && e.Type().IsRegular() {
+				matches = append(matches, e.Name())
+			}
+		}
+	}
+	if len(matches) != 1 {
+		return nil, nil
+	}
+	h, err := fileHashes(filepath.Join(serverDir, matches[0]))
+	if err != nil {
+		return nil, err
+	}
+	return &ServerFile{Path: matches[0], Hashes: h}, nil
+}
+
+// escapeGlob quotes the path.Match metacharacters in s.
+func escapeGlob(s string) string {
+	var b strings.Builder
+	for _, r := range s {
+		if strings.ContainsRune(`*?[\`, r) {
+			b.WriteRune('\\')
+		}
+		b.WriteRune(r)
+	}
+	return b.String()
+}
+
+func fileHashes(file string) (modrinth.Hashes, error) {
+	f, err := os.Open(file)
+	if err != nil {
+		return modrinth.Hashes{}, err
+	}
+	defer f.Close()
+	h1 := sha1.New()
+	h512 := sha512.New()
+	_, err = io.Copy(io.MultiWriter(h1, h512), f)
+	if err != nil {
+		return modrinth.Hashes{}, err
+	}
+	return modrinth.Hashes{Sha1: hex.EncodeToString(h1.Sum(nil)), Sha512: hex.EncodeToString(h512.Sum(nil))}, nil
 }
 
 // FromArchive builds the state an install of the *.mrpack file at path

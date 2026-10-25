@@ -241,18 +241,6 @@ func writeState(t *testing.T, content string) string {
 	return dir
 }
 
-// A packstate.json without schema is the beta format, which a later
-// conversion handles. Until then it counts as no old state.
-func TestLoadBetaStateIsNoState(t *testing.T) {
-	t.Parallel()
-	dir := writeState(t, `{"slug":"example","version":"1.0.0","hashes":{}}`)
-
-	state, err := LoadPackState(dir)
-	if err != nil || state != nil {
-		t.Errorf("LoadPackState() = %+v, %v, want nil, nil", state, err)
-	}
-}
-
 func TestLoadUnknownSchemaFails(t *testing.T) {
 	t.Parallel()
 	dir := writeState(t, `{"schema":2}`)
@@ -397,5 +385,106 @@ func TestForceSyncIsNotRecorded(t *testing.T) {
 	}
 	if !got.Options.Equal(Options{ForceSync: true}) {
 		t.Error("Equal() compares ForceSync, want it ignored")
+	}
+}
+
+// copyBeta lays out a server dir holding the beta fixture as its state.
+func copyBeta(t *testing.T, files map[string]string) string {
+	t.Helper()
+	b, err := os.ReadFile("testdata/beta-packstate.json")
+	if err != nil {
+		t.Fatal(err)
+	}
+	dir := t.TempDir()
+	if err := os.WriteFile(filepath.Join(dir, FileName), b, 0644); err != nil {
+		t.Fatal(err)
+	}
+	for p, data := range files {
+		if err := os.WriteFile(filepath.Join(dir, p), []byte(data), 0644); err != nil {
+			t.Fatal(err)
+		}
+	}
+	return dir
+}
+
+func TestLoadBetaState(t *testing.T) {
+	t.Parallel()
+	dir := copyBeta(t, map[string]string{"fabric-server-mc.1.21.8-loader.0.17.2-launcher.1.1.0.jar": "launcher"})
+
+	state, err := LoadPackState(dir)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if state == nil {
+		t.Fatal("LoadPackState() = nil, want the converted beta state")
+	}
+	if state.SchemaVersion != 1 || state.Version != "1.0.0" || state.ArchiveSha512 != "" {
+		t.Errorf("SchemaVersion, Version, ArchiveSha512 = %d, %q, %q", state.SchemaVersion, state.Version, state.ArchiveSha512)
+	}
+	if state.Ids != (Ids{Slug: "example", ProjectId: "P1", VersionId: "V1"}) {
+		t.Errorf("Ids = %+v", state.Ids)
+	}
+	if state.Deps != (mrpack.Deps{Minecraft: "1.21.8", Fabric: "0.17.2"}) {
+		t.Errorf("Deps = %+v", state.Deps)
+	}
+	// The beta override bug recorded the SHA-512 of empty input, so the
+	// override compares by SHA-1 only.
+	want := map[string]modrinth.Hashes{
+		"mods/a.jar":   {Sha1: "f92e777f4341930bad9b2422283c4680d00dbc06", Sha512: "483365784455682e7e83c6e150e56dbe3f387a06c9d407b8253e4bdf8e0bd1fac8234e3973d4e59ff8c01cb969f25c0d08c5dc5bb967744b1a5813afe3c58fcc"},
+		"config/a.txt": {Sha1: "356a192b7913b04c54574d18c28d46e6395428ab"},
+	}
+	if !reflect.DeepEqual(state.Hashes, want) {
+		t.Errorf("Hashes = %v, want %v", state.Hashes, want)
+	}
+	if state.ServerFile == nil || state.ServerFile.Path != "fabric-server-mc.1.21.8-loader.0.17.2-launcher.1.1.0.jar" || state.ServerFile.Hashes.Sha512 == "" {
+		t.Errorf("ServerFile = %+v, want the fabric launcher with its hashes", state.ServerFile)
+	}
+}
+
+func TestInferServerFile(t *testing.T) {
+	t.Parallel()
+	fabric := mrpack.Deps{Minecraft: "1.21.8", Fabric: "0.17.2"}
+	tests := []struct {
+		name  string
+		deps  mrpack.Deps
+		files []string
+		want  string
+	}{
+		{"fabric", fabric, []string{"fabric-server-mc.1.21.8-loader.0.17.2-launcher.1.1.0.jar", "server.jar"}, "fabric-server-mc.1.21.8-loader.0.17.2-launcher.1.1.0.jar"},
+		{"two fabric launchers", fabric, []string{"fabric-server-mc.1.21.8-loader.0.17.2-launcher.1.0.3.jar", "fabric-server-mc.1.21.8-loader.0.17.2-launcher.1.1.0.jar"}, ""},
+		{"other fabric loader", fabric, []string{"fabric-server-mc.1.21.8-loader.0.16.14-launcher.1.1.0.jar"}, ""},
+		{"forge", mrpack.Deps{Minecraft: "1.16.5", Forge: "36.2.39"}, []string{"forge-1.16.5-36.2.39.jar", "forge-1.16.5-36.2.39-installer.jar"}, "forge-1.16.5-36.2.39.jar"},
+		{"forge universal", mrpack.Deps{Minecraft: "1.12.2", Forge: "14.23.5.2768"}, []string{"forge-1.12.2-14.23.5.2768-universal.jar"}, "forge-1.12.2-14.23.5.2768-universal.jar"},
+		{"forge shim", mrpack.Deps{Minecraft: "1.20.4", Forge: "49.1.0"}, []string{"forge-1.20.4-49.1.0-shim.jar", "run.sh"}, "forge-1.20.4-49.1.0-shim.jar"},
+		{"forge run.sh only", mrpack.Deps{Minecraft: "1.20.1", Forge: "47.3.0"}, []string{"run.sh"}, ""},
+		{"vanilla", mrpack.Deps{Minecraft: "1.21.8"}, []string{"server.jar"}, ""},
+		{"nothing installed", fabric, nil, ""},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			dir := t.TempDir()
+			for _, name := range tt.files {
+				if err := os.WriteFile(filepath.Join(dir, name), []byte(name), 0644); err != nil {
+					t.Fatal(err)
+				}
+			}
+
+			got, err := inferServerFile(dir, tt.deps)
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			if tt.want == "" {
+				if got != nil {
+					t.Errorf("inferServerFile() = %+v, want nil", got)
+				}
+				return
+			}
+			if got == nil || got.Path != tt.want || got.Hashes.Sha1 == "" || got.Hashes.Sha512 == "" {
+				t.Errorf("inferServerFile() = %+v, want %s with its hashes", got, tt.want)
+			}
+		})
 	}
 }

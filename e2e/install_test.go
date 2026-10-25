@@ -148,7 +148,10 @@ type packState struct {
 	Options       struct {
 		Exclude []string `json:"exclude"`
 	} `json:"options"`
-	Hashes map[string]map[string]string `json:"hashes"`
+	Hashes     map[string]map[string]string `json:"hashes"`
+	ServerFile *struct {
+		Path string `json:"path"`
+	} `json:"server-file"`
 }
 
 func readState(t testing.TB, dir string) packState {
@@ -852,4 +855,67 @@ func TestDryRun(t *testing.T) {
 		t.Errorf("stdout lacks the server install:\n%s", stdout)
 	}
 	assertMissing(t, missing)
+}
+
+// A server dir a beta installed keeps updating: its packstate.json, with the
+// beta's empty-input SHA-512 on every override, converts to schema 1.
+func TestSyncConvertsBetaState(t *testing.T) {
+	t.Parallel()
+	const slug = "e2e-sync-beta"
+	mod, _ := seedPackMod(t, slug+"-mod")
+	packs := t.TempDir()
+	v1 := filepath.Join(packs, "v1.mrpack")
+	v2 := filepath.Join(packs, "v2.mrpack")
+	if err := os.WriteFile(v1, fabricPack(t, slug, "1.0.0", []packFile{mod}, []zipEntry{
+		{"overrides/config/changed.txt", "1"},
+		{"overrides/config/dropped.txt", "1"},
+	}), 0644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(v2, fabricPack(t, slug, "2.0.0", []packFile{mod}, []zipEntry{
+		{"overrides/config/changed.txt", "2"},
+	}), 0644); err != nil {
+		t.Fatal(err)
+	}
+	dir := t.TempDir()
+	installInto(t, dir, v1)
+	sha1Hex := func(s string) string {
+		sum := sha1.Sum([]byte(s))
+		return hex.EncodeToString(sum[:])
+	}
+	empty := sha512.Sum512(nil)
+	override := map[string]string{"sha1": sha1Hex("1"), "sha512": hex.EncodeToString(empty[:])}
+	beta, err := json.Marshal(map[string]any{
+		"slug":         slug,
+		"project-id":   "",
+		"version":      "1.0.0",
+		"version-id":   "",
+		"dependencies": fabricDeps,
+		"hashes": map[string]any{
+			mod.Path:             mod.Hashes,
+			"config/changed.txt": override,
+			"config/dropped.txt": override,
+		},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(dir, "packstate.json"), beta, 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	installInto(t, dir, v2)
+
+	assertMissing(t, filepath.Join(dir, "config", "dropped.txt"))
+	assertContent(t, filepath.Join(dir, "config", "changed.txt"), "2")
+	assertMissing(t, filepath.Join(dir, "backups"))
+	state := readState(t, dir)
+	if state.Schema != 1 {
+		t.Errorf("state schema = %d, want 1", state.Schema)
+	}
+	// The beta never recorded the server jar. The conversion infers it from
+	// the dependencies, and the same dependencies keep it recorded.
+	if state.ServerFile == nil || !strings.HasPrefix(state.ServerFile.Path, "fabric-server-mc.1.21.8-loader.0.17.2-launcher.") {
+		t.Errorf("state server file = %+v, want the inferred fabric launcher", state.ServerFile)
+	}
 }
