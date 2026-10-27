@@ -2,7 +2,7 @@
 
 ## Sync
 
-Installing a pack brings the server dir to that pack version, whether the dir is empty or holds an earlier install.
+Installing a pack brings the server dir to that pack version, whether the dir is empty or holds an earlier install. `update [<version>]` runs the same sync (`syncPack` in `cmd`) for the project the state records, by id or else slug.
 
 - A pack given as a URL, slug or id is downloaded into the archive cache (`cache`): `mrpack-install` in the user cache dir, or a private per-run dir in the OS temp dir when that is unusable, since a shared temp path would let another user swap an archive after its hash check. Archives are named by their SHA-512 and checked against it before reuse, so a slug or id install whose archive is cached downloads nothing. A file path is read in place.
 - `packstate.json` in the server dir records what the last run put in place: the pack, the archive's SHA-512, the options, the dependencies, and the hashes of every pack file. It is written to a temp file and renamed into place. A `packstate.json` without a `schema` field was written by a beta and converts on load: its overrides' SHA-512, the hash of empty input from a beta bug, is dropped so they compare by SHA-1, and the server file it never recorded is inferred from its dependencies (Forge's versioned jar by exact name, Fabric's launcher with only the launcher version as wildcard, a single match only). With no `packstate.json`, a `modpack.json` in exactly the shape v0.16.10 wrote converts the same way, with SHA-1 hashes only. It is deleted once a run has saved its `packstate.json`, also when a `packstate.json` took precedence. Another tool's `modpack.json` is neither read nor deleted.

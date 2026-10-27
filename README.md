@@ -33,7 +33,7 @@ Available Commands:
   help        Help about any command
   ping        Ping a Labrinth instance
   server      Prepare a plain server environment
-  update      Update the deployed modpack
+  update      Update the installed modpack
   version     Print version infos
 
 Flags:
@@ -114,14 +114,18 @@ Global Flags:
 ### update
 
 ```
-Update the deployed modpacks files, creating backups if necessary.
+Update the installed modpack to <version>, or to its latest release, the
+same way mrpack-install <pack> <version> does, with the pack the server
+dir's packstate.json records.
 
 Usage:
   mrpack-install update [<version>] [flags]
 
 Flags:
       --backup-dir string             Backup directory path (default <server-dir>/backups)
+      --dry-run                       Print what the run would change and exit without changing anything
       --exclude stringArray           Never touch paths matching this pattern, relative to the server dir (repeatable, e.g. 'config/**', 'mods/*-client.jar')
+      --force-sync                    Re-apply the pack and reinstall the server, even when it is already installed
   -h, --help                          help for update
       --optional-disable-all          Disable all optional mods
       --optional-select stringArray   Select optional mods by file path (regex)
@@ -134,7 +138,6 @@ Global Flags:
       --server-dir string    Server directory path (default "mc")
       --server-file string   Name of the jar that starts the server
   -v, --verbose              Enable verbose output
-
 ```
 
 ### version

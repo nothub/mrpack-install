@@ -1038,3 +1038,99 @@ func TestSyncConvertsModpackJson(t *testing.T) {
 		assertMissing(t, filepath.Join(dir, "modpack.json"))
 	})
 }
+
+// update [<version>] syncs to a version of the pack the state records,
+// whether the root command or a beta wrote that state.
+func TestUpdateSubcommand(t *testing.T) {
+	t.Parallel()
+	const slug = "e2e-update-cmd"
+	mod, _ := seedPackMod(t, slug+"-mod")
+	v1 := fabricPack(t, slug, "1.0.0", []packFile{mod}, []zipEntry{
+		{"overrides/config/kept.txt", "1"},
+		{"overrides/config/dropped.txt", "1"},
+	})
+	v2 := fabricPack(t, slug, "2.0.0", []packFile{mod}, []zipEntry{{"overrides/config/kept.txt", "2"}})
+	version := func(number string) versionData {
+		v := fabric1218
+		v.VersionNumber = number
+		return v
+	}
+	created := createProject(t, api.ModpackProjectType, slug, file{Name: slug + "-1.0.0.mrpack", Data: v1}, version("1.0.0"))
+	uploadVersion(t, created.Id, file{Name: slug + "-2.0.0.mrpack", Data: v2}, version("2.0.0"))
+	approve(t, created.Id)
+
+	t.Run("root command state", func(t *testing.T) {
+		t.Parallel()
+		dir := t.TempDir()
+		installInto(t, dir, slug, "1.0.0")
+
+		installInto(t, dir, "update", "2.0.0")
+
+		assertMissing(t, filepath.Join(dir, "config", "dropped.txt"))
+		assertContent(t, filepath.Join(dir, "config", "kept.txt"), "2")
+	})
+
+	t.Run("beta state", func(t *testing.T) {
+		t.Parallel()
+		dir := t.TempDir()
+		installInto(t, dir, slug, "1.0.0")
+		sum := sha1.Sum([]byte("1"))
+		empty := sha512.Sum512(nil)
+		override := map[string]string{"sha1": hex.EncodeToString(sum[:]), "sha512": hex.EncodeToString(empty[:])}
+		beta, err := json.Marshal(map[string]any{
+			"slug":         slug,
+			"project-id":   created.Id,
+			"version":      "1.0.0",
+			"version-id":   created.Versions[0],
+			"dependencies": fabricDeps,
+			"hashes": map[string]any{
+				mod.Path:             mod.Hashes,
+				"config/kept.txt":    override,
+				"config/dropped.txt": override,
+			},
+		})
+		if err != nil {
+			t.Fatal(err)
+		}
+		if err := os.WriteFile(filepath.Join(dir, "packstate.json"), beta, 0644); err != nil {
+			t.Fatal(err)
+		}
+
+		installInto(t, dir, "update", "2.0.0")
+
+		assertMissing(t, filepath.Join(dir, "config", "dropped.txt"))
+		assertContent(t, filepath.Join(dir, "config", "kept.txt"), "2")
+		assertMissing(t, filepath.Join(dir, "backups"))
+	})
+
+	// A v0.16.10 modpack.json never recorded the project.
+	t.Run("state without project", func(t *testing.T) {
+		t.Parallel()
+		path := filepath.Join(t.TempDir(), "v1.mrpack")
+		if err := os.WriteFile(path, v1, 0644); err != nil {
+			t.Fatal(err)
+		}
+		dir := legacyServerDir(t, path, mod, map[string]string{"config/kept.txt": "1", "config/dropped.txt": "1"})
+
+		out, err := mrpackInstall(t, "update", "--host", labrinthURL, "--server-dir", dir)
+
+		if err == nil {
+			t.Fatalf("update without a recorded project: exit 0, want non-zero\n%s", out)
+		}
+		if !strings.Contains(string(out), "mrpack-install <pack>") {
+			t.Errorf("output does not point to mrpack-install <pack>:\n%s", out)
+		}
+		assertContent(t, filepath.Join(dir, "config", "dropped.txt"), "1")
+	})
+
+	t.Run("no state", func(t *testing.T) {
+		t.Parallel()
+		out, err := mrpackInstall(t, "update", "--host", labrinthURL, "--server-dir", t.TempDir())
+		if err == nil {
+			t.Fatalf("update without a state: exit 0, want non-zero\n%s", out)
+		}
+		if !strings.Contains(string(out), "mrpack-install <pack>") {
+			t.Errorf("output does not point to mrpack-install <pack>:\n%s", out)
+		}
+	})
+}

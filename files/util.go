@@ -185,45 +185,6 @@ func copyFile(src string, dst string) error {
 	return os.Chmod(dst, fi.Mode().Perm())
 }
 
-func CountFiles(dir string) int {
-	count := 0
-	err := filepath.Walk(dir, func(path string, info os.FileInfo, err error) error {
-		if !info.IsDir() {
-			count = count + 1
-		}
-		return err
-	})
-	if err != nil {
-		log.Fatalln("Unable to walk file tree!", err.Error())
-	}
-	return count
-}
-
-func RmEmptyDirs(dir string) {
-	var dirs []string
-	err := filepath.Walk(dir, func(path string, info os.FileInfo, err error) error {
-		// ignore tree root
-		if dir == path {
-			return err
-		}
-		if info.IsDir() && CountFiles(path) == 0 {
-			// prepend because we want to delete the innermost children first
-			dirs = append([]string{path}, dirs...)
-		}
-		return err
-	})
-	if err != nil {
-		log.Fatalln("Unable to walk file tree!", err.Error())
-	}
-
-	for _, path := range dirs {
-		err := os.Remove(path)
-		if err != nil {
-			log.Printf("Unable to delete empty directory %s. %s\n", path, err.Error())
-		}
-	}
-}
-
 func RandString(n int) string {
 	const chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
 	b := make([]byte, n)

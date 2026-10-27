@@ -60,12 +60,7 @@ func init() {
 	RootCmd.PersistentFlags().Uint8Var(&dlThreads, "dl-threads", 8, "Concurrent download threads")
 	RootCmd.PersistentFlags().Uint8Var(&dlRetries, "dl-retries", 3, "Retries when download fails")
 
-	RootCmd.Flags().StringArrayVar(&optionalSelected, "optional-select", nil, "Select optional mods by file path (regex)")
-	RootCmd.Flags().BoolVar(&optionalDisableAll, "optional-disable-all", false, "Disable all optional mods")
-	RootCmd.Flags().StringVar(&backupDir, "backup-dir", "", "Backup directory path (default <server-dir>/backups)")
-	RootCmd.Flags().StringArrayVar(&excludes, "exclude", nil, excludeUsage)
-	RootCmd.Flags().BoolVar(&forceSync, "force-sync", false, "Re-apply the pack and reinstall the server, even when it is already installed")
-	RootCmd.Flags().BoolVar(&dryRun, "dry-run", false, "Print what the run would change and exit without changing anything")
+	addSyncFlags(RootCmd)
 
 	cobra.OnInitialize(func() {
 		if printVersion {
@@ -129,7 +124,17 @@ func init() {
 	})
 }
 
-const excludeUsage = "Never touch paths matching this pattern, relative to the server dir (repeatable, e.g. 'config/**', 'mods/*-client.jar')"
+// addSyncFlags registers the flags of a sync, which the root command and
+// update share.
+func addSyncFlags(cmd *cobra.Command) {
+	fs := cmd.Flags()
+	fs.StringArrayVar(&optionalSelected, "optional-select", nil, "Select optional mods by file path (regex)")
+	fs.BoolVar(&optionalDisableAll, "optional-disable-all", false, "Disable all optional mods")
+	fs.StringVar(&backupDir, "backup-dir", "", "Backup directory path (default <server-dir>/backups)")
+	fs.StringArrayVar(&excludes, "exclude", nil, "Never touch paths matching this pattern, relative to the server dir (repeatable, e.g. 'config/**', 'mods/*-client.jar')")
+	fs.BoolVar(&forceSync, "force-sync", false, "Re-apply the pack and reinstall the server, even when it is already installed")
+	fs.BoolVar(&dryRun, "dry-run", false, "Print what the run would change and exit without changing anything")
+}
 
 var RootCmd = &cobra.Command{
 	Use:   "mrpack-install (<filepath> | <url> | <slug> [<version>] | <id> [<version>])",
@@ -149,107 +154,112 @@ var RootCmd = &cobra.Command{
 		if len(args) > 1 {
 			version = args[1]
 		}
-		opts := packstate.Options{OptionalSelect: optionalSelected, OptionalDisableAll: optionalDisableAll, Exclude: excludes, ServerFile: serverFile, ForceSync: forceSync}
 		old, err := packstate.LoadPackState(serverDir)
 		if err != nil {
 			log.Fatalln(err)
 		}
-		installed := func(sum string) bool {
-			noop, err := update.NoOp(serverDir, old, sum, opts)
-			if err != nil {
-				log.Fatalln(err)
-			}
-			if noop {
-				log.Printf("%q %s is already installed in %q, nothing to do\n", old.Name, old.Version, serverDir)
-				if dryRun {
-					// The empty plan, in the shape a dry-run always prints.
-					fmt.Println("install server: no")
-				}
-			}
-			return noop
-		}
-		src := resolvePack(input, version)
-		// A slug or id input knows its archive's SHA-512 before downloading.
-		if installed(src.sha512) {
-			return
-		}
-		zipPath, err := filepath.Abs(src.archive())
-		if err != nil {
-			log.Fatalln(err)
-		}
-		sum, err := packstate.ArchiveSha512(zipPath)
-		if err != nil {
-			log.Fatalln(err)
-		}
-		if installed(sum) {
-			return
-		}
-		index, err := mrpack.ReadIndex(zipPath)
-		if err != nil {
-			log.Fatalln(err)
-		}
-
-		plan, err := update.Compute(serverDir, old, index, zipPath, opts)
-		if err != nil {
-			log.Fatalln(err)
-		}
-		if dryRun {
-			err = plan.Describe(os.Stdout)
-			if err != nil {
-				log.Fatalln(err)
-			}
-			return
-		}
-
-		log.Printf("Installing %q from %q to %q\n", index.Name, zipPath, serverDir)
-		err = os.MkdirAll(serverDir, 0755)
-		if err != nil {
-			log.Fatalln(err)
-		}
-		// The Forge and Quilt installers and override extraction resolve
-		// paths against the working directory.
-		err = os.Chdir(serverDir)
-		if err != nil {
-			log.Fatalln(err)
-		}
-
-		// Before staging: its API lookup can fail, and should fail before the downloads.
-		packState, err := packstate.FromArchive(zipPath, opts, src.lookup)
-		if err != nil {
-			log.Fatalln(err)
-		}
-
-		staging, err := update.Stage(serverDir, plan, index, zipPath, download.Downloader{
-			Threads: int(dlThreads),
-			Retries: int(dlRetries),
-		})
-		if err != nil {
-			log.Fatalln(err)
-		}
-
-		// Everything from here on changes the server dir.
-		err = old.Invalidate(serverDir)
-		if err != nil {
-			log.Fatalln(err)
-		}
-
-		backupBase := backupDir
-		if backupBase == "" {
-			backupBase = filepath.Join(serverDir, "backups")
-		}
-		backups := backup.NewDir(backupBase)
-		err = update.InstallServer(serverDir, plan, old, packState, server.InstallerFromDeps(&index.Deps), serverFile, backups)
-		if err != nil {
-			log.Fatalln(err)
-		}
-
-		err = update.Apply(serverDir, plan, staging, packState, zipPath, backups)
-		if err != nil {
-			log.Fatalln(err)
-		}
-
-		log.Println("Installation done :) Have a nice day ✌️")
+		syncPack(resolvePack(input, version), old)
 	},
+}
+
+// syncPack brings the server dir to the pack src, from the old state, nil
+// when there is none.
+func syncPack(src packSource, old *packstate.Schema) {
+	opts := packstate.Options{OptionalSelect: optionalSelected, OptionalDisableAll: optionalDisableAll, Exclude: excludes, ServerFile: serverFile, ForceSync: forceSync}
+	installed := func(sum string) bool {
+		noop, err := update.NoOp(serverDir, old, sum, opts)
+		if err != nil {
+			log.Fatalln(err)
+		}
+		if noop {
+			log.Printf("%q %s is already installed in %q, nothing to do\n", old.Name, old.Version, serverDir)
+			if dryRun {
+				// The empty plan, in the shape a dry-run always prints.
+				fmt.Println("install server: no")
+			}
+		}
+		return noop
+	}
+	// A slug or id input knows its archive's SHA-512 before downloading.
+	if installed(src.sha512) {
+		return
+	}
+	zipPath, err := filepath.Abs(src.archive())
+	if err != nil {
+		log.Fatalln(err)
+	}
+	sum, err := packstate.ArchiveSha512(zipPath)
+	if err != nil {
+		log.Fatalln(err)
+	}
+	if installed(sum) {
+		return
+	}
+	index, err := mrpack.ReadIndex(zipPath)
+	if err != nil {
+		log.Fatalln(err)
+	}
+
+	plan, err := update.Compute(serverDir, old, index, zipPath, opts)
+	if err != nil {
+		log.Fatalln(err)
+	}
+	if dryRun {
+		err = plan.Describe(os.Stdout)
+		if err != nil {
+			log.Fatalln(err)
+		}
+		return
+	}
+
+	log.Printf("Installing %q from %q to %q\n", index.Name, zipPath, serverDir)
+	err = os.MkdirAll(serverDir, 0755)
+	if err != nil {
+		log.Fatalln(err)
+	}
+	// The Forge and Quilt installers and override extraction resolve
+	// paths against the working directory.
+	err = os.Chdir(serverDir)
+	if err != nil {
+		log.Fatalln(err)
+	}
+
+	// Before staging: its API lookup can fail, and should fail before the downloads.
+	packState, err := packstate.FromArchive(zipPath, opts, src.lookup)
+	if err != nil {
+		log.Fatalln(err)
+	}
+
+	staging, err := update.Stage(serverDir, plan, index, zipPath, download.Downloader{
+		Threads: int(dlThreads),
+		Retries: int(dlRetries),
+	})
+	if err != nil {
+		log.Fatalln(err)
+	}
+
+	// Everything from here on changes the server dir.
+	err = old.Invalidate(serverDir)
+	if err != nil {
+		log.Fatalln(err)
+	}
+
+	backupBase := backupDir
+	if backupBase == "" {
+		backupBase = filepath.Join(serverDir, "backups")
+	}
+	backups := backup.NewDir(backupBase)
+	err = update.InstallServer(serverDir, plan, old, packState, server.InstallerFromDeps(&index.Deps), serverFile, backups)
+	if err != nil {
+		log.Fatalln(err)
+	}
+
+	err = update.Apply(serverDir, plan, staging, packState, zipPath, backups)
+	if err != nil {
+		log.Fatalln(err)
+	}
+
+	log.Println("Installation done :) Have a nice day ✌️")
 }
 
 // packSource is a pack input resolved to where its archive comes from.
@@ -280,7 +290,12 @@ func resolvePack(input string, version string) packSource {
 		log.Printf("Installing from mrpack file: %s\n", path)
 		return packSource{path: path, lookup: lookupIds}
 	}
+	return resolveProject(input, version)
+}
 
+// resolveProject resolves a Modrinth project id or slug at version, or at
+// its latest release when version is empty.
+func resolveProject(input string, version string) packSource {
 	log.Printf("Trying to resolve project id or slug: %s\n", input)
 	project, err := modrinth.Client.GetProject(input)
 	if err != nil {
@@ -338,22 +353,6 @@ func (src packSource) archive() string {
 		log.Fatalln(err)
 	}
 	return path
-}
-
-// handleArgs resolves the pack input to its index and archive path, and
-// returns how to find the pack's Modrinth ids.
-func handleArgs(input string, version string, serverDir string, host string) (*mrpack.Index, string, func(string) (packstate.Ids, error)) {
-	err := os.MkdirAll(serverDir, 0755)
-	if err != nil {
-		log.Fatalln(err)
-	}
-	src := resolvePack(input, version)
-	archivePath := src.archive()
-	index, err := mrpack.ReadIndex(archivePath)
-	if err != nil {
-		log.Fatalln(err.Error())
-	}
-	return index, archivePath, src.lookup
 }
 
 // lookupIds finds the Modrinth ids of the archive with the given SHA-512.
