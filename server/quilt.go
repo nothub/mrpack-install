@@ -64,14 +64,16 @@ func (inst *QuiltInstaller) Install(serverDir string, serverFile string) (string
 		return "", fmt.Errorf("quilt install failed: %w\n%s", err, out)
 	}
 
-	if serverFile == "" {
-		return quiltLaunchJar, nil
+	file := quiltLaunchJar
+	if serverFile != "" {
+		err = os.Rename(filepath.Join(serverDir, quiltLaunchJar), filepath.Join(serverDir, serverFile))
+		if err != nil {
+			return "", err
+		}
+		file = serverFile
 	}
-	err = os.Rename(filepath.Join(serverDir, quiltLaunchJar), filepath.Join(serverDir, serverFile))
-	if err != nil {
-		return "", err
-	}
-	return serverFile, nil
+	removeInstaller(installer)
+	return file, nil
 }
 
 func (inst *QuiltInstaller) args(installer string, serverDir string) []string {

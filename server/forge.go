@@ -74,7 +74,12 @@ func (inst *ForgeInstaller) Install(serverDir string, serverFile string) (string
 		return "", err
 	}
 
-	return forgeStartFile(serverDir, version, serverFile, placeServerStarterJar)
+	file, err := forgeStartFile(serverDir, version, serverFile, placeServerStarterJar)
+	if err != nil {
+		return "", err
+	}
+	removeInstaller(installerFile)
+	return file, nil
 }
 
 // forgeStartFile returns the jar that starts the installed Forge version.

@@ -74,16 +74,14 @@ func (inst *NeoForgeInstaller) Install(serverDir string, serverFile string) (str
 		return "", err
 	}
 
-	if serverFile == "" {
-		// NeoForge starts only through the run.sh and run.bat it writes.
-		return "", nil
-	}
-	if serverFile != "server.jar" {
+	if serverFile != "" && serverFile != "server.jar" {
 		err = os.Rename(filepath.Join(serverDir, "server.jar"), filepath.Join(serverDir, serverFile))
 		if err != nil {
 			return "", fmt.Errorf("renaming the NeoForge server.jar: %w", err)
 		}
 	}
+	removeInstaller(installerFile)
+	// serverFile is empty when only run.sh and run.bat start NeoForge.
 	return serverFile, nil
 }
 

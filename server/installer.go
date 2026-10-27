@@ -1,8 +1,11 @@
 package server
 
 import (
+	"errors"
 	"github.com/nothub/mrpack-install/modrinth/mrpack"
+	"io/fs"
 	"log"
+	"os"
 )
 
 type Installer interface {
@@ -72,4 +75,15 @@ func NewInstaller(flavorName Flavor, minecraftVersion string, flavorVersion stri
 		log.Fatalln("No installer for flavor: " + flavorName)
 	}
 	return inst, nil
+}
+
+// removeInstaller deletes an installer jar and the <jar>.log it may have
+// written, after a successful install, so loader upgrades don't pile them
+// up in the server dir. The install worked, so a failure only warns.
+func removeInstaller(jar string) {
+	for _, p := range []string{jar, jar + ".log"} {
+		if err := os.Remove(p); err != nil && !errors.Is(err, fs.ErrNotExist) {
+			log.Printf("Unable to remove the installer: %s\n", err)
+		}
+	}
 }
