@@ -28,21 +28,7 @@ func (inst *NeoForgeInstaller) Install(serverDir string, serverFile string) (str
 			return "", err
 		}
 
-		mcPrefix := strings.Join(strings.Split(inst.MinecraftVersion, ".")[1:3], ".")
-		var versions []string
-		for _, ver := range meta.Versioning.Versions {
-			if !strings.HasPrefix(ver, mcPrefix) {
-				// does not match mc version
-				continue
-			}
-			if strings.Contains(ver, "-") {
-				// is pre-release version
-				continue
-			}
-			versions = append(versions, ver)
-		}
-
-		parsed, err := semver.ParseAll(versions)
+		parsed, err := semver.ParseAll(neoforgeVersionsFor(meta.Versioning.Versions, inst.MinecraftVersion))
 		if err != nil {
 			return "", err
 		}
@@ -86,4 +72,27 @@ func (inst *NeoForgeInstaller) Install(serverDir string, serverFile string) (str
 
 	// NeoForge starts only through the run.sh and run.bat it writes.
 	return "", nil
+}
+
+// neoforgeVersionsFor returns the versions without a pre-release suffix
+// that belong to Minecraft version mc. NeoForge numbers them
+// <mc minor>.<mc patch>.<build>, so 21.1.x is for 1.21.1 and 21.11.x for
+// 1.21.11, and a two-part mc version has patch 0.
+func neoforgeVersionsFor(versions []string, mc string) []string {
+	parts := strings.Split(mc, ".")
+	if len(parts) < 2 {
+		return nil
+	}
+	patch := "0"
+	if len(parts) > 2 {
+		patch = parts[2]
+	}
+	prefix := parts[1] + "." + patch + "."
+	var matching []string
+	for _, v := range versions {
+		if strings.HasPrefix(v, prefix) && !strings.Contains(v, "-") {
+			matching = append(matching, v)
+		}
+	}
+	return matching
 }
