@@ -49,7 +49,7 @@ Flags:
       --optional-select stringArray   Select optional mods by file path (regex)
       --proxy string                  Proxy url for http connections
       --server-dir string             Server directory path (default "mc")
-      --server-file string            Name of the jar that starts the server
+      --server-file string            Name of the jar that starts the server. Forge 1.17+ and NeoForge jars don't read user_jvm_args.txt, start them as java @user_jvm_args.txt -jar <file>. Older Forge and other jars start as java -jar <file>
   -v, --verbose                       Enable verbose output
   -V, --version                       Print version and exit
 
@@ -74,7 +74,7 @@ Global Flags:
       --host string          Labrinth host address or full URL, e.g. http://labrinth.lan:8000 (default "api.modrinth.com")
       --proxy string         Proxy url for http connections
       --server-dir string    Server directory path (default "mc")
-      --server-file string   Name of the jar that starts the server
+      --server-file string   Name of the jar that starts the server. Forge 1.17+ and NeoForge jars don't read user_jvm_args.txt, start them as java @user_jvm_args.txt -jar <file>. Older Forge and other jars start as java -jar <file>
   -v, --verbose              Enable verbose output
 
 ```
@@ -106,7 +106,7 @@ Global Flags:
       --host string          Labrinth host address or full URL, e.g. http://labrinth.lan:8000 (default "api.modrinth.com")
       --proxy string         Proxy url for http connections
       --server-dir string    Server directory path (default "mc")
-      --server-file string   Name of the jar that starts the server
+      --server-file string   Name of the jar that starts the server. Forge 1.17+ and NeoForge jars don't read user_jvm_args.txt, start them as java @user_jvm_args.txt -jar <file>. Older Forge and other jars start as java -jar <file>
   -v, --verbose              Enable verbose output
 
 ```
@@ -136,7 +136,7 @@ Global Flags:
       --host string          Labrinth host address or full URL, e.g. http://labrinth.lan:8000 (default "api.modrinth.com")
       --proxy string         Proxy url for http connections
       --server-dir string    Server directory path (default "mc")
-      --server-file string   Name of the jar that starts the server
+      --server-file string   Name of the jar that starts the server. Forge 1.17+ and NeoForge jars don't read user_jvm_args.txt, start them as java @user_jvm_args.txt -jar <file>. Older Forge and other jars start as java -jar <file>
   -v, --verbose              Enable verbose output
 ```
 
@@ -157,7 +157,7 @@ Global Flags:
       --host string          Labrinth host address or full URL, e.g. http://labrinth.lan:8000 (default "api.modrinth.com")
       --proxy string         Proxy url for http connections
       --server-dir string    Server directory path (default "mc")
-      --server-file string   Name of the jar that starts the server
+      --server-file string   Name of the jar that starts the server. Forge 1.17+ and NeoForge jars don't read user_jvm_args.txt, start them as java @user_jvm_args.txt -jar <file>. Older Forge and other jars start as java -jar <file>
   -v, --verbose              Enable verbose output
 
 ```

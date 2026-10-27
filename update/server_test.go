@@ -5,6 +5,7 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
+	"time"
 
 	modrinth "github.com/nothub/mrpack-install/modrinth/api"
 	"github.com/nothub/mrpack-install/update/backup"
@@ -222,4 +223,39 @@ func assertNoFile(t *testing.T, path string) {
 	if _, err := os.Stat(path); !os.IsNotExist(err) {
 		t.Errorf("%s: stat error = %v, want not exist", path, err)
 	}
+}
+
+// rewritingInstaller rewrites keep, as the Forge 1.20.3+ installer rewrites
+// its shim jar, and reports file as the server file.
+type rewritingInstaller struct {
+	keep string
+	file string
+}
+
+func (r *rewritingInstaller) Install(serverDir string, _ string) (string, error) {
+	if err := os.WriteFile(filepath.Join(serverDir, r.keep), []byte("shim"), 0644); err != nil {
+		return "", err
+	}
+	return r.file, os.WriteFile(filepath.Join(serverDir, r.file), []byte("starter"), 0644)
+}
+
+// A recorded file the install wrote again is part of the new install, so
+// it stays even when the install reports another server file.
+func TestInstallServerKeepsRecordedFileTheInstallRewrote(t *testing.T) {
+	t.Parallel()
+	dir := serverDir(t, map[string]string{"forge-shim.jar": "shim"})
+	old := withServerFile("forge-shim.jar", "shim")
+	past := time.Now().Add(-time.Hour)
+	if err := os.Chtimes(filepath.Join(dir, "forge-shim.jar"), past, past); err != nil {
+		t.Fatal(err)
+	}
+	inst := &rewritingInstaller{keep: "forge-shim.jar", file: "mc.jar"}
+
+	err := InstallServer(dir, &Plan{InstallServer: true}, old, newState(), inst, "mc.jar", backup.NewDir(filepath.Join(dir, "backups")))
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	assertFile(t, filepath.Join(dir, "forge-shim.jar"), "shim")
+	assertFile(t, filepath.Join(dir, "mc.jar"), "starter")
 }

@@ -59,6 +59,10 @@ func InstallServer(serverDir string, plan *Plan, old *packstate.Schema, state *p
 		}
 	}
 
+	var before fs.FileInfo
+	if recordedPath != "" {
+		before, _ = os.Stat(recordedPath)
+	}
 	file, err := inst.Install(serverDir, serverFile)
 	if err != nil {
 		return err
@@ -84,7 +88,7 @@ func InstallServer(serverDir string, plan *Plan, old *packstate.Schema, state *p
 	}
 
 	switch {
-	case recordedPath != "" && recorded.Path != file && !(full != "" && sameFile(recordedPath, full)):
+	case recordedPath != "" && recorded.Path != file && !(full != "" && sameFile(recordedPath, full)) && !rewritten(recordedPath, before):
 		err = os.Remove(recordedPath)
 		if err != nil && !errors.Is(err, fs.ErrNotExist) {
 			return fmt.Errorf("deleting old server file %s: %w", recorded.Path, err)
@@ -96,6 +100,18 @@ func InstallServer(serverDir string, plan *Plan, old *packstate.Schema, state *p
 		log.Printf("No server file was recorded before, so an old one may remain. Start the server with: %s\n", startWith(file))
 	}
 	return nil
+}
+
+// rewritten reports whether the file at path changed since before, its
+// state ahead of the install, nil when it was missing. A recorded file the
+// installer wrote again belongs to the new install: Forge 1.20.3 and later
+// rewrite their shim jar, which the run.sh and ServerStarterJar both need.
+func rewritten(path string, before fs.FileInfo) bool {
+	after, err := os.Stat(path)
+	if err != nil {
+		return false
+	}
+	return before == nil || !after.ModTime().Equal(before.ModTime()) || after.Size() != before.Size()
 }
 
 // backUpUnless moves the file at path into backups, unless it is missing or

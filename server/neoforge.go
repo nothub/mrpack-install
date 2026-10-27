@@ -6,7 +6,9 @@ import (
 	"github.com/nothub/mrpack-install/web"
 	"github.com/nothub/semver"
 	"log"
+	"os"
 	"os/exec"
+	"path/filepath"
 	"strings"
 )
 
@@ -60,18 +62,29 @@ func (inst *NeoForgeInstaller) Install(serverDir string, serverFile string) (str
 
 	log.Println("Installer downloaded to:", installerFile)
 
-	cmd := exec.Command("java", "-jar", installerFile, "--install-server", serverDir)
+	args := []string{"-jar", installerFile, "--install-server", serverDir}
+	if serverFile != "" {
+		// The installer then also writes ServerStarterJar as server.jar,
+		// which starts NeoForge with java -jar.
+		args = append(args, "--server-jar")
+	}
+	cmd := exec.Command("java", args...)
 	log.Println("Executing command:", cmd.String())
 	if err = cmd.Run(); err != nil {
 		return "", err
 	}
 
-	if serverFile != "" {
-		log.Println("ignoring --server-file option for neoforged server installation!")
+	if serverFile == "" {
+		// NeoForge starts only through the run.sh and run.bat it writes.
+		return "", nil
 	}
-
-	// NeoForge starts only through the run.sh and run.bat it writes.
-	return "", nil
+	if serverFile != "server.jar" {
+		err = os.Rename(filepath.Join(serverDir, "server.jar"), filepath.Join(serverDir, serverFile))
+		if err != nil {
+			return "", fmt.Errorf("renaming the NeoForge server.jar: %w", err)
+		}
+	}
+	return serverFile, nil
 }
 
 // neoforgeVersionsFor returns the versions without a pre-release suffix

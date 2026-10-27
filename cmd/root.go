@@ -55,7 +55,7 @@ func init() {
 
 	RootCmd.PersistentFlags().StringVar(&host, "host", "api.modrinth.com", "Labrinth host address or full URL, e.g. http://labrinth.lan:8000")
 	RootCmd.PersistentFlags().StringVar(&serverDir, "server-dir", "mc", "Server directory path")
-	RootCmd.PersistentFlags().StringVar(&serverFile, "server-file", "", "Name of the jar that starts the server")
+	RootCmd.PersistentFlags().StringVar(&serverFile, "server-file", "", "Name of the jar that starts the server. Forge 1.17+ and NeoForge jars don't read user_jvm_args.txt, start them as java @user_jvm_args.txt -jar <file>. Older Forge and other jars start as java -jar <file>")
 	RootCmd.PersistentFlags().StringVar(&proxy, "proxy", "", "Proxy url for http connections")
 	RootCmd.PersistentFlags().Uint8Var(&dlThreads, "dl-threads", 8, "Concurrent download threads")
 	RootCmd.PersistentFlags().Uint8Var(&dlRetries, "dl-retries", 3, "Retries when download fails")
