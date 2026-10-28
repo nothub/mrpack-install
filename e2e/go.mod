@@ -3,7 +3,7 @@ module github.com/nothub/mrpack-install/e2e
 go 1.27.3
 
 require (
-	github.com/nothub/mrpack-install v0.0.0
+	github.com/nothub/mrpack-install v0.16.10
 	github.com/testcontainers/testcontainers-go v0.44.0
 )
 
