@@ -9,10 +9,11 @@ import (
 	"github.com/spf13/cobra"
 	"log"
 	"net/http"
+	"os"
 	"text/template"
 )
 
-//go:embed readme.tmpl
+//go:embed readme.tmpl usage.tmpl
 var fs embed.FS
 
 func init() {
@@ -45,20 +46,26 @@ func main() {
 	}
 	data.Contribs = filterBots(data.Contribs)
 
-	// load template
-	tmpl, err := template.ParseFS(fs, "readme.tmpl")
+	render("readme.tmpl", "README.md", data)
+	render("usage.tmpl", "USAGE.md", data)
+}
+
+// render executes the embedded template name with data into the file out,
+// relative to the working directory.
+func render(name string, out string, data any) {
+	tmpl, err := template.ParseFS(fs, name)
 	if err != nil {
 		log.Fatalln(err.Error())
 	}
-
-	// apply data to template
-	var buf = bytes.Buffer{}
+	var buf bytes.Buffer
 	err = tmpl.Execute(&buf, data)
 	if err != nil {
 		log.Fatalln(err.Error())
 	}
-
-	fmt.Print(buf.String())
+	err = os.WriteFile(out, buf.Bytes(), 0644)
+	if err != nil {
+		log.Fatalln(err.Error())
+	}
 }
 
 type command struct {
