@@ -1,6 +1,3 @@
-//usr/bin/env -S go run "$0" "$@" ; exit
-//go:build exclude
-
 package main
 
 import (
@@ -9,9 +6,9 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/nothub/mrpack-install/cmd"
+	"github.com/spf13/cobra"
 	"log"
 	"net/http"
-	"os/exec"
 	"text/template"
 )
 
@@ -29,17 +26,19 @@ func main() {
 		Contribs []ghUser
 	}
 
-	// extract command infos
-	err := exec.Command("go", "build", "-o", "/tmp/mrpack-install").Run()
-	if err != nil {
-		log.Fatalln(err.Error())
-	}
-	data.Entries = append(data.Entries, extractCmdInfos("root", ""))
-	for _, sc := range cmd.RootCmd.Commands() {
-		data.Entries = append(data.Entries, extractCmdInfos(sc.Name(), sc.Name()))
+	// The project's own commands get a section, cobra's help and completion
+	// commands don't. Execute adds those two, so add them by hand for the
+	// root help to list them as the binary does.
+	subcommands := cmd.RootCmd.Commands()
+	cmd.RootCmd.InitDefaultHelpCmd()
+	cmd.RootCmd.InitDefaultCompletionCmd()
+	data.Entries = append(data.Entries, helpOf("root", cmd.RootCmd))
+	for _, sc := range subcommands {
+		data.Entries = append(data.Entries, helpOf(sc.Name(), sc))
 	}
 
 	// fetch contribs from gh api
+	var err error
 	data.Contribs, err = getContribs("nothub", "mrpack-install")
 	if err != nil {
 		log.Fatalln(err.Error())
@@ -67,14 +66,17 @@ type command struct {
 	Help string
 }
 
-func extractCmdInfos(name string, cmd string) command {
-	help, err := exec.Command("/tmp/mrpack-install", cmd, "--help").CombinedOutput()
+func helpOf(name string, c *cobra.Command) command {
+	c.InitDefaultHelpFlag()
+	var buf bytes.Buffer
+	c.SetOut(&buf)
+	err := c.Help()
 	if err != nil {
 		log.Fatalln(err.Error())
 	}
 	return command{
 		Name: name,
-		Help: string(help),
+		Help: buf.String(),
 	}
 }
 

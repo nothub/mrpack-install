@@ -5,7 +5,7 @@ cd "$(dirname "$(realpath "$0")")/.."
 
 echo "#!/bin/sh
 set -eu
-./tools/readme.go > README.md
+go run ./tools/readme > README.md
 git add README.md
 " >.git/hooks/pre-commit
 chmod +x .git/hooks/pre-commit
