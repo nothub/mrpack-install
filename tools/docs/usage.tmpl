@@ -1,151 +1,204 @@
 <!-- Generated from tools/docs/usage.tmpl by: go run ./tools/docs -->
 # Usage
 
-`<pack>` is a Modrinth project slug or id, an `.mrpack` file path, or an `.mrpack` URL. Every command takes `--server-dir` (default `mc`). [Commands](#commands) lists all flags.
+mrpack-install sets up a Minecraft server from a [Modrinth](https://modrinth.com/) modpack and keeps it on the pack version you ask for. Run the same command again later with another version and it updates the server dir: new files are written, dropped ones deleted, and your own changes are backed up first.
 
-## Install a pack
+- [Quick start](#quick-start)
+- [Choosing the pack](#choosing-the-pack)
+- [Updating a server](#updating-a-server)
+- [Running it on every server start](#running-it-on-every-server-start)
+- [Keeping your changes](#keeping-your-changes)
+- [Checking a run before it happens](#checking-a-run-before-it-happens)
+- [A stable start command](#a-stable-start-command)
+- [Plain servers without a pack](#plain-servers-without-a-pack)
+- [When something goes wrong](#when-something-goes-wrong)
+- [Upgrading from older releases](#upgrading-from-older-releases)
+- [Commands](#commands): every command and flag
+
+## Quick start
+
+Install the latest release of a pack into `srv`, accept Minecraft's EULA, and start the server:
 
 ```sh
-mrpack-install adrenaserver --server-dir srv                  # latest release
+mrpack-install adrenaserver --server-dir srv --server-file server.jar
+echo 'eula=true' > srv/eula.txt
+cd srv && java -jar server.jar nogui
+```
+
+mrpack-install downloads the pack, installs the Minecraft server with the loader the pack needs, and writes `srv/packstate.json`. That file records what was installed, which is what lets later runs update the dir. Leave it in place.
+
+Without `--server-dir` the server goes into `mc` in the current directory. Without `--server-file` the start jar keeps the name the loader gives it. See [A stable start command](#a-stable-start-command).
+
+## Choosing the pack
+
+A pack is a Modrinth project slug or id, an `.mrpack` file, or an `.mrpack` URL. A version number after it picks that version; without one you get the latest release.
+
+```sh
+mrpack-install adrenaserver --server-dir srv                  # latest release, by slug
 mrpack-install yK0ISmKn 1.0.0-1.18 --server-dir srv           # a version, by project id
 mrpack-install ./cool-pack.mrpack --server-dir srv            # a local file
-mrpack-install https://example.org/data/cool-pack.mrpack      # a URL
+mrpack-install https://example.org/data/cool-pack.mrpack --server-dir srv
 ```
 
-Downloads go through a proxy, or come from a self-hosted Modrinth instance (labrinth):
+Pack archives are cached in your user cache dir. For a slug or id, a version that is already cached isn't downloaded again.
+
+Some packs have optional mods. All of them are installed by default. Pick some by file name (a regular expression), or turn them all off:
 
 ```sh
-mrpack-install ./cool-pack.mrpack --proxy socks5://127.0.0.1:7890
-mrpack-install communitypack9000 --host api.labrinth.example.org
+mrpack-install ./example.mrpack --server-dir srv --optional-select 'foo\.jar' --optional-select 'bar-[\d+\.]+\.jar'
+mrpack-install ./example.mrpack --server-dir srv --optional-disable-all
 ```
 
-Optional mods are all installed by default. Select them by file name (regex), or disable them all:
+Behind a proxy, or with a self-hosted Modrinth backend (labrinth):
 
 ```sh
-mrpack-install ./example.mrpack --optional-select 'foo\.jar' --optional-select 'bar-[\d+\.]+\.jar'
-mrpack-install ./example.mrpack --optional-disable-all
+mrpack-install ./cool-pack.mrpack --server-dir srv --proxy socks5://127.0.0.1:7890
+mrpack-install communitypack9000 --server-dir srv --host api.labrinth.example.org
 ```
 
-## Update a server
+## Updating a server
 
-Run the same command for another version. It brings the server dir to that version:
+Run the install command again with the new version:
 
 ```sh
-mrpack-install adrenaserver 1.0.0 --server-dir srv
 mrpack-install adrenaserver 2.0.0 --server-dir srv
 ```
 
-- Files the new version ships are written, and files it dropped are deleted.
-- Files no pack version listed, such as your own mods or the world, are never touched.
-- A file you edited since the last run is moved to `srv/backups/<timestamp>/` before it is replaced or deleted.
-- The server is reinstalled when the Minecraft or loader version changes, and the old loader's jar is removed.
-- Every file is downloaded and checked first. A failed download exits non-zero and changes nothing.
-
-`update` does the same for the pack the server dir records, at a version or at the latest release:
+or let `update` take the pack from `srv/packstate.json`:
 
 ```sh
-mrpack-install update 2.0.0 --server-dir srv
-mrpack-install update --server-dir srv
+mrpack-install update 2.0.0 --server-dir srv      # a version
+mrpack-install update --server-dir srv            # the latest release
 ```
 
-`update` refuses a version published before the installed one:
+Either way, the server dir ends up at that version:
+
+- Files the new version ships are written, and files it no longer ships are deleted.
+- A file you edited since the last run is moved to `srv/backups/<timestamp>/` before it is replaced or deleted.
+- Files no pack version ever installed are left alone: your world, your own mods, configs that mods create at runtime.
+- When the Minecraft or loader version changes, the server is reinstalled and the old loader's jar removed.
+- Everything is downloaded and checked before the server dir changes. A failed download stops the run and changes nothing.
+
+`update` refuses to go back to a version published before the installed one. Pass `--allow-downgrade` when you mean it:
 
 ```sh
 mrpack-install update 1.0.0 --server-dir srv                    # exits 1
 mrpack-install update 1.0.0 --server-dir srv --allow-downgrade
 ```
 
-## Run it on every server start
+## Running it on every server start
 
-A run for the installed version and options changes nothing, and for a slug or id downloads nothing:
+A run for the version that is already installed, with the same options, does nothing. For a slug or id it doesn't even download the pack. That makes it cheap to run before every server start, for example in a container's start script:
 
 ```sh
-mrpack-install adrenaserver --server-dir srv
+#!/bin/sh
+set -eu
+mrpack-install adrenaserver 2.0.0 --server-dir /srv --server-file server.jar
+cd /srv && exec java -Xmx4G -jar server.jar nogui
 ```
 
-It doesn't repair either. To restore deleted files, back up and reset edited ones, and reinstall the server:
+With a version, the server stays on it until you change the script. Without one, every start moves to the latest release as soon as it is published.
+
+## Keeping your changes
+
+Edited files are backed up, not kept: the next update still replaces a config the pack ships. To keep your version of a file for good, exclude it. Excluded paths are never written, deleted or backed up:
 
 ```sh
-mrpack-install adrenaserver --server-dir srv --force-sync
+mrpack-install adrenaserver 2.0.0 --server-dir srv --exclude 'config/tuned/**' --exclude 'mods/*-client.jar'
 ```
 
-## Keep your changes
+Patterns are relative to the server dir. `*` matches within one path segment, and `**` matches any number of segments. Pass the same `--exclude` flags on every run.
 
-Never touch some paths, even when the pack changes or drops them. Patterns are relative to the server dir, and `**` matches any number of path segments:
+Backups go to `backups/` in the server dir. To keep them elsewhere, for example on another volume:
 
 ```sh
-mrpack-install ./pack.mrpack --server-dir srv --exclude 'config/tuned/**' --exclude 'mods/*-client.jar'
+mrpack-install adrenaserver 2.0.0 --server-dir srv --backup-dir /backups
 ```
 
-Keep backups somewhere else:
+## Checking a run before it happens
+
+`--dry-run` prints what a run would change and exits without changing anything, not even creating the server dir:
 
 ```sh
-mrpack-install ./pack.mrpack --server-dir srv --backup-dir /backups
-```
-
-## See what a run would do
-
-`--dry-run` prints one line per file it would write, delete or back up, and whether it would install the server. It changes nothing, and doesn't even create the server dir:
-
-```sh
-mrpack-install ./pack-v2.mrpack --server-dir srv --dry-run
+mrpack-install adrenaserver 2.0.0 --server-dir srv --dry-run
 ```
 
 ```
 delete config/dropped.txt
 write config/new.txt
+backup+write config/tuned.txt
 install server: no
 ```
 
-## Name the start jar
+Each line is one file: `write`, `delete`, or `backup+write` and `backup+delete` for files you edited. The last line says whether the server would be reinstalled.
 
-`--server-file` names the jar that starts the server, and keeps that name across loader upgrades. A deleted jar or a new name triggers a reinstall:
+## A stable start command
 
-```sh
-mrpack-install ./pack.mrpack --server-dir srv --server-file mc.jar
-```
-
-Forge 1.17+ and NeoForge jars don't read `user_jvm_args.txt`:
+Loaders name their server jar after their version, so a loader upgrade changes the file you start. `--server-file` gives it a fixed name instead, which keeps start scripts and panel settings working across upgrades:
 
 ```sh
-cd srv && java @user_jvm_args.txt -jar mc.jar     # Forge 1.17+, NeoForge
-cd srv && java -jar mc.jar                        # all other loaders
+mrpack-install adrenaserver --server-dir srv --server-file server.jar
 ```
 
-## Install a plain server
+Most loaders start with `java -jar`. Forge 1.17 and later and NeoForge also need their JVM arguments file:
 
-`server` installs a server without a pack and prints the file that starts it:
+```sh
+cd srv && java -jar server.jar nogui                          # vanilla, Fabric, Quilt, Paper, Forge 1.16.5 and older
+cd srv && java @user_jvm_args.txt -jar server.jar nogui       # Forge 1.17 and later, NeoForge
+```
+
+Use the same `--server-file` on every run. Changing the name, or deleting the jar, reinstalls the server on the next run. Quilt needs a name other than `server.jar`, which its launcher loads, so use for example `--server-file mc.jar` there.
+
+## Plain servers without a pack
+
+`server` installs only a Minecraft server, with a loader of your choice, and prints the file that starts it:
 
 ```sh
 mrpack-install server fabric --minecraft-version 1.21.1 --server-dir srv
-mrpack-install server paper --minecraft-version 1.18.2 --server-file srv.jar
-mrpack-install server quilt --minecraft-version 1.20.1 --flavor-version 0.20.1 --server-file mc.jar
-mrpack-install server neoforge --minecraft-version 1.21.1 --server-file mc.jar
-mrpack-install server forge --minecraft-version 1.16.5 --flavor-version 36.2.39 --server-file mc.jar
+mrpack-install server quilt --minecraft-version 1.20.1 --flavor-version 0.20.1 --server-dir srv
+mrpack-install server forge --minecraft-version 1.20.1 --flavor-version 47.3.0 --server-dir srv
+mrpack-install server paper --minecraft-version 1.21.1 --server-dir srv --server-file server.jar
 ```
 
-The output is the start file alone, so a script can use it:
+The output is only the start file, so a script can use it directly:
 
 ```sh
 JAR=$(mrpack-install server fabric --minecraft-version 1.21.1 --server-dir srv)
-cd srv && java -jar "$JAR"
+cd srv && java -jar "$JAR" nogui
 ```
 
-Forge 1.17 to 1.20.2 and NeoForge print `run.sh` (`run.bat` on Windows) when started without `--server-file`.
+Forge 1.17 to 1.20.2 and NeoForge print `run.sh` (`run.bat` on Windows) when no `--server-file` is given, since only their start script starts them.
+
+## When something goes wrong
+
+**A download failed.** The run exits non-zero, names the files, and leaves the server dir as it was. Run it again.
+
+**Files are missing or broken.** A normal re-run doesn't repair anything. `--force-sync` restores missing files, backs up and resets edited ones, and reinstalls the server:
+
+```sh
+mrpack-install adrenaserver 2.0.0 --server-dir srv --force-sync
+```
+
+**An update replaced a file you needed.** Every run that displaced files has its own dir under `backups/`, named by time, with the files at their original paths. Copy the file back, and add an `--exclude` for it if the pack should leave it alone from now on:
+
+```sh
+ls srv/backups/
+cp srv/backups/20261028221500/config/tuned.toml srv/config/tuned.toml
+```
 
 ## Upgrading from older releases
 
-A server dir installed by v0.16.10 (`modpack.json`) or a beta (`packstate.json`) updates on its first run, and its state is converted. A v0.16.10 dir records no Modrinth project, so pass the pack once:
+Server dirs installed by v0.16.10 (with a `modpack.json`) or by a beta (with a schema-less `packstate.json`) update on their first run, and their state is converted. v0.16.10 didn't record the Modrinth project, so run the install command once instead of `update`:
 
 ```sh
 mrpack-install adrenaserver 2.0.0 --server-dir srv
 ```
 
-Behaviour that changed:
+What changed:
 
-- A plain re-run no longer repairs edited or deleted files. Use `--force-sync`.
-- A server jar that is already in the server dir no longer skips the first install.
 - v0.16.10's `update <pack> [<version>]` is now `mrpack-install <pack> [<version>]`. `update` takes only a version.
+- A plain re-run no longer repairs edited or deleted files. Use `--force-sync`.
+- `--server-file` no longer skips the server install when that file already exists. The first run in a server dir always installs the server and backs up the existing file.
 
 ## Commands
 {{ range .Entries }}
