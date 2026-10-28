@@ -6,6 +6,8 @@
 
 A cli application for installing Minecraft servers and [Modrinth](https://modrinth.com/) [modpacks](https://support.modrinth.com/en/articles/8802351-modrinth-modpack-format-mrpack).
 
+For examples, see [USAGE.md](USAGE.md).
+
 ---
 
 ## Commands
@@ -15,18 +17,11 @@ A cli application for installing Minecraft servers and [Modrinth](https://modrin
 ```
 Deploys a Modrinth modpack including Minecraft server.
 
+Examples: https://github.com/nothub/mrpack-install/blob/main/USAGE.md
+
 Usage:
   mrpack-install (<filepath> | <url> | <slug> [<version>] | <id> [<version>]) [flags]
   mrpack-install [command]
-
-Examples:
-  mrpack-install https://example.org/data/cool-pack.mrpack
-  mrpack-install downloads/cool-pack.mrpack --proxy socks5://127.0.0.1:7890
-  mrpack-install adrenaserver --server-file srv.jar
-  mrpack-install yK0ISmKn 1.0.0-1.18 --server-dir mcserver
-  mrpack-install communitypack9000 --host api.labrinth.example.org
-  mrpack-install example.mrpack --optional-select 'foo\.jar' \
-                                --optional-select 'bar-[\d+\.]+\.jar'
 
 Available Commands:
   completion  Generate the autocompletion script for the specified shell
@@ -88,12 +83,10 @@ Prints the file that starts the server on stdout: a jar to run with
 java -jar, or run.sh (run.bat on Windows) where only the installer's
 start script starts it.
 
+Examples: https://github.com/nothub/mrpack-install/blob/main/USAGE.md
+
 Usage:
   mrpack-install server ( vanilla | fabric | quilt | forge | neoforge | paper ) [flags]
-
-Examples:
-  mrpack-install server fabric --server-dir fabric-srv
-  mrpack-install server paper --minecraft-version 1.18.2 --server-file srv.jar
 
 Flags:
       --flavor-version string      Flavor version (default "latest")
@@ -140,6 +133,7 @@ Global Flags:
       --server-dir string    Server directory path (default "mc")
       --server-file string   Name of the jar that starts the server. Forge 1.17+ and NeoForge jars don't read user_jvm_args.txt, start them as java @user_jvm_args.txt -jar <file>. Older Forge and other jars start as java -jar <file>
   -v, --verbose              Enable verbose output
+
 ```
 
 ### version
@@ -169,7 +163,7 @@ Global Flags:
 To build an executable, run:
 
 ```sh
-go tool goreleaser build --clean --snapshot --single-target
+goreleaser build --clean --snapshot --single-target
 ```
 
 ## Release
@@ -177,7 +171,7 @@ go tool goreleaser build --clean --snapshot --single-target
 To build a local snapshot release, run:
 
 ```sh
-go tool goreleaser release --clean --snapshot
+goreleaser release --clean --snapshot
 ```
 
 To build and publish a full release, push a semver tag (with 'v' prefix) to any branch.

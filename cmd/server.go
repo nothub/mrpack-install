@@ -47,9 +47,9 @@ var serverCmd = &cobra.Command{
 
 Prints the file that starts the server on stdout: a jar to run with
 java -jar, or run.sh (run.bat on Windows) where only the installer's
-start script starts it.`,
-	Example: `  mrpack-install server fabric --server-dir fabric-srv
-  mrpack-install server paper --minecraft-version 1.18.2 --server-file srv.jar`,
+start script starts it.
+
+Examples: https://github.com/nothub/mrpack-install/blob/main/USAGE.md`,
 	Args:      cobra.MatchAll(cobra.ExactArgs(1), cobra.OnlyValidArgs),
 	ValidArgs: server.FlavorNames(),
 	Run: func(cmd *cobra.Command, args []string) {
