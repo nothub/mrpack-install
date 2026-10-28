@@ -216,3 +216,19 @@ func assertMoved(t *testing.T, src string, dst string, data string, mode os.File
 		t.Errorf("dst mode = %v, want %v", fi.Mode().Perm(), mode)
 	}
 }
+
+// A file that doesn't exist yet, under a symlink that leads outside the
+// base, is outside it too.
+func TestIsSubpathMissingLeafUnderSymlink(t *testing.T) {
+	base := t.TempDir()
+	outside := t.TempDir()
+	if err := os.Symlink(outside, filepath.Join(base, "link")); err != nil {
+		t.Fatal(err)
+	}
+
+	ok, err := IsSubpath(filepath.Join(base, "link", "new.jar"), base)
+
+	if err == nil && ok {
+		t.Error("IsSubpath() = true, want a path through the symlink to be outside the base")
+	}
+}
