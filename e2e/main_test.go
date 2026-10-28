@@ -189,12 +189,14 @@ func (s *stack) start(ctx context.Context) error {
 	}
 
 	// labrinth's local storage backend writes files but never serves them.
+	// A new volume belongs to root, and labrinth runs as whichever user its
+	// image picks, so the cdn opens the volume to every user before
+	// labrinth starts. Its port wait orders the two.
 	cdn, err := s.runContainer(ctx, "cdn", imageBusybox,
-		testcontainers.WithCmd("httpd", "-f", "-p", "80", "-h", "/srv"),
+		testcontainers.WithCmd("sh", "-c", "chmod 1777 /srv && exec httpd -f -p 80 -h /srv"),
 		testcontainers.WithMounts(testcontainers.ContainerMount{
-			Source:   testcontainers.GenericVolumeMountSource{Name: s.volume},
-			Target:   "/srv",
-			ReadOnly: true,
+			Source: testcontainers.GenericVolumeMountSource{Name: s.volume},
+			Target: "/srv",
 		}),
 		testcontainers.WithExposedPorts("80/tcp"),
 		testcontainers.WithWaitStrategy(wait.ForListeningPort("80/tcp")),

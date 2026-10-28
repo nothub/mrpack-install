@@ -62,7 +62,8 @@ func newVersionCreate(f file, v versionData) versionCreate {
 }
 
 // createProject creates a project owned by the seed admin, with one initial
-// version holding f. The project stays in review until approve.
+// version holding f. labrinth only creates projects as drafts, and approve
+// publishes it.
 func createProject(t testing.TB, projectType api.ProjectType, slug string, f file, v versionData) *api.Project {
 	t.Helper()
 	data := struct {
@@ -87,6 +88,7 @@ func createProject(t testing.TB, projectType api.ProjectType, slug string, f fil
 		InitialVersions: []versionCreate{newVersionCreate(f, v)},
 		Categories:      []string{},
 		LicenseID:       "MIT",
+		IsDraft:         true,
 	}
 	var project api.Project
 	upload(t, "/v2/project", data, f, &project)
