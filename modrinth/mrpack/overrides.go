@@ -4,6 +4,7 @@ import (
 	"archive/zip"
 	"bytes"
 	"crypto"
+	"fmt"
 	"github.com/nothub/hashutils/chksum"
 	"github.com/nothub/hashutils/encoding"
 	"github.com/nothub/mrpack-install/files"
@@ -43,10 +44,17 @@ func (o *override) realPath() string {
 // ends up with the server-overrides copy.
 func iterServerOverrides(zipFile string, callback func(file *zip.File) error) error {
 	for _, prefix := range []string{pathPrefixBoth, pathPrefixServer} {
+		// Two entries for one path in one layer leave which content is meant
+		// to the zip's entry order, so such a pack is rejected.
+		seen := make(map[string]bool)
 		err := IterZip(zipFile, func(file *zip.File) error {
 			if !strings.HasPrefix(file.Name, prefix) {
 				return nil
 			}
+			if seen[file.Name] {
+				return fmt.Errorf("pack has %s more than once", file.Name)
+			}
+			seen[file.Name] = true
 			return callback(file)
 		})
 		if err != nil {
