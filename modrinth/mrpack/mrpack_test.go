@@ -4,6 +4,7 @@ import (
 	"archive/zip"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	modrinth "github.com/nothub/mrpack-install/modrinth/api"
@@ -214,5 +215,30 @@ func TestExtractOverridesFilter(t *testing.T) {
 	}
 	if _, err := os.Stat(filepath.Join(serverDir, "b")); !os.IsNotExist(err) {
 		t.Errorf("b: stat error = %v, want not exist", err)
+	}
+}
+
+// Not parallel: ExtractOverrides needs the CWD set to the server dir.
+func TestExtractOverridesRejectsDuplicates(t *testing.T) {
+	pack := writeZip(t, [][2]string{{"overrides/x", "first"}, {"overrides/x", "second"}})
+	serverDir := t.TempDir()
+	t.Chdir(serverDir)
+
+	err := ExtractOverrides(pack, serverDir, nil)
+
+	if err == nil || !strings.Contains(err.Error(), "overrides/x") {
+		t.Errorf("ExtractOverrides() = %v, want an error naming overrides/x", err)
+	}
+}
+
+// The same path in overrides/ and server-overrides/ is the layering the
+// format defines, not a duplicate.
+func TestExtractOverridesAcceptsLayeredPath(t *testing.T) {
+	pack := writeZip(t, [][2]string{{"overrides/x", "common"}, {"server-overrides/x", "server"}})
+	serverDir := t.TempDir()
+	t.Chdir(serverDir)
+
+	if err := ExtractOverrides(pack, serverDir, nil); err != nil {
+		t.Fatal(err)
 	}
 }
