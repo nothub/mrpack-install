@@ -1,0 +1,5 @@
+# Contributors to list in addition to the ones the GitHub contributors API
+# returns, one login per line. GitHub counts a commit whose author email
+# is linked to no account as anonymous and leaves it out of that API.
+mmtawous
+murderspagurder

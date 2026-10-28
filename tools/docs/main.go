@@ -11,6 +11,7 @@ import (
 	"net/http"
 	"os"
 	"slices"
+	"strings"
 	"text/template"
 )
 
@@ -96,9 +97,21 @@ type ghUser struct {
 	Contributions int    `json:"contributions"`
 }
 
-// unlinkedContributors have commits whose author email no longer belongs
-// to their GitHub account.
-var unlinkedContributors = []string{"mmtawous", "murderspagurder"}
+//go:embed contribs.txt
+var extraContribs string
+
+// extraLogins returns the logins in contribs.txt, skipping blank lines and
+// # comments.
+func extraLogins() []string {
+	var logins []string
+	for _, line := range strings.Split(extraContribs, "\n") {
+		line = strings.TrimSpace(line)
+		if line != "" && !strings.HasPrefix(line, "#") {
+			logins = append(logins, line)
+		}
+	}
+	return logins
+}
 
 func getContribs(owner string, repo string) (contribs []ghUser, err error) {
 
@@ -107,10 +120,7 @@ func getContribs(owner string, repo string) (contribs []ghUser, err error) {
 		return nil, err
 	}
 
-	// GitHub counts a commit whose author email is linked to no account as
-	// anonymous and leaves it out of this endpoint, so these are added by
-	// login.
-	for _, login := range unlinkedContributors {
+	for _, login := range extraLogins() {
 		if !slices.ContainsFunc(contribs, func(c ghUser) bool { return c.Login == login }) {
 			contribs = append(contribs, ghUser{Login: login})
 		}
