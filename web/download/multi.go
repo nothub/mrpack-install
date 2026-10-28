@@ -2,8 +2,11 @@ package download
 
 import (
 	"crypto"
+	"fmt"
 	"log"
 	"path/filepath"
+	"slices"
+	"strings"
 	"sync"
 
 	"github.com/nothub/hashutils/chksum"
@@ -26,9 +29,14 @@ type Downloader struct {
 
 type empty struct{}
 
-func (g *Downloader) Download(baseDir string) {
+// Download fetches every file into baseDir and returns an error naming
+// each file that no URL delivered with a matching hash. Every URL gets at
+// least one attempt, also with zero Retries.
+func (g *Downloader) Download(baseDir string) error {
 	semaphore := make(chan empty, g.Threads) // Create a semaphore to limit concurrency
 	var wg sync.WaitGroup
+	var mu sync.Mutex
+	var failed []string
 
 	for i := range g.Downloads {
 		wg.Add(1)
@@ -52,17 +60,17 @@ func (g *Downloader) Download(baseDir string) {
 				//    gitlab.com
 
 				// retry when download failed
-				for retries := 0; retries < g.Retries; retries++ {
+				for attempt := 1; attempt <= max(1, g.Retries); attempt++ {
 					// try download
 					f, err := web.DefaultClient.DownloadFile(link, filepath.Dir(absPath), filepath.Base(absPath))
 					if err != nil {
-						log.Printf("Download failed for %s (attempt %v), because: %s\n", dl.Path, retries+1, err.Error())
+						log.Printf("Download failed for %s (attempt %v), because: %s\n", dl.Path, attempt, err.Error())
 						continue
 					}
 					// check hashcode
 					_, err = chksum.VerifyFile(f, dl.Hashes.Sha512, crypto.SHA512.New(), encoding.Hex)
 					if err != nil {
-						log.Printf("Hash check failed for %s (attempt %v), because: %s\n", dl.Path, retries+1, err.Error())
+						log.Printf("Hash check failed for %s (attempt %v), because: %s\n", dl.Path, attempt, err.Error())
 						continue
 					}
 					// success yay
@@ -76,10 +84,17 @@ func (g *Downloader) Download(baseDir string) {
 			}
 			if !success {
 				log.Printf("Download failed: %s\n", dl.Path)
-				// TODO: tell user what manual actions are required?
+				mu.Lock()
+				failed = append(failed, dl.Path)
+				mu.Unlock()
 			}
 		}()
 	}
 
 	wg.Wait()
+	if len(failed) > 0 {
+		slices.Sort(failed)
+		return fmt.Errorf("failed to download: %s", strings.Join(failed, ", "))
+	}
+	return nil
 }

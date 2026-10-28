@@ -33,19 +33,23 @@ Available Commands:
   help        Help about any command
   ping        Ping a Labrinth instance
   server      Prepare a plain server environment
-  update      Update the deployed modpack
+  update      Update the installed modpack
   version     Print version infos
 
 Flags:
+      --backup-dir string             Backup directory path (default <server-dir>/backups)
       --dl-retries uint8              Retries when download fails (default 3)
       --dl-threads uint8              Concurrent download threads (default 8)
+      --dry-run                       Print what the run would change and exit without changing anything
+      --exclude stringArray           Never touch paths matching this pattern, relative to the server dir (repeatable, e.g. 'config/**', 'mods/*-client.jar')
+      --force-sync                    Re-apply the pack and reinstall the server, even when it is already installed
   -h, --help                          help for mrpack-install
       --host string                   Labrinth host address or full URL, e.g. http://labrinth.lan:8000 (default "api.modrinth.com")
       --optional-disable-all          Disable all optional mods
       --optional-select stringArray   Select optional mods by file path (regex)
       --proxy string                  Proxy url for http connections
       --server-dir string             Server directory path (default "mc")
-      --server-file string            Server jar file name
+      --server-file string            Name of the jar that starts the server. Forge 1.17+ and NeoForge jars don't read user_jvm_args.txt, start them as java @user_jvm_args.txt -jar <file>. Older Forge and other jars start as java -jar <file>
   -v, --verbose                       Enable verbose output
   -V, --version                       Print version and exit
 
@@ -70,7 +74,7 @@ Global Flags:
       --host string          Labrinth host address or full URL, e.g. http://labrinth.lan:8000 (default "api.modrinth.com")
       --proxy string         Proxy url for http connections
       --server-dir string    Server directory path (default "mc")
-      --server-file string   Server jar file name
+      --server-file string   Name of the jar that starts the server. Forge 1.17+ and NeoForge jars don't read user_jvm_args.txt, start them as java @user_jvm_args.txt -jar <file>. Older Forge and other jars start as java -jar <file>
   -v, --verbose              Enable verbose output
 
 ```
@@ -79,6 +83,10 @@ Global Flags:
 
 ```
 Download and configure one of several Minecraft server flavors.
+
+Prints the file that starts the server on stdout: a jar to run with
+java -jar, or run.sh (run.bat on Windows) where only the installer's
+start script starts it.
 
 Usage:
   mrpack-install server ( vanilla | fabric | quilt | forge | neoforge | paper ) [flags]
@@ -98,7 +106,7 @@ Global Flags:
       --host string          Labrinth host address or full URL, e.g. http://labrinth.lan:8000 (default "api.modrinth.com")
       --proxy string         Proxy url for http connections
       --server-dir string    Server directory path (default "mc")
-      --server-file string   Server jar file name
+      --server-file string   Name of the jar that starts the server. Forge 1.17+ and NeoForge jars don't read user_jvm_args.txt, start them as java @user_jvm_args.txt -jar <file>. Older Forge and other jars start as java -jar <file>
   -v, --verbose              Enable verbose output
 
 ```
@@ -106,13 +114,20 @@ Global Flags:
 ### update
 
 ```
-Update the deployed modpacks files, creating backups if necessary.
+Update the installed modpack to <version>, or to its latest release, the
+same way mrpack-install <pack> <version> does, with the pack the server
+dir's packstate.json records. A version published before the installed
+one needs --allow-downgrade.
 
 Usage:
   mrpack-install update [<version>] [flags]
 
 Flags:
-      --backup-dir string             Backup directory path
+      --allow-downgrade               Update to a version published before the installed one
+      --backup-dir string             Backup directory path (default <server-dir>/backups)
+      --dry-run                       Print what the run would change and exit without changing anything
+      --exclude stringArray           Never touch paths matching this pattern, relative to the server dir (repeatable, e.g. 'config/**', 'mods/*-client.jar')
+      --force-sync                    Re-apply the pack and reinstall the server, even when it is already installed
   -h, --help                          help for update
       --optional-disable-all          Disable all optional mods
       --optional-select stringArray   Select optional mods by file path (regex)
@@ -123,9 +138,8 @@ Global Flags:
       --host string          Labrinth host address or full URL, e.g. http://labrinth.lan:8000 (default "api.modrinth.com")
       --proxy string         Proxy url for http connections
       --server-dir string    Server directory path (default "mc")
-      --server-file string   Server jar file name
+      --server-file string   Name of the jar that starts the server. Forge 1.17+ and NeoForge jars don't read user_jvm_args.txt, start them as java @user_jvm_args.txt -jar <file>. Older Forge and other jars start as java -jar <file>
   -v, --verbose              Enable verbose output
-
 ```
 
 ### version
@@ -145,7 +159,7 @@ Global Flags:
       --host string          Labrinth host address or full URL, e.g. http://labrinth.lan:8000 (default "api.modrinth.com")
       --proxy string         Proxy url for http connections
       --server-dir string    Server directory path (default "mc")
-      --server-file string   Server jar file name
+      --server-file string   Name of the jar that starts the server. Forge 1.17+ and NeoForge jars don't read user_jvm_args.txt, start them as java @user_jvm_args.txt -jar <file>. Older Forge and other jars start as java -jar <file>
   -v, --verbose              Enable verbose output
 
 ```

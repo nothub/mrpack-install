@@ -67,7 +67,7 @@ func TestExtractOverrides(t *testing.T) {
 	serverDir := t.TempDir()
 	t.Chdir(serverDir)
 
-	err = ExtractOverrides(pack, serverDir)
+	err = ExtractOverrides(pack, serverDir, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -160,7 +160,7 @@ func TestServerOverridesWin(t *testing.T) {
 			serverDir := t.TempDir()
 			t.Chdir(serverDir)
 
-			err := ExtractOverrides(pack, serverDir)
+			err := ExtractOverrides(pack, serverDir, nil)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -180,5 +180,39 @@ func TestServerOverridesWin(t *testing.T) {
 				t.Errorf("x sha512 = %q, want %q", h.Sha512, serverSha512)
 			}
 		})
+	}
+}
+
+// A server file without download URLs stays in the list, so the downloader
+// reports it as failed instead of the install silently lacking it.
+func TestServerDownloadsKeepsFileWithoutUrls(t *testing.T) {
+	t.Parallel()
+	index := Index{Files: []File{
+		{Path: "mods/nourl.jar", Env: Env{Server: modrinth.RequiredEnvSupport}},
+	}}
+
+	dls := index.ServerDownloads(func(File) bool { return true })
+
+	if len(dls) != 1 || dls[0].Path != "mods/nourl.jar" {
+		t.Errorf("ServerDownloads() = %v, want mods/nourl.jar", dls)
+	}
+}
+
+// Not parallel: ExtractOverrides needs the CWD set to the server dir.
+func TestExtractOverridesFilter(t *testing.T) {
+	pack := writeZip(t, [][2]string{{"overrides/a", "a"}, {"overrides/b", "b"}})
+	serverDir := t.TempDir()
+	t.Chdir(serverDir)
+
+	err := ExtractOverrides(pack, serverDir, func(p string) bool { return p == "a" })
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if _, err := os.Stat(filepath.Join(serverDir, "a")); err != nil {
+		t.Error(err)
+	}
+	if _, err := os.Stat(filepath.Join(serverDir, "b")); !os.IsNotExist(err) {
+		t.Errorf("b: stat error = %v, want not exist", err)
 	}
 }

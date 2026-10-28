@@ -14,7 +14,7 @@ func TestServer(t *testing.T) {
 		t.Run(flavor, func(t *testing.T) {
 			t.Parallel()
 			dir := t.TempDir()
-			out, err := mrpackInstall(t, "server", flavor, "--minecraft-version", "1.21.1", "--server-dir", dir)
+			stdout, out, err := mrpackInstallStdout(t, "server", flavor, "--minecraft-version", "1.21.1", "--server-dir", dir)
 			if err != nil {
 				t.Fatalf("mrpack-install server %s: %v\n%s", flavor, err, out)
 			}
@@ -33,6 +33,10 @@ func TestServer(t *testing.T) {
 			}
 			if fi.Size() == 0 {
 				t.Errorf("%s is empty", jars[0])
+			}
+			// Logs go to stderr, so a script gets only the result.
+			if got, want := string(stdout), filepath.Base(jars[0])+"\n"; got != want {
+				t.Errorf("stdout = %q, want %q", got, want)
 			}
 		})
 	}

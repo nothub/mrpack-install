@@ -18,6 +18,18 @@
         "imageLabrinth\\s*=\\s*\"(?<depName>[^:\"]+):(?<currentValue>[^@\"]+)@(?<currentDigest>sha256:[a-f0-9]{64})\""
       ],
       "datasourceTemplate": "docker"
+    },
+    {
+      "customType": "regex",
+      "description": "ServerStarterJar, which starts Forge 1.17+ with --server-file",
+      "managerFilePatterns": [
+        "/^server/starter\\.go$/"
+      ],
+      "matchStrings": [
+        "serverStarterJarVersion\\s*=\\s*\"(?<currentValue>[^\"]+)\""
+      ],
+      "depNameTemplate": "neoforged/ServerStarterJar",
+      "datasourceTemplate": "github-releases"
     }
   ],
   "packageRules": [
@@ -29,6 +41,15 @@
       "minimumReleaseAge": null,
       "prBodyNotes": [
         "Re-check `seedDump` and `allScopes` in `e2e/images_test.go` against the new image's `org.opencontainers.image.revision` label, and update the revision noted there."
+      ]
+    },
+    {
+      "description": "the pinned SHA-256 has to follow the version",
+      "matchDepNames": [
+        "neoforged/ServerStarterJar"
+      ],
+      "prBodyNotes": [
+        "Update `serverStarterJarSha256` in `server/starter.go` to the SHA-256 of the new release's `server.jar`, or the install fails its hash check."
       ]
     }
   ]

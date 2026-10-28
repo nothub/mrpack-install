@@ -1,0 +1,20 @@
+{
+    "slug": "example",
+    "project-id": "P1",
+    "version": "1.0.0",
+    "version-id": "V1",
+    "dependencies": {
+        "minecraft": "1.21.8",
+        "fabric-loader": "0.17.2"
+    },
+    "hashes": {
+        "mods/a.jar": {
+            "sha1": "f92e777f4341930bad9b2422283c4680d00dbc06",
+            "sha512": "483365784455682e7e83c6e150e56dbe3f387a06c9d407b8253e4bdf8e0bd1fac8234e3973d4e59ff8c01cb969f25c0d08c5dc5bb967744b1a5813afe3c58fcc"
+        },
+        "config/a.txt": {
+            "sha1": "356a192b7913b04c54574d18c28d46e6395428ab",
+            "sha512": "cf83e1357eefb8bdf1542850d66d8007d620e4050b5715dc83f4a921d36ce9ce47d0d13c5d85f2b0ff8318d2877eec2f63b931bd47417a81a538327af927da3e"
+        }
+    }
+}

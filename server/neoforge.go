@@ -6,7 +6,9 @@ import (
 	"github.com/nothub/mrpack-install/web"
 	"github.com/nothub/semver"
 	"log"
+	"os"
 	"os/exec"
+	"path/filepath"
 	"strings"
 )
 
@@ -15,7 +17,7 @@ type NeoForgeInstaller struct {
 	NeoForgeVersion  string
 }
 
-func (inst *NeoForgeInstaller) Install(serverDir string, serverFile string) error {
+func (inst *NeoForgeInstaller) Install(serverDir string, serverFile string) (string, error) {
 	version := inst.NeoForgeVersion
 	if version == "" || version == "latest" {
 
@@ -25,26 +27,12 @@ func (inst *NeoForgeInstaller) Install(serverDir string, serverFile string) erro
 		}
 		meta, err := maven.FetchMetadata(metaUrl)
 		if err != nil {
-			return err
+			return "", err
 		}
 
-		mcPrefix := strings.Join(strings.Split(inst.MinecraftVersion, ".")[1:3], ".")
-		var versions []string
-		for _, ver := range meta.Versioning.Versions {
-			if !strings.HasPrefix(ver, mcPrefix) {
-				// does not match mc version
-				continue
-			}
-			if strings.Contains(ver, "-") {
-				// is pre-release version
-				continue
-			}
-			versions = append(versions, ver)
-		}
-
-		parsed, err := semver.ParseAll(versions)
+		parsed, err := semver.ParseAll(neoforgeVersionsFor(meta.Versioning.Versions, inst.MinecraftVersion))
 		if err != nil {
-			return err
+			return "", err
 		}
 
 		var releases []semver.Version
@@ -57,7 +45,7 @@ func (inst *NeoForgeInstaller) Install(serverDir string, serverFile string) erro
 		sorted := semver.SortDesc(releases)
 
 		if len(sorted) <= 0 {
-			return fmt.Errorf("no neoforge release version found for mc version %s", inst.MinecraftVersion)
+			return "", fmt.Errorf("no neoforge release version found for mc version %s", inst.MinecraftVersion)
 		}
 
 		version = sorted[0].String()
@@ -69,20 +57,53 @@ func (inst *NeoForgeInstaller) Install(serverDir string, serverFile string) erro
 	}
 	installerFile, err := web.DefaultClient.DownloadFile(u, serverDir, fmt.Sprintf("neoforge-%s-installer.jar", version))
 	if err != nil {
-		return err
+		return "", err
 	}
 
 	log.Println("Installer downloaded to:", installerFile)
 
-	cmd := exec.Command("java", "-jar", installerFile, "--install-server", serverDir)
+	args := []string{"-jar", installerFile, "--install-server", serverDir}
+	if serverFile != "" {
+		// The installer then also writes ServerStarterJar as server.jar,
+		// which starts NeoForge with java -jar.
+		args = append(args, "--server-jar")
+	}
+	cmd := exec.Command("java", args...)
 	log.Println("Executing command:", cmd.String())
 	if err = cmd.Run(); err != nil {
-		return err
+		return "", err
 	}
 
-	if serverFile != "" {
-		log.Println("ignoring --server-file option for neoforged server installation!")
+	if serverFile != "" && serverFile != "server.jar" {
+		err = os.Rename(filepath.Join(serverDir, "server.jar"), filepath.Join(serverDir, serverFile))
+		if err != nil {
+			return "", fmt.Errorf("renaming the NeoForge server.jar: %w", err)
+		}
 	}
+	removeInstaller(installerFile)
+	// serverFile is empty when only run.sh and run.bat start NeoForge.
+	return serverFile, nil
+}
 
-	return nil
+// neoforgeVersionsFor returns the versions without a pre-release suffix
+// that belong to Minecraft version mc. NeoForge numbers them
+// <mc minor>.<mc patch>.<build>, so 21.1.x is for 1.21.1 and 21.11.x for
+// 1.21.11, and a two-part mc version has patch 0.
+func neoforgeVersionsFor(versions []string, mc string) []string {
+	parts := strings.Split(mc, ".")
+	if len(parts) < 2 {
+		return nil
+	}
+	patch := "0"
+	if len(parts) > 2 {
+		patch = parts[2]
+	}
+	prefix := parts[1] + "." + patch + "."
+	var matching []string
+	for _, v := range versions {
+		if strings.HasPrefix(v, prefix) && !strings.Contains(v, "-") {
+			matching = append(matching, v)
+		}
+	}
+	return matching
 }
