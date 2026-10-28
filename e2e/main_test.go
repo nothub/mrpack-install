@@ -1,5 +1,3 @@
-//go:build e2e
-
 package e2e
 
 import (
@@ -103,8 +101,11 @@ func run(m *testing.M) int {
 	defer os.RemoveAll(dir)
 	binary = filepath.Join(dir, "mrpack-install")
 	cacheHome = filepath.Join(dir, "cache")
-	// Built before the stack starts, so a compile error fails fast.
-	build := exec.Command("go", "build", "-o", binary, "github.com/nothub/mrpack-install")
+	// Built before the stack starts, so a compile error fails fast. It is
+	// built in the app's own module, so it gets the app's dependency
+	// versions, not the ones this test module resolves.
+	build := exec.Command("go", "build", "-o", binary, ".")
+	build.Dir = ".."
 	if out, err := build.CombinedOutput(); err != nil {
 		log.Printf("build mrpack-install: %v\n%s", err, out)
 		return 1

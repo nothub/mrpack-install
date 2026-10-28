@@ -27,10 +27,14 @@ jobs:
       - uses: actions/checkout@v7
       - uses: actions/setup-go@v7
         with:
-          go-version-file: 'go.mod'
+          go-version-file: 'e2e/go.mod'
           check-latest: true
           cache: true
-      - run: go test -v -race -timeout 15m -tags e2e ./e2e/...
+          cache-dependency-path: |
+            go.sum
+            e2e/go.sum
+      - run: go test -v -race -timeout 15m ./...
+        working-directory: e2e
 
   release:
     if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v') == true
