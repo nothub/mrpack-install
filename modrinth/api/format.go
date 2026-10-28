@@ -6,8 +6,9 @@ import (
 )
 
 func arrayAsParam(arr []string) string {
-	for i := range arr {
-		arr[i] = fmt.Sprintf("%q", arr[i])
+	quoted := make([]string, len(arr))
+	for i, s := range arr {
+		quoted[i] = fmt.Sprintf("%q", s)
 	}
-	return "[" + strings.Join(arr, ",") + "]"
+	return "[" + strings.Join(quoted, ",") + "]"
 }
