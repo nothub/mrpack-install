@@ -116,12 +116,14 @@ Global Flags:
 ```
 Update the installed modpack to <version>, or to its latest release, the
 same way mrpack-install <pack> <version> does, with the pack the server
-dir's packstate.json records.
+dir's packstate.json records. A version published before the installed
+one needs --allow-downgrade.
 
 Usage:
   mrpack-install update [<version>] [flags]
 
 Flags:
+      --allow-downgrade               Update to a version published before the installed one
       --backup-dir string             Backup directory path (default <server-dir>/backups)
       --dry-run                       Print what the run would change and exit without changing anything
       --exclude stringArray           Never touch paths matching this pattern, relative to the server dir (repeatable, e.g. 'config/**', 'mods/*-client.jar')

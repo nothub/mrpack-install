@@ -1134,3 +1134,40 @@ func TestUpdateSubcommand(t *testing.T) {
 		}
 	})
 }
+
+// update refuses a version published before the installed one, unless
+// --allow-downgrade is given.
+func TestUpdateRefusesDowngrade(t *testing.T) {
+	t.Parallel()
+	const slug = "e2e-update-downgrade"
+	mod, _ := seedPackMod(t, slug+"-mod")
+	v1 := fabricPack(t, slug, "1.0.0", []packFile{mod}, []zipEntry{{"overrides/config/a.txt", "1"}})
+	v2 := fabricPack(t, slug, "2.0.0", []packFile{mod}, []zipEntry{{"overrides/config/a.txt", "2"}})
+	version := func(number string) versionData {
+		v := fabric1218
+		v.VersionNumber = number
+		return v
+	}
+	created := createProject(t, api.ModpackProjectType, slug, file{Name: slug + "-1.0.0.mrpack", Data: v1}, version("1.0.0"))
+	uploadVersion(t, created.Id, file{Name: slug + "-2.0.0.mrpack", Data: v2}, version("2.0.0"))
+	approve(t, created.Id)
+	dir := t.TempDir()
+	installInto(t, dir, slug, "2.0.0")
+
+	out, err := mrpackInstall(t, "update", "1.0.0", "--host", labrinthURL, "--server-dir", dir)
+
+	if err == nil {
+		t.Fatalf("update to an older version: exit 0, want non-zero\n%s", out)
+	}
+	if !strings.Contains(string(out), "--allow-downgrade") {
+		t.Errorf("output does not mention --allow-downgrade:\n%s", out)
+	}
+	assertContent(t, filepath.Join(dir, "config", "a.txt"), "2")
+
+	installInto(t, dir, "update", "1.0.0", "--allow-downgrade")
+	assertContent(t, filepath.Join(dir, "config", "a.txt"), "1")
+
+	// Going forward again needs no flag.
+	installInto(t, dir, "update", "2.0.0")
+	assertContent(t, filepath.Join(dir, "config", "a.txt"), "2")
+}

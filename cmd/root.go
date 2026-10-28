@@ -274,6 +274,8 @@ type packSource struct {
 	// lookup finds the pack's Modrinth ids: the ones a slug or id input
 	// resolved, or a lookup by archive hash for a file or URL input.
 	lookup func(string) (packstate.Ids, error)
+	// version is the Modrinth version a slug or id input resolved to.
+	version *modrinth.Version
 }
 
 // resolvePack resolves a file path, URL, slug or id input without
@@ -328,9 +330,10 @@ func resolveProject(input string, version string) packSource {
 	for _, f := range picked.Files {
 		if strings.HasSuffix(f.Filename, ".mrpack") {
 			return packSource{
-				url:    f.Url,
-				sha512: f.Hashes.Sha512,
-				lookup: func(string) (packstate.Ids, error) { return ids, nil },
+				url:     f.Url,
+				sha512:  f.Hashes.Sha512,
+				lookup:  func(string) (packstate.Ids, error) { return ids, nil },
+				version: picked,
 			}
 		}
 	}
