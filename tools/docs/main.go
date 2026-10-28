@@ -1,6 +1,3 @@
-//usr/bin/env -S go run "$0" "$@" ; exit
-//go:build exclude
-
 package main
 
 import (
@@ -9,13 +6,16 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/nothub/mrpack-install/cmd"
+	"github.com/spf13/cobra"
 	"log"
 	"net/http"
-	"os/exec"
+	"os"
+	"slices"
+	"strings"
 	"text/template"
 )
 
-//go:embed readme.tmpl
+//go:embed readme.tmpl usage.tmpl
 var fs embed.FS
 
 func init() {
@@ -29,37 +29,45 @@ func main() {
 		Contribs []ghUser
 	}
 
-	// extract command infos
-	err := exec.Command("go", "build", "-o", "/tmp/mrpack-install").Run()
-	if err != nil {
-		log.Fatalln(err.Error())
-	}
-	data.Entries = append(data.Entries, extractCmdInfos("root", ""))
-	for _, sc := range cmd.RootCmd.Commands() {
-		data.Entries = append(data.Entries, extractCmdInfos(sc.Name(), sc.Name()))
+	// The project's own commands get a section, cobra's help and completion
+	// commands don't. Execute adds those two, so add them by hand for the
+	// root help to list them as the binary does.
+	subcommands := cmd.RootCmd.Commands()
+	cmd.RootCmd.InitDefaultHelpCmd()
+	cmd.RootCmd.InitDefaultCompletionCmd()
+	data.Entries = append(data.Entries, helpOf("root", cmd.RootCmd))
+	for _, sc := range subcommands {
+		data.Entries = append(data.Entries, helpOf(sc.Name(), sc))
 	}
 
 	// fetch contribs from gh api
+	var err error
 	data.Contribs, err = getContribs("nothub", "mrpack-install")
 	if err != nil {
 		log.Fatalln(err.Error())
 	}
 	data.Contribs = filterBots(data.Contribs)
 
-	// load template
-	tmpl, err := template.ParseFS(fs, "readme.tmpl")
+	render("readme.tmpl", "README.md", data)
+	render("usage.tmpl", "USAGE.md", data)
+}
+
+// render executes the embedded template name with data into the file out,
+// relative to the working directory.
+func render(name string, out string, data any) {
+	tmpl, err := template.ParseFS(fs, name)
 	if err != nil {
 		log.Fatalln(err.Error())
 	}
-
-	// apply data to template
-	var buf = bytes.Buffer{}
+	var buf bytes.Buffer
 	err = tmpl.Execute(&buf, data)
 	if err != nil {
 		log.Fatalln(err.Error())
 	}
-
-	fmt.Print(buf.String())
+	err = os.WriteFile(out, buf.Bytes(), 0644)
+	if err != nil {
+		log.Fatalln(err.Error())
+	}
 }
 
 type command struct {
@@ -67,14 +75,17 @@ type command struct {
 	Help string
 }
 
-func extractCmdInfos(name string, cmd string) command {
-	help, err := exec.Command("/tmp/mrpack-install", cmd, "--help").CombinedOutput()
+func helpOf(name string, c *cobra.Command) command {
+	c.InitDefaultHelpFlag()
+	var buf bytes.Buffer
+	c.SetOut(&buf)
+	err := c.Help()
 	if err != nil {
 		log.Fatalln(err.Error())
 	}
 	return command{
 		Name: name,
-		Help: string(help),
+		Help: buf.String(),
 	}
 }
 
@@ -86,11 +97,33 @@ type ghUser struct {
 	Contributions int    `json:"contributions"`
 }
 
+//go:embed contribs.txt
+var extraContribs string
+
+// extraLogins returns the logins in contribs.txt, skipping blank lines and
+// # comments.
+func extraLogins() []string {
+	var logins []string
+	for _, line := range strings.Split(extraContribs, "\n") {
+		line = strings.TrimSpace(line)
+		if line != "" && !strings.HasPrefix(line, "#") {
+			logins = append(logins, line)
+		}
+	}
+	return logins
+}
+
 func getContribs(owner string, repo string) (contribs []ghUser, err error) {
 
 	err = ghApi(fmt.Sprintf("/repos/%s/%s/contributors", owner, repo), &contribs)
 	if err != nil {
 		return nil, err
+	}
+
+	for _, login := range extraLogins() {
+		if !slices.ContainsFunc(contribs, func(c ghUser) bool { return c.Login == login }) {
+			contribs = append(contribs, ghUser{Login: login})
+		}
 	}
 
 	// 'contributors' endpoint is not enough, it does not provide names...

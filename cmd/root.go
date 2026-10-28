@@ -139,14 +139,9 @@ func addSyncFlags(cmd *cobra.Command) {
 var RootCmd = &cobra.Command{
 	Use:   "mrpack-install (<filepath> | <url> | <slug> [<version>] | <id> [<version>])",
 	Short: "Modrinth Modpack server deployment",
-	Long:  `Deploys a Modrinth modpack including Minecraft server.`,
-	Example: `  mrpack-install https://example.org/data/cool-pack.mrpack
-  mrpack-install downloads/cool-pack.mrpack --proxy socks5://127.0.0.1:7890
-  mrpack-install adrenaserver --server-file srv.jar
-  mrpack-install yK0ISmKn 1.0.0-1.18 --server-dir mcserver
-  mrpack-install communitypack9000 --host api.labrinth.example.org
-  mrpack-install example.mrpack --optional-select 'foo\.jar' \
-                                --optional-select 'bar-[\d+\.]+\.jar'`,
+	Long: `Deploys a Modrinth modpack including Minecraft server.
+
+Examples: https://github.com/nothub/mrpack-install/blob/main/USAGE.md`,
 	Args: cobra.RangeArgs(1, 2),
 	Run: func(cmd *cobra.Command, args []string) {
 		input := args[0]
