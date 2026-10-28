@@ -10,6 +10,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"slices"
 	"text/template"
 )
 
@@ -95,11 +96,24 @@ type ghUser struct {
 	Contributions int    `json:"contributions"`
 }
 
+// unlinkedContributors have commits whose author email no longer belongs
+// to their GitHub account.
+var unlinkedContributors = []string{"mmtawous", "murderspagurder"}
+
 func getContribs(owner string, repo string) (contribs []ghUser, err error) {
 
 	err = ghApi(fmt.Sprintf("/repos/%s/%s/contributors", owner, repo), &contribs)
 	if err != nil {
 		return nil, err
+	}
+
+	// GitHub counts a commit whose author email is linked to no account as
+	// anonymous and leaves it out of this endpoint, so these are added by
+	// login.
+	for _, login := range unlinkedContributors {
+		if !slices.ContainsFunc(contribs, func(c ghUser) bool { return c.Login == login }) {
+			contribs = append(contribs, ghUser{Login: login})
+		}
 	}
 
 	// 'contributors' endpoint is not enough, it does not provide names...
