@@ -3,6 +3,9 @@
   "configMigration": true,
   "minimumReleaseAge": "7 days",
   "semanticCommits": "enabled",
+  "postUpdateOptions": [
+    "gomodTidy"
+  ],
   "timezone": "Europe/Berlin",
   "assignees": [
     "nothub"
