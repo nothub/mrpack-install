@@ -43,7 +43,7 @@
       ],
       "minimumReleaseAge": null,
       "prBodyNotes": [
-        "Re-check `seedDump` and `allScopes` in `e2e/images_test.go` against the new image's `org.opencontainers.image.revision` label, and update the revision noted there."
+        "Re-check `seedDump` and `allScopes` in `e2e/images_test.go` against the new image's `org.opencontainers.image.revision` label. The e2e job logs it as `labrinth revision <sha>`."
       ]
     },
     {
