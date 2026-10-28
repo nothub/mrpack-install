@@ -256,6 +256,13 @@ func (s *stack) start(ctx context.Context) error {
 	if err != nil {
 		return fmt.Errorf("labrinth endpoint: %w", err)
 	}
+	// The digest pins the image, the revision names the labrinth commit it
+	// was built from, which seedDump and allScopes are checked against.
+	info, err := labrinth.Inspect(ctx)
+	if err != nil {
+		return fmt.Errorf("inspect labrinth: %w", err)
+	}
+	log.Printf("labrinth revision %s", info.Config.Labels["org.opencontainers.image.revision"])
 
 	return nil
 }
