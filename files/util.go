@@ -23,28 +23,21 @@ func IsFile(path string) bool {
 	return !info.IsDir()
 }
 
+// Resolve returns the absolute path with every symlink resolved, also
+// those in the part of a path that doesn't exist yet.
 func Resolve(path string) (string, error) {
-	// resolve absolute path
-	path, err := filepath.Abs(path)
+	abs, err := filepath.Abs(path)
 	if err != nil {
 		return "", err
 	}
-
-	if _, err := os.Stat(path); err == nil {
-		// resolve symlinks
-		preResolve := path
-		path, err = filepath.EvalSymlinks(path)
-		if err != nil {
-			return "", err
-		}
-		if preResolve != path {
-			log.Printf("Resolved symlink %q to %q\n", preResolve, path)
-		}
-	} else if !errors.Is(err, os.ErrNotExist) {
+	resolved, err := resolveExisting(abs)
+	if err != nil {
 		return "", err
 	}
-
-	return path, nil
+	if resolved != abs {
+		log.Printf("Resolved symlink %q to %q\n", abs, resolved)
+	}
+	return resolved, nil
 }
 
 func IsSubpath(subPath string, basePath string) (bool, error) {
