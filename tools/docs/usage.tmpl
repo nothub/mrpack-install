@@ -20,7 +20,7 @@ mrpack-install sets up a Minecraft server from a [Modrinth](https://modrinth.com
 Install the latest release of a pack into `srv`, accept Minecraft's EULA, and start the server:
 
 ```sh
-mrpack-install adrenaserver --server-dir srv --server-file server.jar
+mrpack-install examplepack --server-dir srv --server-file server.jar
 echo 'eula=true' > srv/eula.txt
 cd srv && java -jar server.jar nogui
 ```
@@ -34,7 +34,7 @@ Without `--server-dir` the server goes into `mc` in the current directory. Witho
 A pack is a Modrinth project slug or id, an `.mrpack` file, or an `.mrpack` URL. A version number after it picks that version; without one you get the latest release.
 
 ```sh
-mrpack-install adrenaserver --server-dir srv                  # latest release, by slug
+mrpack-install examplepack --server-dir srv                  # latest release, by slug
 mrpack-install yK0ISmKn 1.0.0-1.18 --server-dir srv           # a version, by project id
 mrpack-install ./cool-pack.mrpack --server-dir srv            # a local file
 mrpack-install https://example.org/data/cool-pack.mrpack --server-dir srv
@@ -61,7 +61,7 @@ mrpack-install communitypack9000 --server-dir srv --host api.labrinth.example.or
 Run the install command again with the new version:
 
 ```sh
-mrpack-install adrenaserver 2.0.0 --server-dir srv
+mrpack-install examplepack 2.0.0 --server-dir srv
 ```
 
 or let `update` take the pack from `srv/packstate.json`:
@@ -93,7 +93,7 @@ A run for the version that is already installed, with the same options, does not
 ```sh
 #!/bin/sh
 set -eu
-mrpack-install adrenaserver 2.0.0 --server-dir /srv --server-file server.jar
+mrpack-install examplepack 2.0.0 --server-dir /srv --server-file server.jar
 cd /srv && exec java -Xmx4G -jar server.jar nogui
 ```
 
@@ -104,7 +104,7 @@ With a version, the server stays on it until you change the script. Without one,
 Edited files are backed up, not kept: the next update still replaces a config the pack ships. To keep your version of a file for good, exclude it. Excluded paths are never written, deleted or backed up:
 
 ```sh
-mrpack-install adrenaserver 2.0.0 --server-dir srv --exclude 'config/tuned/**' --exclude 'mods/*-client.jar'
+mrpack-install examplepack 2.0.0 --server-dir srv --exclude 'config/tuned/**' --exclude 'mods/*-client.jar'
 ```
 
 Patterns are relative to the server dir. `*` matches within one path segment, and `**` matches any number of segments. Pass the same `--exclude` flags on every run.
@@ -112,7 +112,7 @@ Patterns are relative to the server dir. `*` matches within one path segment, an
 Backups go to `backups/` in the server dir. To keep them elsewhere, for example on another volume:
 
 ```sh
-mrpack-install adrenaserver 2.0.0 --server-dir srv --backup-dir /backups
+mrpack-install examplepack 2.0.0 --server-dir srv --backup-dir /backups
 ```
 
 ## Checking a run before it happens
@@ -120,7 +120,7 @@ mrpack-install adrenaserver 2.0.0 --server-dir srv --backup-dir /backups
 `--dry-run` prints what a run would change and exits without changing anything, not even creating the server dir:
 
 ```sh
-mrpack-install adrenaserver 2.0.0 --server-dir srv --dry-run
+mrpack-install examplepack 2.0.0 --server-dir srv --dry-run
 ```
 
 ```
@@ -137,7 +137,7 @@ Each line is one file: `write`, `delete`, or `backup+write` and `backup+delete` 
 Loaders name their server jar after their version, so a loader upgrade changes the file you start. `--server-file` gives it a fixed name instead, which keeps start scripts and panel settings working across upgrades:
 
 ```sh
-mrpack-install adrenaserver --server-dir srv --server-file server.jar
+mrpack-install examplepack --server-dir srv --server-file server.jar
 ```
 
 Most loaders start with `java -jar`. Forge 1.17 and later and NeoForge also need their JVM arguments file:
@@ -176,7 +176,7 @@ Forge 1.17 to 1.20.2 and NeoForge print `run.sh` (`run.bat` on Windows) when no 
 **Files are missing or broken.** A normal re-run doesn't repair anything. `--force-sync` restores missing files, backs up and resets edited ones, and reinstalls the server:
 
 ```sh
-mrpack-install adrenaserver 2.0.0 --server-dir srv --force-sync
+mrpack-install examplepack 2.0.0 --server-dir srv --force-sync
 ```
 
 **An update replaced a file you needed.** Every run that displaced files has its own dir under `backups/`, named by time, with the files at their original paths. Copy the file back, and add an `--exclude` for it if the pack should leave it alone from now on:
@@ -191,7 +191,7 @@ cp srv/backups/20261028221500/config/tuned.toml srv/config/tuned.toml
 Server dirs installed by v0.16.10 (with a `modpack.json`) or by a beta (with a schema-less `packstate.json`) update on their first run, and their state is converted. v0.16.10 didn't record the Modrinth project, so run the install command once instead of `update`:
 
 ```sh
-mrpack-install adrenaserver 2.0.0 --server-dir srv
+mrpack-install examplepack 2.0.0 --server-dir srv
 ```
 
 What changed:
