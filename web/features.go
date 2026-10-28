@@ -152,7 +152,7 @@ func (c *Client) get(url string) (*http.Response, error) {
 }
 
 func (c *Client) sendRequest(request *http.Request) (*http.Response, error) {
-	awaitRateLimits(request.Host)
+	awaitRateLimits(request.URL.Host)
 	response, err := c.c.Do(request)
 	if err != nil {
 		return nil, err

@@ -23,6 +23,15 @@ func (infos *rateLimitInfos) isExpired() bool {
 	return !infos.LastUpdate.Add(infos.ResetDelay).After(time.Now())
 }
 
+// wait returns how long to wait before the next request: the time left
+// until the limit resets, once at most one request remains.
+func (infos *rateLimitInfos) wait() time.Duration {
+	if infos.isExpired() || infos.Remaining > 1 {
+		return 0
+	}
+	return time.Until(infos.LastUpdate.Add(infos.ResetDelay))
+}
+
 func updateRateLimits(response *http.Response) {
 	if response.Header.Get("x-ratelimit-remaining") == "" || response.Header.Get("x-ratelimit-reset") == "" {
 		return
@@ -35,7 +44,7 @@ func updateRateLimits(response *http.Response) {
 	// number of requests left for the time window
 	remaining, err := strconv.ParseUint(response.Header.Get("x-ratelimit-remaining"), 10, 0)
 	if err != nil {
-		log.Println("Failed to parse ratelimit-remaining value", err, "sent by", response.Request.Host)
+		log.Println("Failed to parse ratelimit-remaining value", err, "sent by", response.Request.URL.Host)
 		return
 	}
 	limits.Remaining = remaining
@@ -43,13 +52,15 @@ func updateRateLimits(response *http.Response) {
 	// number of seconds before the rate limit resets
 	reset, err := strconv.ParseUint(response.Header.Get("x-ratelimit-reset"), 10, 0)
 	if err != nil {
-		log.Println("Failed to parse ratelimit-reset value", err, "sent by", response.Request.Host)
+		log.Println("Failed to parse ratelimit-reset value", err, "sent by", response.Request.URL.Host)
 		return
 	}
 	limits.ResetDelay = time.Duration(reset) * time.Second
 
+	// After a redirect, response.Request is the request to the target, whose
+	// Host field is empty, so the key comes from its URL.
 	rateLimitsMu.Lock()
-	rateLimits[response.Request.Host] = &limits
+	rateLimits[response.Request.URL.Host] = &limits
 	rateLimitsMu.Unlock()
 }
 
@@ -63,11 +74,8 @@ func awaitRateLimits(host string) {
 	if limits == nil {
 		return
 	}
-	if limits.isExpired() {
-		return
-	}
-	if limits.Remaining <= 1 {
-		log.Println("Awaiting rate limits for:", host, "Sleeping for", limits.ResetDelay, "seconds...")
-		time.Sleep(limits.ResetDelay)
+	if d := limits.wait(); d > 0 {
+		log.Printf("Rate limit of %s reached, waiting %s\n", host, d.Round(time.Second))
+		time.Sleep(d)
 	}
 }
