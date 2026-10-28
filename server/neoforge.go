@@ -18,6 +18,9 @@ type NeoForgeInstaller struct {
 }
 
 func (inst *NeoForgeInstaller) Install(serverDir string, serverFile string) (string, error) {
+	if !neoforgeSupports(inst.MinecraftVersion) {
+		return "", fmt.Errorf("NeoForge starts at Minecraft 1.20.1, there is none for %s", inst.MinecraftVersion)
+	}
 	version := inst.NeoForgeVersion
 	if version == "" || version == "latest" {
 
@@ -88,8 +91,19 @@ func (inst *NeoForgeInstaller) Install(serverDir string, serverFile string) (str
 // neoforgeVersionsFor returns the versions without a pre-release suffix
 // that belong to Minecraft version mc. NeoForge numbers them
 // <mc minor>.<mc patch>.<build>, so 21.1.x is for 1.21.1 and 21.11.x for
-// 1.21.11, and a two-part mc version has patch 0.
+// 1.21.11, and a two-part mc version has patch 0. For 1.20.1 NeoForge is
+// the fork of Forge, numbered 1.20.1-<forge version>, and the prefix is
+// cut because the download URL adds it back.
 func neoforgeVersionsFor(versions []string, mc string) []string {
+	if mc == "1.20.1" {
+		var matching []string
+		for _, v := range versions {
+			if forge, ok := strings.CutPrefix(v, "1.20.1-"); ok && !strings.Contains(forge, "-") {
+				matching = append(matching, forge)
+			}
+		}
+		return matching
+	}
 	parts := strings.Split(mc, ".")
 	if len(parts) < 2 {
 		return nil
@@ -106,4 +120,23 @@ func neoforgeVersionsFor(versions []string, mc string) []string {
 		}
 	}
 	return matching
+}
+
+// neoforgeSupports reports whether NeoForge exists for Minecraft version
+// mc: from 1.20.1, where it forked from Forge, on. A version it can't read
+// is left for the version lookup to reject.
+func neoforgeSupports(mc string) bool {
+	var major, minor, patch int
+	n, _ := fmt.Sscanf(mc, "%d.%d.%d", &major, &minor, &patch)
+	if n < 2 {
+		return true
+	}
+	switch {
+	case major != 1:
+		return major > 1
+	case minor != 20:
+		return minor > 20
+	default:
+		return patch >= 1
+	}
 }
