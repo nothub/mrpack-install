@@ -1,6 +1,7 @@
 package server
 
 import (
+	"archive/zip"
 	"os"
 	"path/filepath"
 	"testing"
@@ -59,5 +60,40 @@ func TestRemoveInstallerKeepsGoing(t *testing.T) {
 
 	if _, err := os.Stat(jar); !os.IsNotExist(err) {
 		t.Errorf("%s: stat error = %v, want removed", jar, err)
+	}
+}
+
+func TestCheckJar(t *testing.T) {
+	t.Parallel()
+	dir := t.TempDir()
+	jar := filepath.Join(dir, "fabric-server.jar")
+	f, err := os.Create(jar)
+	if err != nil {
+		t.Fatal(err)
+	}
+	zw := zip.NewWriter(f)
+	w, err := zw.Create("META-INF/MANIFEST.MF")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := w.Write([]byte("Manifest-Version: 1.0\r\nMain-Class: net.fabricmc.installer.ServerLauncher\r\n\r\n")); err != nil {
+		t.Fatal(err)
+	}
+	if err := zw.Close(); err != nil {
+		t.Fatal(err)
+	}
+	if err := f.Close(); err != nil {
+		t.Fatal(err)
+	}
+	page := filepath.Join(dir, "error.jar")
+	if err := os.WriteFile(page, []byte("<html>502 Bad Gateway</html>"), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	if err := checkJar(jar); err != nil {
+		t.Errorf("checkJar(jar) = %v, want nil", err)
+	}
+	if err := checkJar(page); err == nil {
+		t.Error("checkJar(html page) = nil, want an error")
 	}
 }
