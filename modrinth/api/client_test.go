@@ -22,3 +22,13 @@ func TestNewClient(t *testing.T) {
 		})
 	}
 }
+
+func TestBaseURLRejects(t *testing.T) {
+	for _, host := range []string{"", " ", "/", "http://", "https:///labrinth", "ftp://labrinth.lan", "labrinth.lan/?x=1", "labrinth.lan/#top", "labrinth.lan/?"} {
+		t.Run(host, func(t *testing.T) {
+			if got, err := BaseURL(host); err == nil {
+				t.Errorf("BaseURL(%q) = %q, want an error", host, got)
+			}
+		})
+	}
+}
