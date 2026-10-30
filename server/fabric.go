@@ -2,9 +2,11 @@ package server
 
 import (
 	"errors"
+	"fmt"
 	"github.com/nothub/mrpack-install/web"
 	"log"
 	"net/url"
+	"os"
 	"path/filepath"
 )
 
@@ -37,6 +39,11 @@ func (inst *FabricInstaller) Install(serverDir string, serverFile string) (strin
 	file, err := web.DefaultClient.DownloadFile(u.String(), serverDir, serverFile)
 	if err != nil {
 		return "", err
+	}
+	err = checkJar(file)
+	if err != nil {
+		os.Remove(file)
+		return "", fmt.Errorf("downloading the fabric server jar: %w", err)
 	}
 
 	log.Println("Server jar downloaded to:", file)

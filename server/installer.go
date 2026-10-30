@@ -1,11 +1,14 @@
 package server
 
 import (
+	"archive/zip"
 	"errors"
+	"fmt"
 	"github.com/nothub/mrpack-install/modrinth/mrpack"
 	"io/fs"
 	"log"
 	"os"
+	"path/filepath"
 )
 
 type Installer interface {
@@ -86,4 +89,20 @@ func removeInstaller(jar string) {
 			log.Printf("Unable to remove the installer: %s\n", err)
 		}
 	}
+}
+
+// checkJar fails unless the file at path is a jar with a manifest. Fabric's
+// meta API sends no checksum for the launcher jar it builds, so this is
+// what tells a download from an error page sent with status 200.
+func checkJar(path string) error {
+	r, err := zip.OpenReader(path)
+	if err != nil {
+		return fmt.Errorf("%s is not a jar: %w", filepath.Base(path), err)
+	}
+	defer r.Close()
+	f, err := r.Open("META-INF/MANIFEST.MF")
+	if err != nil {
+		return fmt.Errorf("%s has no manifest: %w", filepath.Base(path), err)
+	}
+	return f.Close()
 }
