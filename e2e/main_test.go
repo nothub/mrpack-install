@@ -41,6 +41,7 @@ func mrpackInstall(t testing.TB, args ...string) ([]byte, error) {
 	t.Helper()
 	var out bytes.Buffer
 	err := runBinary(t, &out, &out, args)
+	failOnRace(t, out.Bytes())
 	return out.Bytes(), err
 }
 
@@ -50,7 +51,17 @@ func mrpackInstallStdout(t testing.TB, args ...string) (stdout []byte, stderr []
 	t.Helper()
 	var so, se bytes.Buffer
 	err = runBinary(t, &so, &se, args)
+	failOnRace(t, se.Bytes())
 	return so.Bytes(), se.Bytes(), err
+}
+
+// failOnRace fails t when the race detector reported a race in a run. The
+// non-zero exit alone would pass a test that expects the run to fail.
+func failOnRace(t testing.TB, stderr []byte) {
+	t.Helper()
+	if bytes.Contains(stderr, []byte("WARNING: DATA RACE")) {
+		t.Errorf("data race in mrpack-install:\n%s", stderr)
+	}
 }
 
 func runBinary(t testing.TB, stdout io.Writer, stderr io.Writer, args []string) error {
@@ -104,7 +115,8 @@ func run(m *testing.M) int {
 	// Built before the stack starts, so a compile error fails fast. It is
 	// built in the app's own module, so it gets the app's dependency
 	// versions, not the ones this test module resolves.
-	build := exec.Command("go", "build", "-o", binary, ".")
+	// -race reports any data race in a run, see failOnRace.
+	build := exec.Command("go", "build", "-race", "-o", binary, ".")
 	build.Dir = ".."
 	if out, err := build.CombinedOutput(); err != nil {
 		log.Printf("build mrpack-install: %v\n%s", err, out)
