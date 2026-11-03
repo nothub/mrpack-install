@@ -76,38 +76,36 @@ func ExtractOverrides(zipFile string, serverDir string, keep func(path string) b
 		files.AssertSafe(p, serverDir)
 		targetPath := filepath.Join(serverDir, p)
 
-		err := os.MkdirAll(filepath.Dir(targetPath), 0755)
+		err := writeOverride(file, targetPath)
 		if err != nil {
 			return err
 		}
-
-		fileReader, err := file.Open()
-		if err != nil {
-			return err
-		}
-
-		outFile, err := os.OpenFile(targetPath, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0644)
-		if err != nil {
-			return err
-		}
-		_, err = io.Copy(outFile, fileReader)
-		if err != nil {
-			return err
-		}
-
-		err = fileReader.Close()
-		if err != nil {
-			return err
-		}
-		err = outFile.Close()
-		if err != nil {
-			return err
-		}
-
 		log.Printf("Override: %s\n", targetPath)
-
 		return nil
 	})
+}
+
+// writeOverride writes the content of the zip entry to target, creating
+// its parent dirs.
+func writeOverride(file *zip.File, target string) error {
+	err := os.MkdirAll(filepath.Dir(target), 0755)
+	if err != nil {
+		return err
+	}
+	in, err := file.Open()
+	if err != nil {
+		return err
+	}
+	defer in.Close()
+	out, err := os.OpenFile(target, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0644)
+	if err != nil {
+		return err
+	}
+	_, err = io.Copy(out, in)
+	if cerr := out.Close(); err == nil {
+		err = cerr
+	}
+	return err
 }
 
 func OverrideHashes(zipFile string) map[string]modrinth.Hashes {
