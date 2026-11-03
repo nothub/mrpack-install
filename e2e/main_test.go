@@ -210,11 +210,16 @@ func (s *stack) start(ctx context.Context) error {
 		return fmt.Errorf("cdn port: %w", err)
 	}
 
+	if err := seedMeta(ctx, postgres); err != nil {
+		return err
+	}
+
 	env := map[string]string{
-		"DATABASE_URL":            "postgresql://labrinth:labrinth@postgres/labrinth",
-		"REDIS_URL":               "redis://redis",
-		"CLICKHOUSE_URL":          "http://clickhouse:8123",
-		"KAFKA_BOOTSTRAP_SERVERS": "redpanda:9092",
+		"DATABASE_URL":                "postgresql://labrinth:labrinth@postgres/labrinth",
+		"MINECRAFT_META_DATABASE_URL": "postgresql://labrinth:labrinth@postgres/" + metaDatabase,
+		"REDIS_URL":                   "redis://redis",
+		"CLICKHOUSE_URL":              "http://clickhouse:8123",
+		"KAFKA_BOOTSTRAP_SERVERS":     "redpanda:9092",
 	}
 
 	migrate, err := s.runContainer(ctx, "migrate", imageLabrinth,
@@ -269,6 +274,47 @@ func (s *stack) start(ctx context.Context) error {
 }
 
 // seed loads labrinth's seed dump and inserts the test PATs.
+// metaDatabase is the Minecraft metadata database, next to labrinth's own in
+// the same postgres.
+const metaDatabase = "launchermeta"
+
+// seedMeta creates the Minecraft metadata database, applies its schema and
+// loads metaSeed into it.
+func seedMeta(ctx context.Context, postgres testcontainers.Container) error {
+	args := []string{"psql", "-q", "-v", "ON_ERROR_STOP=1", "-U", "labrinth", "-d", metaDatabase}
+	for _, f := range append(append([]string{}, metaSchema...), metaSeed) {
+		dst := "/tmp/" + f
+		if err := postgres.CopyFileToContainer(ctx, filepath.Join("testdata", f), dst, 0o644); err != nil {
+			return fmt.Errorf("copy %s: %w", f, err)
+		}
+		args = append(args, "-f", dst)
+	}
+	if err := psql(ctx, postgres, []string{"psql", "-q", "-U", "labrinth", "-d", "labrinth", "-c", "CREATE DATABASE " + metaDatabase}); err != nil {
+		return fmt.Errorf("create %s: %w", metaDatabase, err)
+	}
+	if err := psql(ctx, postgres, args); err != nil {
+		return fmt.Errorf("seed %s: %w", metaDatabase, err)
+	}
+	return nil
+}
+
+// psql runs a psql command line in the postgres container and fails with
+// its output when it exits non-zero.
+func psql(ctx context.Context, postgres testcontainers.Container, cmd []string) error {
+	code, out, err := postgres.Exec(ctx, cmd, tcexec.Multiplexed())
+	if err != nil {
+		return fmt.Errorf("exec psql: %w", err)
+	}
+	if code != 0 {
+		b, err := io.ReadAll(out)
+		if err != nil {
+			b = fmt.Appendf(b, "(output truncated: %v)", err)
+		}
+		return fmt.Errorf("psql exited with %d:\n%s", code, b)
+	}
+	return nil
+}
+
 func seed(ctx context.Context, postgres testcontainers.Container) error {
 	const dump = "/tmp/seed.sql"
 	err := postgres.CopyFileToContainer(ctx, filepath.Join("testdata", seedDump), dump, 0o644)
@@ -280,19 +326,12 @@ func seed(ctx context.Context, postgres testcontainers.Container) error {
 		(2, 'e2e admin', '%s', %d, %d, '2100-01-01')`,
 		userPAT, allScopes, seedUserID,
 		adminPAT, allScopes, seedAdminID)
-	code, out, err := postgres.Exec(ctx, []string{"psql", "-q",
+	err = psql(ctx, postgres, []string{"psql", "-q",
 		"-v", "ON_ERROR_STOP=1", "-U", "labrinth", "-d", "labrinth",
 		"-f", dump, "-c", pats,
-	}, tcexec.Multiplexed())
+	})
 	if err != nil {
-		return fmt.Errorf("exec psql: %w", err)
-	}
-	if code != 0 {
-		b, err := io.ReadAll(out)
-		if err != nil {
-			b = fmt.Appendf(b, "(output truncated: %v)", err)
-		}
-		return fmt.Errorf("seed exited with %d:\n%s", code, b)
+		return fmt.Errorf("seed: %w", err)
 	}
 	return nil
 }
