@@ -91,7 +91,10 @@ func TestExtractOverrides(t *testing.T) {
 
 func TestOverrideHashes(t *testing.T) {
 	t.Parallel()
-	hashes := OverrideHashes(examplePack)
+	hashes, err := OverrideHashes(examplePack)
+	if err != nil {
+		t.Fatal(err)
+	}
 	if len(hashes) != 2 {
 		t.Errorf("len(hashes) = %d, want 2: %v", len(hashes), hashes)
 	}
@@ -173,7 +176,11 @@ func TestServerOverridesWin(t *testing.T) {
 				t.Errorf("x = %q, want %q", data, "server")
 			}
 
-			h := OverrideHashes(pack)["x"]
+			all, err := OverrideHashes(pack)
+			if err != nil {
+				t.Fatal(err)
+			}
+			h := all["x"]
 			if h.Sha1 != serverSha1 {
 				t.Errorf("x sha1 = %q, want %q", h.Sha1, serverSha1)
 			}
@@ -240,5 +247,17 @@ func TestExtractOverridesAcceptsLayeredPath(t *testing.T) {
 
 	if err := ExtractOverrides(pack, serverDir, nil); err != nil {
 		t.Fatal(err)
+	}
+}
+
+func TestOverrideHashesBadArchive(t *testing.T) {
+	t.Parallel()
+	path := filepath.Join(t.TempDir(), "pack.mrpack")
+	if err := os.WriteFile(path, []byte("not a zip"), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	if _, err := OverrideHashes(path); err == nil {
+		t.Error("OverrideHashes() error = nil, want an error")
 	}
 }

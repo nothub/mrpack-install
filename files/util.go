@@ -5,67 +5,22 @@ import (
 	"fmt"
 	"io"
 	"io/fs"
-	"log"
-	"math/rand"
 	"os"
 	"path/filepath"
 	"strings"
 )
 
-func IsFile(path string) bool {
+// IsFile reports whether path is something other than a dir. A missing
+// path is no file, other stat errors are returned.
+func IsFile(path string) (bool, error) {
 	info, err := os.Stat(path)
-	if err != nil {
-		if errors.Is(err, os.ErrNotExist) {
-			return false
-		}
-		log.Fatalln(err.Error())
+	if errors.Is(err, os.ErrNotExist) {
+		return false, nil
 	}
-	return !info.IsDir()
-}
-
-// Resolve returns the absolute path with every symlink resolved, also
-// those in the part of a path that doesn't exist yet.
-func Resolve(path string) (string, error) {
-	abs, err := filepath.Abs(path)
-	if err != nil {
-		return "", err
-	}
-	resolved, err := resolveExisting(abs)
-	if err != nil {
-		return "", err
-	}
-	if resolved != abs {
-		log.Printf("Resolved symlink %q to %q\n", abs, resolved)
-	}
-	return resolved, nil
-}
-
-func IsSubpath(subPath string, basePath string) (bool, error) {
-	subPath, err := Resolve(subPath)
 	if err != nil {
 		return false, err
 	}
-
-	basePath, err = Resolve(basePath)
-	if err != nil {
-		return false, err
-	}
-
-	rel, err := filepath.Rel(basePath, subPath)
-	if err != nil {
-		return false, err
-	}
-	return rel != ".." && !strings.HasPrefix(rel, ".."+string(filepath.Separator)), nil
-}
-
-func AssertSafe(subPath string, basePath string) {
-	ok, err := IsSubpath(subPath, basePath)
-	if err != nil {
-		log.Println(err.Error())
-	}
-	if err != nil || !ok {
-		log.Fatalln("File path is not safe: " + subPath)
-	}
+	return !info.IsDir(), nil
 }
 
 // InDir joins the pack-relative path rel to dir. It fails when rel is
@@ -176,13 +131,4 @@ func copyFile(src string, dst string) error {
 		return err
 	}
 	return os.Chmod(dst, fi.Mode().Perm())
-}
-
-func RandString(n int) string {
-	const chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
-	b := make([]byte, n)
-	for i := range b {
-		b[i] = chars[rand.Int63()%int64(len(chars))]
-	}
-	return string(b)
 }

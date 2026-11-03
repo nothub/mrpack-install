@@ -279,7 +279,11 @@ func resolvePack(input string, version string) packSource {
 	if web.IsValidHttpUrl(input) {
 		return packSource{url: input, lookup: lookupIds}
 	}
-	if files.IsFile(input) {
+	isFile, err := files.IsFile(input)
+	if err != nil {
+		log.Fatalln(err)
+	}
+	if isFile {
 		path := input
 		if runtime.GOOS == "windows" {
 			path = strings.ToUpper(path[0:1]) + path[1:]

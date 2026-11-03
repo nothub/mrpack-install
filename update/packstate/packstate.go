@@ -481,7 +481,10 @@ func FromArchive(path string, opts Options, ids func(sha512 string) (Ids, error)
 	state.ArchiveSha512 = archiveSha512
 	state.Options = opts
 	state.Deps = index.Deps
-	state.Hashes = ShippedFiles(index, path, opts)
+	state.Hashes, err = ShippedFiles(index, path, opts)
+	if err != nil {
+		return nil, err
+	}
 
 	state.Ids, err = ids(archiveSha512)
 	if err != nil {
@@ -523,7 +526,7 @@ func (state *Schema) Invalidate(serverDir string) error {
 // ShippedFiles returns the hashes of every file the pack at archive puts
 // on the server with opts, by path. An override's content wins over the
 // index file at the same path. Excluded paths are left out.
-func ShippedFiles(index *mrpack.Index, archive string, opts Options) map[string]modrinth.Hashes {
+func ShippedFiles(index *mrpack.Index, archive string, opts Options) (map[string]modrinth.Hashes, error) {
 	shipped := make(map[string]modrinth.Hashes)
 	for _, indexFile := range index.Files {
 		if !opts.Selects(indexFile) || opts.Excludes(indexFile.Path) {
@@ -531,11 +534,15 @@ func ShippedFiles(index *mrpack.Index, archive string, opts Options) map[string]
 		}
 		shipped[indexFile.Path] = indexFile.Hashes
 	}
-	for p, hashes := range mrpack.OverrideHashes(archive) {
+	overrides, err := mrpack.OverrideHashes(archive)
+	if err != nil {
+		return nil, err
+	}
+	for p, hashes := range overrides {
 		if opts.Excludes(p) {
 			continue
 		}
 		shipped[p] = hashes
 	}
-	return shipped
+	return shipped, nil
 }
