@@ -69,10 +69,12 @@ func ExtractOverrides(zipFile string, serverDir string, keep func(path string) b
 		if keep != nil && !keep(p) {
 			return nil
 		}
-		files.AssertSafe(p, serverDir)
-		targetPath := filepath.Join(serverDir, p)
+		targetPath, err := files.InDir(serverDir, p)
+		if err != nil {
+			return err
+		}
 
-		err := writeOverride(file, targetPath)
+		err = writeOverride(file, targetPath)
 		if err != nil {
 			return err
 		}
@@ -104,7 +106,7 @@ func writeOverride(file *zip.File, target string) error {
 	return err
 }
 
-func OverrideHashes(zipFile string) map[string]modrinth.Hashes {
+func OverrideHashes(zipFile string) (map[string]modrinth.Hashes, error) {
 	overrides := make(map[string]modrinth.Hashes)
 
 	err := iterServerOverrides(zipFile, func(file *zip.File) error {
@@ -139,8 +141,8 @@ func OverrideHashes(zipFile string) map[string]modrinth.Hashes {
 		return nil
 	})
 	if err != nil {
-		log.Fatalln(err.Error())
+		return nil, err
 	}
 
-	return overrides
+	return overrides, nil
 }

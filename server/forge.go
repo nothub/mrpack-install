@@ -117,11 +117,19 @@ func forgeServerFile(serverDir string, version string) (string, error) {
 		"forge-" + version + ".jar",
 		"forge-" + version + "-universal.jar",
 	} {
-		if files.IsFile(filepath.Join(serverDir, name)) {
+		ok, err := files.IsFile(filepath.Join(serverDir, name))
+		if err != nil {
+			return "", err
+		}
+		if ok {
 			return name, nil
 		}
 	}
-	if files.IsFile(filepath.Join(serverDir, "run.sh")) {
+	ok, err := files.IsFile(filepath.Join(serverDir, "run.sh"))
+	if err != nil {
+		return "", err
+	}
+	if ok {
 		return "", nil
 	}
 	return "", fmt.Errorf("forge %s install left no server jar and no run.sh", version)

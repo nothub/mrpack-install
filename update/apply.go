@@ -38,7 +38,10 @@ func Stage(serverDir string, plan *Plan, index *mrpack.Index, archive string, dl
 	}
 
 	writes := plan.writes()
-	overrides := mrpack.OverrideHashes(archive)
+	overrides, err := mrpack.OverrideHashes(archive)
+	if err != nil {
+		return nil, err
+	}
 	dl.Downloads = index.ServerDownloads(func(f mrpack.File) bool {
 		_, overridden := overrides[f.Path]
 		return writes[f.Path] && !overridden

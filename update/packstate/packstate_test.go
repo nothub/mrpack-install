@@ -326,7 +326,10 @@ func TestShippedFilesSkipsExcluded(t *testing.T) {
 	}}
 	pack := writePack(t, index, [][2]string{{"overrides/config/a.txt", "server"}})
 
-	got := ShippedFiles(&index, pack, Options{Exclude: []string{"config/**", "mods/*-client.jar"}})
+	got, err := ShippedFiles(&index, pack, Options{Exclude: []string{"config/**", "mods/*-client.jar"}})
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	want := map[string]modrinth.Hashes{"mods/required.jar": {Sha1: "required-sha1", Sha512: "required-sha512"}}
 	if !reflect.DeepEqual(got, want) {

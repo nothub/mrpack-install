@@ -66,7 +66,10 @@ type Plan struct {
 // from serverDir and changes nothing. An unsafe path in the old state or the
 // new pack fails it before any action is planned.
 func Compute(serverDir string, old *packstate.Schema, index *mrpack.Index, archive string, opts packstate.Options) (*Plan, error) {
-	shipped := packstate.ShippedFiles(index, archive, opts)
+	shipped, err := packstate.ShippedFiles(index, archive, opts)
+	if err != nil {
+		return nil, err
+	}
 	var recorded map[string]modrinth.Hashes
 	if old != nil {
 		recorded = old.Hashes
