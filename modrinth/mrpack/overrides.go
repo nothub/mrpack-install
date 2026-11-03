@@ -18,7 +18,6 @@ import (
 
 const pathPrefixBoth = "overrides/"
 const pathPrefixServer = "server-overrides/"
-const pathPrefixClient = "client-overrides/"
 
 type override zip.File
 
@@ -28,9 +27,6 @@ func (o *override) prefix() string {
 	}
 	if strings.HasPrefix(o.Name, pathPrefixServer) {
 		return pathPrefixServer
-	}
-	if strings.HasPrefix(o.Name, pathPrefixClient) {
-		return pathPrefixClient
 	}
 	panic("Not an override path: " + o.Name)
 }
