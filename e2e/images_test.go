@@ -9,7 +9,7 @@ const (
 	// Renovate bumps this digest (renovate.json). Each bump means re-checking
 	// seedDump, metaSchema, metaSeed and allScopes below against the image's
 	// org.opencontainers.image.revision label, which TestMain logs.
-	imageLabrinth = "ghcr.io/modrinth/labrinth:prod@sha256:6dc646bf533d590d7baf7dd32499e3c2f58943ad3426a85e5e2df4f95cd7ec46"
+	imageLabrinth = "ghcr.io/modrinth/labrinth:prod@sha256:dfb0487f57a68576b4b2049f901185bae7f1af387b1cebf3150f3b61998ec2d6"
 )
 
 const (
