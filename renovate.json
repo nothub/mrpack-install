@@ -54,6 +54,13 @@
       "prBodyNotes": [
         "Update `serverStarterJarSha256` in `server/starter.go` to the SHA-256 of the new release's `server.jar`, or the install fails its hash check."
       ]
+    },
+    {
+      "description": "e2e/go.mod requires the app itself only to replace it with the working tree, so the version there is a placeholder",
+      "matchDepNames": [
+        "github.com/nothub/mrpack-install"
+      ],
+      "enabled": false
     }
   ]
 }
