@@ -120,6 +120,10 @@ func init() {
 			}
 		}
 
+		// --host, checked here so a bad value fails before any request
+		if _, err := modrinth.BaseURL(host); err != nil {
+			log.Fatalln("invalid value for flag --host:", err)
+		}
 		modrinth.Client = modrinth.NewClient(host)
 	})
 }
