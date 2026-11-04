@@ -1068,6 +1068,21 @@ func TestUpdateSubcommand(t *testing.T) {
 		assertContent(t, filepath.Join(dir, "config", "kept.txt"), "2")
 	})
 
+	// Without a version, update takes the latest release.
+	t.Run("latest release", func(t *testing.T) {
+		t.Parallel()
+		dir := t.TempDir()
+		installInto(t, dir, slug, "1.0.0")
+
+		installInto(t, dir, "update")
+
+		assertMissing(t, filepath.Join(dir, "config", "dropped.txt"))
+		assertContent(t, filepath.Join(dir, "config", "kept.txt"), "2")
+		if got := readState(t, dir).Version; got != "2.0.0" {
+			t.Errorf("state version = %q, want 2.0.0", got)
+		}
+	})
+
 	t.Run("beta state", func(t *testing.T) {
 		t.Parallel()
 		dir := t.TempDir()
@@ -1168,4 +1183,83 @@ func TestUpdateRefusesDowngrade(t *testing.T) {
 	// Going forward again needs no flag.
 	installInto(t, dir, "update", "2.0.0")
 	assertContent(t, filepath.Join(dir, "config", "a.txt"), "2")
+}
+
+// A pack is found by project id as well as by slug, and from an archive
+// URL.
+func TestInstallByProjectIDAndURL(t *testing.T) {
+	t.Parallel()
+	const slug = "e2e-install-id-url"
+	mod, jar := seedPackMod(t, slug+"-mod")
+	pack := fabricPack(t, slug, "1.0.0", []packFile{mod}, []zipEntry{{"overrides/config/a.txt", "1"}})
+	created := createProject(t, api.ModpackProjectType, slug, file{Name: slug + ".mrpack", Data: pack}, fabric1218)
+	approve(t, created.Id)
+	version, err := api.NewClient(labrinthURL).GetVersion(created.Versions[0])
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	for name, args := range map[string][]string{
+		"project id": {created.Id, "1.0.0"},
+		"url":        {version.Files[0].Url},
+	} {
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+			dir := t.TempDir()
+
+			installInto(t, dir, args...)
+
+			assertSha512(t, filepath.Join(dir, mod.Path), jar)
+			assertContent(t, filepath.Join(dir, "config", "a.txt"), "1")
+			state := readState(t, dir)
+			if state.Slug != slug || state.ProjectID != created.Id {
+				t.Errorf("state slug, project-id = %q, %q, want %q, %q", state.Slug, state.ProjectID, slug, created.Id)
+			}
+		})
+	}
+}
+
+// Optional pack files are installed by default, picked by file name with
+// --optional-select, or left out with --optional-disable-all.
+func TestInstallOptionalMods(t *testing.T) {
+	t.Parallel()
+	const slug = "e2e-install-optional"
+	required, _ := seedPackMod(t, slug+"-required")
+	optA, _ := seedPackMod(t, slug+"-opt-a")
+	optB, _ := seedPackMod(t, slug+"-opt-b")
+	for _, f := range []*packFile{&optA, &optB} {
+		f.Env = map[string]string{"client": "required", "server": "optional"}
+	}
+	path := filepath.Join(t.TempDir(), "pack.mrpack")
+	if err := os.WriteFile(path, fabricPack(t, slug, "1.0.0", []packFile{required, optA, optB}, nil), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	tests := []struct {
+		name  string
+		flags []string
+		want  []packFile
+		gone  []packFile
+	}{
+		{"default", nil, []packFile{required, optA, optB}, nil},
+		{"select", []string{"--optional-select", `opt-a\.jar`}, []packFile{required, optA}, []packFile{optB}},
+		{"disable all", []string{"--optional-disable-all"}, []packFile{required}, []packFile{optA, optB}},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			dir := t.TempDir()
+
+			installInto(t, dir, append([]string{path}, tt.flags...)...)
+
+			for _, f := range tt.want {
+				if _, err := os.Stat(filepath.Join(dir, f.Path)); err != nil {
+					t.Errorf("%s: %v", f.Path, err)
+				}
+			}
+			for _, f := range tt.gone {
+				assertMissing(t, filepath.Join(dir, f.Path))
+			}
+		})
+	}
 }
