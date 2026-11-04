@@ -10,19 +10,20 @@ import (
 
 const apiVersion = "v2"
 
-func (client *ModrinthClient) LabrinthInfo() (*LabrinthInfo, error) {
-	u, err := url.Parse(client.BaseUrl)
+// Statistics https://docs.modrinth.com/api/operations/statistics/
+func (client *ModrinthClient) Statistics() (*Statistics, error) {
+	u, err := url.Parse(client.BaseUrl + apiVersion + "/statistics")
 	if err != nil {
 		return nil, err
 	}
 
-	labrinthInfo := LabrinthInfo{}
-	err = client.Http.GetJson(u.String(), &labrinthInfo, &Error{})
+	statistics := Statistics{}
+	err = client.Http.GetJson(u.String(), &statistics, &Error{})
 	if err != nil {
 		return nil, err
 	}
 
-	return &labrinthInfo, nil
+	return &statistics, nil
 }
 
 /* projects */

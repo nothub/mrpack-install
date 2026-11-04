@@ -48,11 +48,11 @@ const (
 	Sha512HashAlgo HashAlgo = "sha512"
 )
 
-type LabrinthInfo struct {
-	About         string `json:"about"`
-	Documentation string `json:"documentation"`
-	Name          string `json:"name"`
-	Version       string `json:"version"`
+type Statistics struct {
+	Projects int `json:"projects"`
+	Versions int `json:"versions"`
+	Authors  int `json:"authors"`
+	Files    int `json:"files"`
 }
 
 type Project struct {

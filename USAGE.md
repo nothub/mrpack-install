@@ -245,7 +245,7 @@ Use "mrpack-install [command] --help" for more information about a command.
 ### ping
 
 ```
-Connect to a Labrinth instance and display basic information.
+Connect to a Labrinth instance and display its statistics.
 
 Usage:
   mrpack-install ping [flags]
