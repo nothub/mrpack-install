@@ -14,16 +14,17 @@ func init() {
 var pingCmd = &cobra.Command{
 	Use:   "ping",
 	Short: "Ping a Labrinth instance",
-	Long:  `Connect to a Labrinth instance and display basic information.`,
+	Long:  `Connect to a Labrinth instance and display its statistics.`,
 	Run: func(cmd *cobra.Command, args []string) {
 		log.Println("Connecting to:", host)
-		info, err := modrinth.Client.LabrinthInfo()
+		stats, err := modrinth.Client.Statistics()
 		if err != nil {
 			log.Fatalln(err)
 		}
 
-		fmt.Println(info.About)
-		fmt.Println(info.Name, info.Version)
-		fmt.Println(info.Documentation)
+		fmt.Println("projects:", stats.Projects)
+		fmt.Println("versions:", stats.Versions)
+		fmt.Println("authors: ", stats.Authors)
+		fmt.Println("files:   ", stats.Files)
 	},
 }

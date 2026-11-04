@@ -233,3 +233,16 @@ func TestVersionFromMrpackFile(t *testing.T) {
 		t.Errorf("id = %q, want %q", version.Id, created.Versions[0])
 	}
 }
+
+func TestPing(t *testing.T) {
+	t.Parallel()
+	stdout, stderr, err := mrpackInstallStdout(t, "ping", "--host", labrinthURL)
+	if err != nil {
+		t.Fatalf("ping: %v\n%s", err, stderr)
+	}
+	for _, label := range []string{"projects:", "versions:", "authors:", "files:"} {
+		if !strings.Contains(string(stdout), label) {
+			t.Errorf("stdout = %q, want a %s line", stdout, label)
+		}
+	}
+}
