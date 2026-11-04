@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"errors"
 	"fmt"
 	"github.com/nothub/mrpack-install/cache"
 	"github.com/nothub/mrpack-install/files"
@@ -15,6 +16,7 @@ import (
 	"github.com/nothub/mrpack-install/web/download"
 	"github.com/spf13/cobra"
 	"log"
+	"net/http"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -303,6 +305,10 @@ func resolvePack(input string, version string) packSource {
 func resolveProject(input string, version string) packSource {
 	log.Printf("Trying to resolve project id or slug: %s\n", input)
 	project, err := modrinth.Client.GetProject(input)
+	var statusErr *web.StatusError
+	if errors.As(err, &statusErr) && statusErr.Code == http.StatusNotFound {
+		log.Fatalf("No project with slug or id %q on %s\n", input, host)
+	}
 	if err != nil {
 		log.Fatalln(err)
 	}

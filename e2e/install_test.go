@@ -1263,3 +1263,14 @@ func TestInstallOptionalMods(t *testing.T) {
 		})
 	}
 }
+
+func TestInstallUnknownProject(t *testing.T) {
+	t.Parallel()
+	out, err := mrpackInstall(t, "e2e-install-missing", "--host", labrinthURL, "--server-dir", t.TempDir())
+	if err == nil {
+		t.Fatalf("install succeeded, want an error:\n%s", out)
+	}
+	if want := `No project with slug or id "e2e-install-missing"`; !strings.Contains(string(out), want) {
+		t.Errorf("output = %q, want it to contain %q", out, want)
+	}
+}
