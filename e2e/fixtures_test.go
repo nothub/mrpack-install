@@ -207,25 +207,12 @@ func seedMod(t testing.TB, slug string, v versionData) *api.Project {
 // lists no files and has no overrides, so it carries one override.
 func mrpack(t testing.TB, name string) []byte {
 	t.Helper()
-	var buf bytes.Buffer
-	zw := zip.NewWriter(&buf)
-	w, err := zw.Create("modrinth.index.json")
-	if err != nil {
-		t.Fatal(err)
-	}
-	_, err = fmt.Fprintf(w, `{"formatVersion":1,"game":"minecraft","versionId":"1.0.0","name":%q,"files":[],"dependencies":{"minecraft":"1.21.8"}}`, name)
-	if err != nil {
-		t.Fatal(err)
-	}
-	w, err = zw.Create("overrides/" + name + ".txt")
-	if err != nil {
-		t.Fatal(err)
-	}
-	if _, err := io.WriteString(w, name); err != nil {
-		t.Fatal(err)
-	}
-	if err := zw.Close(); err != nil {
-		t.Fatal(err)
-	}
-	return buf.Bytes()
+	return packArchive(t, packIndex{
+		FormatVersion: 1,
+		Game:          "minecraft",
+		VersionID:     "1.0.0",
+		Name:          name,
+		Files:         []packFile{},
+		Dependencies:  map[string]string{"minecraft": "1.21.8"},
+	}, []zipEntry{{Name: "overrides/" + name + ".txt", Data: name}})
 }
