@@ -10,6 +10,7 @@ import (
 	"strings"
 	"sync/atomic"
 	"testing"
+	"time"
 
 	modrinth "github.com/nothub/mrpack-install/modrinth/api"
 )
@@ -83,6 +84,30 @@ func TestDownloadWithZeroRetriesTriesOnce(t *testing.T) {
 	}
 	if got := requests.Load(); got != 1 {
 		t.Errorf("requests = %d, want 1", got)
+	}
+}
+
+func TestDownloadWithZeroThreadsStillDownloads(t *testing.T) {
+	t.Parallel()
+	srv, _ := serve(t)
+	dir := t.TempDir()
+	d := Downloader{
+		Downloads: []*Download{
+			{Path: "mods/ok.jar", Urls: []string{srv.URL + "/ok.jar"}, Hashes: jarHashes()},
+		},
+		Threads: 0,
+		Retries: 1,
+	}
+
+	done := make(chan error, 1)
+	go func() { done <- d.Download(dir) }()
+	select {
+	case err := <-done:
+		if err != nil {
+			t.Fatal(err)
+		}
+	case <-time.After(10 * time.Second):
+		t.Fatal("Download with zero Threads didn't return")
 	}
 }
 
