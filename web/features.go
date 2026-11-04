@@ -14,6 +14,20 @@ import (
 	"strconv"
 )
 
+// StatusError is a response with a status outside 2xx and 3xx. Detail is
+// the error the response body described, if any.
+type StatusError struct {
+	Code   int
+	Detail string
+}
+
+func (e *StatusError) Error() string {
+	if e.Detail == "" {
+		return "http status " + strconv.Itoa(e.Code)
+	}
+	return "http status " + strconv.Itoa(e.Code) + " - " + e.Detail
+}
+
 func (c *Client) GetModel(url string, respModel interface{}, errModel error, decode func(body io.Reader, model interface{}) error) error {
 	req, err := http.NewRequest(http.MethodGet, url, nil)
 	if err != nil {
@@ -36,11 +50,11 @@ func (c *Client) GetModel(url string, respModel interface{}, errModel error, dec
 	}(res.Body)
 
 	if res.StatusCode < http.StatusOK || res.StatusCode >= http.StatusBadRequest {
-		// TODO: error struct with more details
-		if errModel == nil || json.NewDecoder(res.Body).Decode(&errModel) != nil {
-			return errors.New("http status " + strconv.Itoa(res.StatusCode))
+		statusErr := &StatusError{Code: res.StatusCode}
+		if errModel != nil && json.NewDecoder(res.Body).Decode(&errModel) == nil {
+			statusErr.Detail = errModel.Error()
 		}
-		return errors.New("http status " + strconv.Itoa(res.StatusCode) + " - " + errModel.Error())
+		return statusErr
 	}
 
 	err = decode(res.Body, &respModel)
