@@ -4,8 +4,26 @@ import (
 	"errors"
 	"os"
 	"path/filepath"
+	"reflect"
 	"testing"
 )
+
+func TestForgeVersionsFor(t *testing.T) {
+	t.Parallel()
+	all := []string{"1.21.1-52.0.1", "1.21.1-52.1.0", "1.21.11-61.2.5", "1.21-51.0.33", "1.7.10-10.13.4.1614-1.7.10"}
+	tests := map[string][]string{
+		"1.21.1":  {"1.21.1-52.0.1", "1.21.1-52.1.0"},
+		"1.21.11": {"1.21.11-61.2.5"},
+		"1.21":    {"1.21-51.0.33"},
+		"1.7.10":  {"1.7.10-10.13.4.1614-1.7.10"},
+		"1.20.1":  nil,
+	}
+	for mc, want := range tests {
+		if got := forgeVersionsFor(all, mc); !reflect.DeepEqual(got, want) {
+			t.Errorf("forgeVersionsFor(%s) = %v, want %v", mc, got, want)
+		}
+	}
+}
 
 func TestForgeServerFile(t *testing.T) {
 	t.Parallel()

@@ -33,16 +33,7 @@ func (inst *ForgeInstaller) Install(serverDir string, serverFile string) (string
 			return "", err
 		}
 
-		var versions []string
-		for _, ver := range meta.Versioning.Versions {
-			if !strings.HasPrefix(ver, inst.MinecraftVersion) {
-				// does not match mc version
-				continue
-			}
-			versions = append(versions, ver)
-		}
-
-		parsed, err := semver.ParseAll(versions)
+		parsed, err := semver.ParseAll(forgeVersionsFor(meta.Versioning.Versions, inst.MinecraftVersion))
 		if err != nil {
 			return "", err
 		}
@@ -133,4 +124,17 @@ func forgeServerFile(serverDir string, version string) (string, error) {
 		return "", nil
 	}
 	return "", fmt.Errorf("forge %s install left no server jar and no run.sh", version)
+}
+
+// forgeVersionsFor returns the versions that belong to Minecraft version
+// mc. Forge numbers them <mc>-<forge version>, so the separator keeps 1.21.1
+// from matching 1.21.11.
+func forgeVersionsFor(versions []string, mc string) []string {
+	var matching []string
+	for _, v := range versions {
+		if strings.HasPrefix(v, mc+"-") {
+			matching = append(matching, v)
+		}
+	}
+	return matching
 }
