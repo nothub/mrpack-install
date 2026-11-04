@@ -137,6 +137,15 @@ func CheckPattern(pattern string) error {
 	return nil
 }
 
+// CheckSelect fails for an OptionalSelect pattern that is no valid regular
+// expression.
+func CheckSelect(pattern string) error {
+	if _, err := regexp.Compile(pattern); err != nil {
+		return fmt.Errorf("optional-select pattern %q: %w", pattern, err)
+	}
+	return nil
+}
+
 // Selects reports whether an index file is installed on the server.
 func (opts Options) Selects(f mrpack.File) bool {
 	switch f.Env.Server {

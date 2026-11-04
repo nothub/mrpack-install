@@ -318,6 +318,20 @@ func TestCheckPattern(t *testing.T) {
 	}
 }
 
+func TestCheckSelect(t *testing.T) {
+	t.Parallel()
+	for _, p := range []string{`foo\.jar`, `bar-[\d+\.]+\.jar`} {
+		if err := CheckSelect(p); err != nil {
+			t.Errorf("CheckSelect(%q) = %v, want nil", p, err)
+		}
+	}
+	for _, p := range []string{"(", "[a"} {
+		if err := CheckSelect(p); err == nil {
+			t.Errorf("CheckSelect(%q) = nil, want an error", p)
+		}
+	}
+}
+
 func TestShippedFilesSkipsExcluded(t *testing.T) {
 	t.Parallel()
 	index := mrpack.Index{Name: "Example", Files: []mrpack.File{
