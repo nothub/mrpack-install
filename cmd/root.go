@@ -102,6 +102,13 @@ func init() {
 			backupDir = absBackupDir
 		}
 
+		// --optional-select
+		for _, p := range optionalSelected {
+			if err := packstate.CheckSelect(p); err != nil {
+				log.Fatalln(err)
+			}
+		}
+
 		// --exclude
 		for _, p := range excludes {
 			if err := packstate.CheckPattern(p); err != nil {
