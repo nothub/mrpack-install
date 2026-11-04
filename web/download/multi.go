@@ -31,9 +31,9 @@ type empty struct{}
 
 // Download fetches every file into baseDir and returns an error naming
 // each file that no URL delivered with a matching hash. Every URL gets at
-// least one attempt, also with zero Retries.
+// least one attempt, also with zero Retries, and zero Threads means one.
 func (g *Downloader) Download(baseDir string) error {
-	semaphore := make(chan empty, g.Threads) // Create a semaphore to limit concurrency
+	semaphore := make(chan empty, max(1, g.Threads)) // Create a semaphore to limit concurrency
 	var wg sync.WaitGroup
 	var mu sync.Mutex
 	var failed []string
