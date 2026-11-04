@@ -42,25 +42,24 @@ func UserAgent() string {
 	)
 }
 
+// SetProxy routes every request through the proxy at fixedURL. It only
+// checks the URL: an unreachable proxy fails the first request.
 func (c *Client) SetProxy(fixedURL string) error {
 	proxy, err := url.Parse(fixedURL)
 	if err != nil {
-		return err
+		return fmt.Errorf("invalid proxy %q: %w", fixedURL, err)
+	}
+	switch proxy.Scheme {
+	case "http", "https", "socks5", "socks5h":
+	default:
+		return fmt.Errorf("invalid proxy %q: scheme must be http, https, socks5 or socks5h", fixedURL)
+	}
+	if proxy.Host == "" {
+		return fmt.Errorf("invalid proxy %q: no host name", fixedURL)
 	}
 
 	transport := NewTransport()
 	transport.Proxy = http.ProxyURL(proxy)
 	c.c.Transport = transport
-
-	// Test proxy
-	httpUrl := "https://api.modrinth.com/"
-	response, err := c.c.Get(httpUrl)
-	if err != nil {
-		return err
-	}
-	if response.StatusCode != http.StatusOK {
-		return err
-	}
-
 	return nil
 }
