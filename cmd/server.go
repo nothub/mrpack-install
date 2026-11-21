@@ -27,17 +27,6 @@ func init() {
 	// TODO: --start-server
 
 	RootCmd.AddCommand(serverCmd)
-
-	cobra.OnInitialize(func() {
-		// --minecraft-version
-		if minecraftVersion == "" || minecraftVersion == "latest" {
-			latestMinecraftVersion, err := mojang.LatestRelease()
-			if err != nil {
-				log.Fatalln(err)
-			}
-			minecraftVersion = latestMinecraftVersion
-		}
-	})
 }
 
 var serverCmd = &cobra.Command{
@@ -53,6 +42,15 @@ Examples: https://github.com/nothub/mrpack-install/blob/main/USAGE.md`,
 	Args:      cobra.MatchAll(cobra.ExactArgs(1), cobra.OnlyValidArgs),
 	ValidArgs: server.FlavorNames(),
 	Run: func(cmd *cobra.Command, args []string) {
+		// --minecraft-version
+		if minecraftVersion == "" || minecraftVersion == "latest" {
+			latestMinecraftVersion, err := mojang.LatestRelease()
+			if err != nil {
+				log.Fatalln(err)
+			}
+			minecraftVersion = latestMinecraftVersion
+		}
+
 		err := os.MkdirAll(serverDir, 0755)
 		if err != nil {
 			log.Fatalln(err)
