@@ -61,6 +61,12 @@ Some people contributed to this project. Thank you! 😊
         </a>
       </td>
       <td align="center">
+        <a href="https://github.com/nothub/mrpack-install/commits?author=iedame">
+          <img src="https://avatars.githubusercontent.com/u/60272?v=4" width="32px;" alt="Rafael Ieda"/>
+          <br><sub><b>Rafael Ieda</b></sub>
+        </a>
+      </td>
+      <td align="center">
         <a href="https://github.com/nothub/mrpack-install/commits?author=mmtawous">
           <img src="https://avatars.githubusercontent.com/u/94245036?v=4" width="32px;" alt="Mohamed Tawous"/>
           <br><sub><b>Mohamed Tawous</b></sub>
