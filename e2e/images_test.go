@@ -21,7 +21,7 @@ const (
 	metaSeed = "minecraft-meta-seed-data-202508052143.sql"
 	// allScopes sets every bit of Scopes in apps/labrinth/src/models/v3/pats.rs.
 	// labrinth reads a mask with unknown bits as no scopes at all.
-	allScopes = 1<<48 - 1
+	allScopes = 1<<52 - 1
 	// User IDs from the seed dump.
 	seedUserID  = 905016946785301
 	seedAdminID = 103587649610509
