@@ -13,12 +13,12 @@
   "customManagers": [
     {
       "customType": "regex",
-      "description": "labrinth image for the e2e suite",
+      "description": "container images for the e2e suite",
       "managerFilePatterns": [
         "/^e2e/images_test\\.go$/"
       ],
       "matchStrings": [
-        "imageLabrinth\\s*=\\s*\"(?<depName>[^:\"]+):(?<currentValue>[^@\"]+)@(?<currentDigest>sha256:[a-f0-9]{64})\""
+        "image\\w+\\s*=\\s*\"(?<depName>[^:\"]+):(?<currentValue>[^@\"]+)@(?<currentDigest>sha256:[a-f0-9]{64})\""
       ],
       "datasourceTemplate": "docker"
     },

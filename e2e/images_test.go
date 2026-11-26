@@ -1,15 +1,17 @@
 package e2e
 
+// Renovate bumps every image here (renovate.json). Its regex expects each
+// value as name:tag@digest.
 const (
-	imagePostgres   = "postgres:15-alpine"
-	imageRedis      = "redis:alpine"
-	imageClickhouse = "clickhouse/clickhouse-server"
-	imageRedpanda   = "redpandadata/redpanda:v26.1.10"
-	imageBusybox    = "busybox:stable"
-	imageTemporal   = "temporalio/temporal:1.10.0"
-	// Renovate bumps this digest (renovate.json). Each bump means re-checking
-	// seedDump, metaSchema, metaSeed and allScopes below against the image's
-	// org.opencontainers.image.revision label, which TestMain logs.
+	imagePostgres   = "postgres:15-alpine@sha256:e18480a22d6e48f4d816a6696769b1ec09ac73a824c5649e49c7d8b684913f3d"
+	imageRedis      = "redis:8-alpine@sha256:5af80107c1eeecb484a2269b80a26d12bfa6521787da4663bd9f19f60a163483"
+	imageClickhouse = "clickhouse/clickhouse-server:26.11@sha256:88ddb6e4ee3c73760ed8ea30777d6f993eaa3f9e8062e3605a69f84ed0717258"
+	imageRedpanda   = "redpandadata/redpanda:v26.1.10@sha256:394cee6e2076a23f9b7b01f5d68228d52429fe683fd087de11c8a68ff5287037"
+	imageBusybox    = "busybox:1.36@sha256:73aaf090f3d85aa34ee199857f03fa3a95c8ede2ffd4cc2cdb5b94e566b11662"
+	imageTemporal   = "temporalio/temporal:1.10.0@sha256:003508da05989e7cf0d583cfce521c4bb2732e733574e3040db8f1284783baa2"
+	// Each labrinth bump means re-checking seedDump, metaSchema, metaSeed and
+	// allScopes below against the image's org.opencontainers.image.revision
+	// label, which TestMain logs.
 	imageLabrinth = "ghcr.io/modrinth/labrinth:prod@sha256:d173735a9a861a02de100382fd649e9988e0694648b6e47d935b7e8de5937f9c"
 )
 
