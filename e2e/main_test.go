@@ -201,6 +201,15 @@ func (s *stack) start(ctx context.Context) error {
 		return err
 	}
 
+	// labrinth connects to Temporal on startup and has no switch to skip it.
+	_, err = s.runContainer(ctx, "temporal", imageTemporal,
+		testcontainers.WithCmd("server", "start-dev", "--ip", "0.0.0.0"),
+		testcontainers.WithWaitStrategy(wait.ForExec([]string{"temporal", "operator", "cluster", "health", "--address", "127.0.0.1:7233"})),
+	)
+	if err != nil {
+		return err
+	}
+
 	// labrinth's local storage backend writes files but never serves them.
 	// A new volume belongs to root, and labrinth runs as whichever user its
 	// image picks, so the cdn opens the volume to every user before
@@ -261,6 +270,7 @@ func (s *stack) start(ctx context.Context) error {
 			"CDN_URL":                     "http://localhost:" + cdnPort.Port(),
 			"MOCK_FILE_PATH":              "/tmp/modrinth",
 			"WHITELISTED_MODPACK_DOMAINS": `["localhost"]`,
+			"TEMPORAL_ADDRESS":            "http://temporal:7233",
 		}),
 		testcontainers.WithCmd("/labrinth/labrinth", "--no-background-tasks", "--no-migrations"),
 		testcontainers.WithMounts(testcontainers.VolumeMount(s.volume, "/tmp/modrinth")),

@@ -6,6 +6,7 @@ const (
 	imageClickhouse = "clickhouse/clickhouse-server"
 	imageRedpanda   = "redpandadata/redpanda:v26.1.10"
 	imageBusybox    = "busybox:stable"
+	imageTemporal   = "temporalio/temporal:1.10.0"
 	// Renovate bumps this digest (renovate.json). Each bump means re-checking
 	// seedDump, metaSchema, metaSeed and allScopes below against the image's
 	// org.opencontainers.image.revision label, which TestMain logs.
