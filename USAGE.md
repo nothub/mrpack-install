@@ -93,11 +93,11 @@ A run for the version that is already installed, with the same options, does not
 ```sh
 #!/bin/sh
 set -eu
-mrpack-install examplepack 2.0.0 --server-dir /srv --server-file server.jar
+mrpack-install examplepack --server-dir /srv --server-file server.jar
 cd /srv && exec java -Xmx4G -jar server.jar nogui
 ```
 
-With a version, the server stays on it until you change the script. Without one, every start moves to the latest release as soon as it is published.
+Every start moves the server to the latest release as soon as it is published. When that release changes the Minecraft version, the world is upgraded with it, and Minecraft can't load it back into an older version. To upgrade only when you choose, pin the version (`mrpack-install examplepack 2.0.0 …`) and change it in the script.
 
 ## Keeping your changes
 
