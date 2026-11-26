@@ -7,27 +7,19 @@
 
 A cli application for installing Minecraft servers and [Modrinth](https://modrinth.com/) [modpacks](https://support.modrinth.com/en/articles/8802351-modrinth-modpack-format-mrpack).
 
-For usage examples and all commands and flags, see [USAGE.md](USAGE.md).
+## How-to
+
+- [Install a modpack server](USAGE.md#quick-start)
+- [Choose the pack](USAGE.md#choosing-the-pack)
+- [Update a server](USAGE.md#updating-a-server)
+- [Update on every server start](USAGE.md#running-it-on-every-server-start)
+- [Keep your own changes across updates](USAGE.md#keeping-your-changes)
+- [Install a plain server without a pack](USAGE.md#plain-servers-without-a-pack)
+- [Troubleshoot a failed run](USAGE.md#when-something-goes-wrong)
+
+For all commands and flags, see [USAGE.md](USAGE.md#commands).
 
 ---
-
-## Build
-
-To build an executable, run:
-
-```sh
-goreleaser build --clean --snapshot --single-target
-```
-
-## Release
-
-To build a local snapshot release, run:
-
-```sh
-goreleaser release --clean --snapshot
-```
-
-To build and publish a full release, push a semver tag (with 'v' prefix) to any branch.
 
 ## Contributors
 
