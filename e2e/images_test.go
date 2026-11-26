@@ -8,7 +8,7 @@ const (
 	imageClickhouse = "clickhouse/clickhouse-server:26.11@sha256:88ddb6e4ee3c73760ed8ea30777d6f993eaa3f9e8062e3605a69f84ed0717258"
 	imageRedpanda   = "redpandadata/redpanda:v26.1.10@sha256:394cee6e2076a23f9b7b01f5d68228d52429fe683fd087de11c8a68ff5287037"
 	imageBusybox    = "busybox:1.36@sha256:73aaf090f3d85aa34ee199857f03fa3a95c8ede2ffd4cc2cdb5b94e566b11662"
-	imageTemporal   = "temporalio/temporal:1.10.0@sha256:003508da05989e7cf0d583cfce521c4bb2732e733574e3040db8f1284783baa2"
+	imageTemporal   = "temporalio/temporal:1.10.1@sha256:b228dadf9cdb6c7c02a1394b89dd76f827aac9760e458fce42f0899a10141225"
 	// Each labrinth bump means re-checking seedDump, metaSchema, metaSeed and
 	// allScopes below against the image's org.opencontainers.image.revision
 	// label, which TestMain logs.
