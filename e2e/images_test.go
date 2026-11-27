@@ -12,7 +12,7 @@ const (
 	// Each labrinth bump means re-checking seedDump, metaSchema, metaSeed and
 	// allScopes below against the image's org.opencontainers.image.revision
 	// label, which TestMain logs.
-	imageLabrinth = "ghcr.io/modrinth/labrinth:prod@sha256:d173735a9a861a02de100382fd649e9988e0694648b6e47d935b7e8de5937f9c"
+	imageLabrinth = "ghcr.io/modrinth/labrinth:prod@sha256:7fad2c7f6a6c5fe01a1af93cdb48e0cfae096bdfbd1c5e1e56248577d9254c92"
 )
 
 const (
